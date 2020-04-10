@@ -2,19 +2,42 @@
   "name": "hash-wasm",
   "version": "0.0.1",
   "description": "Fast hash functions compiled to WebAssembly",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/lib/index.d.ts",
   "scripts": {
-    "start": "ts-node md4.ts",
+    "start": "ts-node lib/index.ts",
     "benchmark": "ts-node benchmark/benchmark.ts",
-    "build": "tsc",
-    "prepublishOnly": "tsc -p ./ --outDir dist/",
+    "build": "sh -c ./scripts/build.sh",
+    "prepublishOnly": "sh -c ./scripts/build.sh",
     "test": "jest --coverage",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
-  "author": "Dani Biro",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Daninet/hash-wasm.git"
+  },
+  "keywords": [
+    "hash",
+    "functions",
+    "hashing",
+    "md5",
+    "md4",
+    "crc32",
+    "wasm",
+    "webassembly",
+    "fast",
+    "browser"
+  ],
+  "bugs": {
+    "url": "https://github.com/Daninet/hash-wasm/issues"
+  },
+  "homepage": "https://github.com/Daninet/hash-wasm#readme",
+  "author": "Dani Biro <danibiro93@gmail.com> (http://danibiro.com)",
   "license": "MIT",
   "devDependencies": {
+    "@rollup/plugin-json": "^4.0.2",
+    "@rollup/plugin-typescript": "^4.0.0",
     "@types/jest": "^24.0.23",
     "@types/node": "^13.11.1",
     "coveralls": "^3.0.8",
@@ -26,9 +49,12 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "jest": "^24.9.0",
-    "js-md4": "^0.3.2",
+    "rollup": "^2.4.0",
     "ts-jest": "^24.2.0",
+    "ts-loader": "^6.2.2",
     "ts-node": "^8.8.2",
+    "tslib": "^1.11.1",
     "typescript": "^3.8.3"
-  }
+  },
+  "dependencies": {}
 }

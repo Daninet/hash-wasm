@@ -24,3 +24,9 @@ node_modules/
 dist
 
 .jest-cache
+
+wasm
+
+benchmark
+test
+scripts

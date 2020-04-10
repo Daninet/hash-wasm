@@ -1,4 +1,3 @@
-const fs = require('fs');
 const MAX_HEAP = 16 * 1024;
 
 export type ITypedArray = Uint8Array | Uint16Array | Uint32Array | ArrayBuffer;
@@ -9,13 +8,18 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
 
 export type IWASMInterface = ThenArg<ReturnType<typeof WASMInterface>>;
 
-async function WASMInterface (hashName: string, hashLength: number) {
+async function WASMInterface (binary: any, hashLength: number) {
   let wasmInstance = null;
   let arrayOffset: number = -1;
   let memoryView: Uint8Array = null;
 
+  const getBinary = async (): Promise<Uint8Array> => {
+    const buf = Buffer.from(binary.data, 'base64');
+    return Promise.resolve(new Uint8Array(buf.buffer, buf.byteOffset, buf.length));
+  } 
+
   const loadWASM = async () => {
-    const binary = fs.readFileSync(`./dist/${hashName}.wasm`);
+    let binary = await getBinary();
     wasmInstance = (await WebAssembly.instantiate(binary)).instance;
     wasmInstance.exports._start();
     arrayOffset = wasmInstance.exports.Hash_GetBuffer();
