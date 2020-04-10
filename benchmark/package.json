@@ -1,0 +1,19 @@
+{
+  "name": "benchmark",
+  "version": "1.0.0",
+  "description": "",
+  "main": "benchmark.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dani Biro",
+  "license": "MIT",
+  "devDependencies": {
+    "benny": "^3.6.14"
+  },
+  "dependencies": {
+    "crc": "^3.8.0",
+    "md5": "^2.2.1",
+    "node-forge": "^0.9.1"
+  }
+}
