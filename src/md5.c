@@ -90,13 +90,9 @@ unsigned char array[16 * 1024];
  */
 
 #define SET(n) \
-  (ctx->block[(n)] = \
-  (MD5_u32plus)ptr[(n) * 4] | \
-  ((MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
-  ((MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
-  ((MD5_u32plus)ptr[(n) * 4 + 3] << 24))
+	(*(MD5_u32plus *)&ptr[(n) * 4])
 #define GET(n) \
-  (ctx->block[(n)])
+	SET(n)
  
 /*
  * This processes one or more 64-byte data blocks, but does NOT update the bit
