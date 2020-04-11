@@ -1,30 +1,45 @@
-/*
- * https://github.com/mygityf/cipher
- * SHA-512 algorithm as described at
+/* sha512.c - an implementation of SHA-384/512 hash functions
+ * based on FIPS 180-3 (Federal Information Processing Standart).
  *
- *   http://csrc.nist.gov/cryptval/shs.html
+ * Copyright (c) 2010, Aleksey Kravchenko <rhash.admin@gmail.com>
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE  INCLUDING ALL IMPLIED WARRANTIES OF  MERCHANTABILITY
+ * AND FITNESS.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT,  OR CONSEQUENTIAL DAMAGES  OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE,  DATA OR PROFITS,  WHETHER IN AN ACTION OF CONTRACT,  NEGLIGENCE
+ * OR OTHER TORTIOUS ACTION,  ARISING OUT OF  OR IN CONNECTION  WITH THE USE  OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <emscripten.h>
 #include <string.h>
 #include <sys/types.h>
+#include <emscripten.h>
 
-#define BLKSIZE 128
+#define sha512_block_size 128
+#define sha512_hash_size  64
+#define sha384_hash_size  48
+#define I64(x) x##ULL
+#define ROTR64(qword, n) ((qword) >> (n) ^ ((qword) << (64 - (n))))
+#define be2me_64(x) bswap_64(x)
+#define bswap_64(x) __builtin_bswap64(x)
+#define IS_ALIGNED_64(p) (0 == (7 & ((const char*)(p) - (const char*)0)))
+#define le2me_64(x) (x)
+#define be64_copy(to, index, from, length) rhash_swap_copy_str_to_u64((to), (index), (from), (length))
 
-typedef struct {
-  unsigned long hi, lo;
-} uint64;
-typedef unsigned int uint32;
-
-struct SHA512_State {
-  uint64 h[8];
-  unsigned char block[128];
-  int blkused;
-  uint32 len[4];
+struct sha512_ctx
+{
+  uint64_t message[16];   /* 1024-bit buffer for leftovers */
+  uint64_t length;        /* number of processed bytes */
+  uint64_t hash[8];       /* 512-bit algorithm internal hashing state */
+  unsigned digest_length; /* length of the algorithm digest in bytes */
 };
 
-struct SHA512_State sctx;
-struct SHA512_State* state = &sctx;
+struct sha512_ctx sctx;
+struct sha512_ctx* ctx = &sctx;
 unsigned char array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
@@ -33,301 +48,276 @@ unsigned char* Hash_GetBuffer()
   return array;
 }
 
-/*
- * Arithmetic implementations. Note that AND, XOR and NOT can
- * overlap destination with one source, but the others can't.
+/* SHA-384 and SHA-512 constants for 80 rounds. These qwords represent
+ * the first 64 bits of the fractional parts of the cube
+ * roots of the first 80 prime numbers. */
+static const uint64_t rhash_k512[80] = {
+  I64(0x428a2f98d728ae22), I64(0x7137449123ef65cd), I64(0xb5c0fbcfec4d3b2f),
+  I64(0xe9b5dba58189dbbc), I64(0x3956c25bf348b538), I64(0x59f111f1b605d019),
+  I64(0x923f82a4af194f9b), I64(0xab1c5ed5da6d8118), I64(0xd807aa98a3030242),
+  I64(0x12835b0145706fbe), I64(0x243185be4ee4b28c), I64(0x550c7dc3d5ffb4e2),
+  I64(0x72be5d74f27b896f), I64(0x80deb1fe3b1696b1), I64(0x9bdc06a725c71235),
+  I64(0xc19bf174cf692694), I64(0xe49b69c19ef14ad2), I64(0xefbe4786384f25e3),
+  I64(0x0fc19dc68b8cd5b5), I64(0x240ca1cc77ac9c65), I64(0x2de92c6f592b0275),
+  I64(0x4a7484aa6ea6e483), I64(0x5cb0a9dcbd41fbd4), I64(0x76f988da831153b5),
+  I64(0x983e5152ee66dfab), I64(0xa831c66d2db43210), I64(0xb00327c898fb213f),
+  I64(0xbf597fc7beef0ee4), I64(0xc6e00bf33da88fc2), I64(0xd5a79147930aa725),
+  I64(0x06ca6351e003826f), I64(0x142929670a0e6e70), I64(0x27b70a8546d22ffc),
+  I64(0x2e1b21385c26c926), I64(0x4d2c6dfc5ac42aed), I64(0x53380d139d95b3df),
+  I64(0x650a73548baf63de), I64(0x766a0abb3c77b2a8), I64(0x81c2c92e47edaee6),
+  I64(0x92722c851482353b), I64(0xa2bfe8a14cf10364), I64(0xa81a664bbc423001),
+  I64(0xc24b8b70d0f89791), I64(0xc76c51a30654be30), I64(0xd192e819d6ef5218),
+  I64(0xd69906245565a910), I64(0xf40e35855771202a), I64(0x106aa07032bbd1b8),
+  I64(0x19a4c116b8d2d0c8), I64(0x1e376c085141ab53), I64(0x2748774cdf8eeb99),
+  I64(0x34b0bcb5e19b48a8), I64(0x391c0cb3c5c95a63), I64(0x4ed8aa4ae3418acb),
+  I64(0x5b9cca4f7763e373), I64(0x682e6ff3d6b2b8a3), I64(0x748f82ee5defb2fc),
+  I64(0x78a5636f43172f60), I64(0x84c87814a1f0ab72), I64(0x8cc702081a6439ec),
+  I64(0x90befffa23631e28), I64(0xa4506cebde82bde9), I64(0xbef9a3f7b2c67915),
+  I64(0xc67178f2e372532b), I64(0xca273eceea26619c), I64(0xd186b8c721c0c207),
+  I64(0xeada7dd6cde0eb1e), I64(0xf57d4f7fee6ed178), I64(0x06f067aa72176fba),
+  I64(0x0a637dc5a2c898a6), I64(0x113f9804bef90dae), I64(0x1b710b35131c471b),
+  I64(0x28db77f523047d84), I64(0x32caab7b40c72493), I64(0x3c9ebe0a15c9bebc),
+  I64(0x431d67c49c100d4c), I64(0x4cc5d4becb3e42b6), I64(0x597f299cfc657e2a),
+  I64(0x5fcb6fab3ad6faec), I64(0x6c44198c4a475817)
+};
+
+/* The SHA512/384 functions defined by FIPS 180-3, 4.1.3 */
+/* Optimized version of Ch(x,y,z)=((x & y) | (~x & z)) */
+#define Ch(x,y,z)  ((z) ^ ((x) & ((y) ^ (z))))
+/* Optimized version of Maj(x,y,z)=((x & y) ^ (x & z) ^ (y & z)) */
+#define Maj(x,y,z) (((x) & (y)) ^ ((z) & ((x) ^ (y))))
+
+#define Sigma0(x) (ROTR64((x), 28) ^ ROTR64((x), 34) ^ ROTR64((x), 39))
+#define Sigma1(x) (ROTR64((x), 14) ^ ROTR64((x), 18) ^ ROTR64((x), 41))
+#define sigma0(x) (ROTR64((x),  1) ^ ROTR64((x),  8) ^ ((x) >> 7))
+#define sigma1(x) (ROTR64((x), 19) ^ ROTR64((x), 61) ^ ((x) >> 6))
+
+/* Recalculate element n-th of circular buffer W using formula
+ *   W[n] = sigma1(W[n - 2]) + W[n - 7] + sigma0(W[n - 15]) + W[n - 16]; */
+#define RECALCULATE_W(W,n) (W[n] += \
+  (sigma1(W[(n - 2) & 15]) + W[(n - 7) & 15] + sigma0(W[(n - 15) & 15])))
+
+#define ROUND(a,b,c,d,e,f,g,h,k,data) { \
+  uint64_t T1 = h + Sigma1(e) + Ch(e,f,g) + k + (data); \
+  d += T1, h = T1 + Sigma0(a) + Maj(a,b,c); }
+#define ROUND_1_16(a,b,c,d,e,f,g,h,n) \
+  ROUND(a,b,c,d,e,f,g,h, rhash_k512[n], W[n] = be2me_64(block[n]))
+#define ROUND_17_80(a,b,c,d,e,f,g,h,n) \
+  ROUND(a,b,c,d,e,f,g,h, k[n], RECALCULATE_W(W, n))
+
+/**
+ * Copy a memory block with changed byte order.
+ * The byte order is changed from little-endian 64-bit integers
+ * to big-endian (or vice-versa).
+ *
+ * @param to     the pointer where to copy memory block
+ * @param index  the index to start writing from
+ * @param from   the source block to copy
+ * @param length length of the memory block
  */
-#define add(r,x,y) ( r.lo = y.lo + x.lo, \
-                     r.hi = y.hi + x.hi + ((uint32)r.lo < (uint32)y.lo) )
-#define rorB(r,x,y) ( r.lo = ((uint32)x.hi >> ((y)-32)) | ((uint32)x.lo << (64-(y))), \
-                      r.hi = ((uint32)x.lo >> ((y)-32)) | ((uint32)x.hi << (64-(y))) )
-#define rorL(r,x,y) ( r.lo = ((uint32)x.lo >> (y)) | ((uint32)x.hi << (32-(y))), \
-                      r.hi = ((uint32)x.hi >> (y)) | ((uint32)x.lo << (32-(y))) )
-#define shrB(r,x,y) ( r.lo = (uint32)x.hi >> ((y)-32), r.hi = 0 )
-#define shrL(r,x,y) ( r.lo = ((uint32)x.lo >> (y)) | ((uint32)x.hi << (32-(y))), \
-                      r.hi = (uint32)x.hi >> (y) )
-#define and(r,x,y) ( r.lo = x.lo & y.lo, r.hi = x.hi & y.hi )
-#define xor(r,x,y) ( r.lo = x.lo ^ y.lo, r.hi = x.hi ^ y.hi )
-#define not(r,x) ( r.lo = ~x.lo, r.hi = ~x.hi )
-#define INIT(h,l) { h, l }
-#define BUILD(r,h,l) ( r.hi = h, r.lo = l )
-#define EXTRACT(h,l,r) ( h = r.hi, l = r.lo )
-
-/* ----------------------------------------------------------------------
- * Core SHA512 algorithm: processes 16-doubleword blocks into a
- * message digest.
- */
-
-#define Ch(r,t,x,y,z) ( not(t,x), and(r,t,z), and(t,x,y), xor(r,r,t) )
-#define Maj(r,t,x,y,z) ( and(r,x,y), and(t,x,z), xor(r,r,t), \
-                         and(t,y,z), xor(r,r,t) )
-#define bigsigma0(r,t,x) ( rorL(r,x,28), rorB(t,x,34), xor(r,r,t), \
-                           rorB(t,x,39), xor(r,r,t) )
-#define bigsigma1(r,t,x) ( rorL(r,x,14), rorL(t,x,18), xor(r,r,t), \
-                           rorB(t,x,41), xor(r,r,t) )
-#define smallsigma0(r,t,x) ( rorL(r,x,1), rorL(t,x,8), xor(r,r,t), \
-                             shrL(t,x,7), xor(r,r,t) )
-#define smallsigma1(r,t,x) ( rorL(r,x,19), rorB(t,x,61), xor(r,r,t), \
-                             shrL(t,x,6), xor(r,r,t) )
-
-#define PUT_32BIT_MSB_FIRST(cp, value) ( \
-  (cp)[0] = (unsigned char)((value) >> 24), \
-  (cp)[1] = (unsigned char)((value) >> 16), \
-  (cp)[2] = (unsigned char)((value) >> 8), \
-  (cp)[3] = (unsigned char)(value))
-
-static void SHA384_Core_Init(struct SHA512_State *s) {
-  static const uint64 iv[] = {
-    INIT(0xcbbb9d5d, 0xc1059ed8),
-    INIT(0x629a292a, 0x367cd507),
-    INIT(0x9159015a, 0x3070dd17),
-    INIT(0x152fecd8, 0xf70e5939),
-    INIT(0x67332667, 0xffc00b31),
-    INIT(0x8eb44a87, 0x68581511),
-    INIT(0xdb0c2e0d, 0x64f98fa7),
-    INIT(0x47b5481d, 0xbefa4fa4),
-  };
-  int i;
-  for (i = 0; i < 8; i++)
-    s->h[i] = iv[i];
-}
-
-static void SHA512_Core_Init(struct SHA512_State *s) {
-  static const uint64 iv[] = {
-    INIT(0x6a09e667, 0xf3bcc908),
-    INIT(0xbb67ae85, 0x84caa73b),
-    INIT(0x3c6ef372, 0xfe94f82b),
-    INIT(0xa54ff53a, 0x5f1d36f1),
-    INIT(0x510e527f, 0xade682d1),
-    INIT(0x9b05688c, 0x2b3e6c1f),
-    INIT(0x1f83d9ab, 0xfb41bd6b),
-    INIT(0x5be0cd19, 0x137e2179),
-  };
-  int i;
-  for (i = 0; i < 8; i++)
-    s->h[i] = iv[i];
-}
-
-static void SHA512_Block(struct SHA512_State *s, uint64 *block) {
-  uint64 w[80];
-  uint64 a,b,c,d,e,f,g,h;
-  static const uint64 k[] = {
-    INIT(0x428a2f98, 0xd728ae22), INIT(0x71374491, 0x23ef65cd),
-    INIT(0xb5c0fbcf, 0xec4d3b2f), INIT(0xe9b5dba5, 0x8189dbbc),
-    INIT(0x3956c25b, 0xf348b538), INIT(0x59f111f1, 0xb605d019),
-    INIT(0x923f82a4, 0xaf194f9b), INIT(0xab1c5ed5, 0xda6d8118),
-    INIT(0xd807aa98, 0xa3030242), INIT(0x12835b01, 0x45706fbe),
-    INIT(0x243185be, 0x4ee4b28c), INIT(0x550c7dc3, 0xd5ffb4e2),
-    INIT(0x72be5d74, 0xf27b896f), INIT(0x80deb1fe, 0x3b1696b1),
-    INIT(0x9bdc06a7, 0x25c71235), INIT(0xc19bf174, 0xcf692694),
-    INIT(0xe49b69c1, 0x9ef14ad2), INIT(0xefbe4786, 0x384f25e3),
-    INIT(0x0fc19dc6, 0x8b8cd5b5), INIT(0x240ca1cc, 0x77ac9c65),
-    INIT(0x2de92c6f, 0x592b0275), INIT(0x4a7484aa, 0x6ea6e483),
-    INIT(0x5cb0a9dc, 0xbd41fbd4), INIT(0x76f988da, 0x831153b5),
-    INIT(0x983e5152, 0xee66dfab), INIT(0xa831c66d, 0x2db43210),
-    INIT(0xb00327c8, 0x98fb213f), INIT(0xbf597fc7, 0xbeef0ee4),
-    INIT(0xc6e00bf3, 0x3da88fc2), INIT(0xd5a79147, 0x930aa725),
-    INIT(0x06ca6351, 0xe003826f), INIT(0x14292967, 0x0a0e6e70),
-    INIT(0x27b70a85, 0x46d22ffc), INIT(0x2e1b2138, 0x5c26c926),
-    INIT(0x4d2c6dfc, 0x5ac42aed), INIT(0x53380d13, 0x9d95b3df),
-    INIT(0x650a7354, 0x8baf63de), INIT(0x766a0abb, 0x3c77b2a8),
-    INIT(0x81c2c92e, 0x47edaee6), INIT(0x92722c85, 0x1482353b),
-    INIT(0xa2bfe8a1, 0x4cf10364), INIT(0xa81a664b, 0xbc423001),
-    INIT(0xc24b8b70, 0xd0f89791), INIT(0xc76c51a3, 0x0654be30),
-    INIT(0xd192e819, 0xd6ef5218), INIT(0xd6990624, 0x5565a910),
-    INIT(0xf40e3585, 0x5771202a), INIT(0x106aa070, 0x32bbd1b8),
-    INIT(0x19a4c116, 0xb8d2d0c8), INIT(0x1e376c08, 0x5141ab53),
-    INIT(0x2748774c, 0xdf8eeb99), INIT(0x34b0bcb5, 0xe19b48a8),
-    INIT(0x391c0cb3, 0xc5c95a63), INIT(0x4ed8aa4a, 0xe3418acb),
-    INIT(0x5b9cca4f, 0x7763e373), INIT(0x682e6ff3, 0xd6b2b8a3),
-    INIT(0x748f82ee, 0x5defb2fc), INIT(0x78a5636f, 0x43172f60),
-    INIT(0x84c87814, 0xa1f0ab72), INIT(0x8cc70208, 0x1a6439ec),
-    INIT(0x90befffa, 0x23631e28), INIT(0xa4506ceb, 0xde82bde9),
-    INIT(0xbef9a3f7, 0xb2c67915), INIT(0xc67178f2, 0xe372532b),
-    INIT(0xca273ece, 0xea26619c), INIT(0xd186b8c7, 0x21c0c207),
-    INIT(0xeada7dd6, 0xcde0eb1e), INIT(0xf57d4f7f, 0xee6ed178),
-    INIT(0x06f067aa, 0x72176fba), INIT(0x0a637dc5, 0xa2c898a6),
-    INIT(0x113f9804, 0xbef90dae), INIT(0x1b710b35, 0x131c471b),
-    INIT(0x28db77f5, 0x23047d84), INIT(0x32caab7b, 0x40c72493),
-    INIT(0x3c9ebe0a, 0x15c9bebc), INIT(0x431d67c4, 0x9c100d4c),
-    INIT(0x4cc5d4be, 0xcb3e42b6), INIT(0x597f299c, 0xfc657e2a),
-    INIT(0x5fcb6fab, 0x3ad6faec), INIT(0x6c44198c, 0x4a475817),
-  };
-
-  int t;
-
-  for (t = 0; t < 16; t++)
-    w[t] = block[t];
-
-  for (t = 16; t < 80; t++) {
-    uint64 p, q, r, tmp;
-    smallsigma1(p, tmp, w[t-2]);
-    smallsigma0(q, tmp, w[t-15]);
-    add(r, p, q);
-    add(p, r, w[t-7]);
-    add(w[t], p, w[t-16]);
-  }
-
-  a = s->h[0]; b = s->h[1]; c = s->h[2]; d = s->h[3];
-  e = s->h[4]; f = s->h[5]; g = s->h[6]; h = s->h[7];
-
-  for (t = 0; t < 80; t+=8) {
-    uint64 tmp, p, q, r;
-
-#define ROUND(j,a,b,c,d,e,f,g,h) \
-    bigsigma1(p, tmp, e); \
-    Ch(q, tmp, e, f, g); \
-    add(r, p, q); \
-    add(p, r, k[j]) ; \
-    add(q, p, w[j]); \
-    add(r, q, h); \
-    bigsigma0(p, tmp, a); \
-    Maj(tmp, q, a, b, c); \
-    add(q, tmp, p); \
-    add(p, r, d); \
-    d = p; \
-    add(h, q, r);
-
-    ROUND(t+0, a,b,c,d,e,f,g,h);
-    ROUND(t+1, h,a,b,c,d,e,f,g);
-    ROUND(t+2, g,h,a,b,c,d,e,f);
-    ROUND(t+3, f,g,h,a,b,c,d,e);
-    ROUND(t+4, e,f,g,h,a,b,c,d);
-    ROUND(t+5, d,e,f,g,h,a,b,c);
-    ROUND(t+6, c,d,e,f,g,h,a,b);
-    ROUND(t+7, b,c,d,e,f,g,h,a);
-  }
-
-  {
-    uint64 tmp;
-#define UPDATE(state, local) ( tmp = state, add(state, tmp, local) )
-    UPDATE(s->h[0], a); UPDATE(s->h[1], b);
-    UPDATE(s->h[2], c); UPDATE(s->h[3], d);
-    UPDATE(s->h[4], e); UPDATE(s->h[5], f);
-    UPDATE(s->h[6], g); UPDATE(s->h[7], h);
-  }
-}
-
-/* ----------------------------------------------------------------------
- * Outer SHA512 algorithm: take an arbitrary length byte string,
- * convert it into 16-doubleword blocks with the prescribed padding
- * at the end, and pass those blocks to the core SHA512 algorithm.
- */
-
-EMSCRIPTEN_KEEPALIVE
-void Hash_Init(unsigned long bits) {
-  if (bits == 384) {
-    SHA384_Core_Init(state);
-  } else {
-    SHA512_Core_Init(state);
-  }
-
-  state->blkused = 0;
-  int i;
-  for (i = 0; i < 4; i++)
-    state->len[i] = 0;
-}
-
-void SHA512_Bytes(const void *p, int len) {
-  struct SHA512_State *s = state;
-  unsigned char *q = (unsigned char *)p;
-  uint64 wordblock[16];
-  uint32 lenw = len;
-  int i;
-
-  /*
-    * Update the length field.
-    */
-  for (i = 0; i < 4; i++) {
-    s->len[i] += lenw;
-    lenw = (s->len[i] < lenw);
-  }
-
-  if (s->blkused && s->blkused+len < BLKSIZE) {
-    /*
-      * Trivial case: just add to the block.
-      */
-    memcpy(s->block + s->blkused, q, len);
-    s->blkused += len;
-  } else {
-    /*
-      * We must complete and process at least one block.
-      */
-    while (s->blkused + len >= BLKSIZE) {
-      memcpy(s->block + s->blkused, q, BLKSIZE - s->blkused);
-      q += BLKSIZE - s->blkused;
-      len -= BLKSIZE - s->blkused;
-      /* Now process the block. Gather bytes big-endian into words */
-      for (i = 0; i < 16; i++) {
-        uint32 h, l;
-        h = ( ((uint32)s->block[i*8+0]) << 24 ) |
-            ( ((uint32)s->block[i*8+1]) << 16 ) |
-            ( ((uint32)s->block[i*8+2]) <<  8 ) |
-            ( ((uint32)s->block[i*8+3]) <<  0 );
-        l = ( ((uint32)s->block[i*8+4]) << 24 ) |
-            ( ((uint32)s->block[i*8+5]) << 16 ) |
-            ( ((uint32)s->block[i*8+6]) <<  8 ) |
-            ( ((uint32)s->block[i*8+7]) <<  0 );
-        BUILD(wordblock[i], h, l);
-      }
-      SHA512_Block(s, wordblock);
-      s->blkused = 0;
-    }
-    memcpy(s->block, q, len);
-    s->blkused = len;
-  }
-}
-
-EMSCRIPTEN_KEEPALIVE
-void Hash_Update(u_int32_t len)
+void rhash_swap_copy_str_to_u64(void* to, int index, const void* from, size_t length)
 {
-  const unsigned char *data = array;
-  SHA512_Bytes(data, len);
+  /* if all pointers and length are 64-bits aligned */
+  if ( 0 == (( (int)((char*)to - (char*)0) | ((char*)from - (char*)0) | index | length ) & 7) ) {
+    /* copy aligned memory block as 64-bit integers */
+    const uint64_t* src = (const uint64_t*)from;
+    const uint64_t* end = (const uint64_t*)((const char*)src + length);
+    uint64_t* dst = (uint64_t*)((char*)to + index);
+    while (src < end) *(dst++) = bswap_64( *(src++) );
+  } else {
+    const char* src = (const char*)from;
+    for (length += index; (size_t)index < length; index++) ((char*)to)[index ^ 7] = *(src++);
+  }
+}
+
+/**
+ * Initialize context before calculating hash.
+ *
+ * @param ctx context to initialize
+ */
+void rhash_sha512_init()
+{
+  /* Initial values. These words were obtained by taking the first 32
+   * bits of the fractional parts of the square roots of the first
+   * eight prime numbers. */
+  static const uint64_t SHA512_H0[8] = {
+    I64(0x6a09e667f3bcc908), I64(0xbb67ae8584caa73b), I64(0x3c6ef372fe94f82b),
+    I64(0xa54ff53a5f1d36f1), I64(0x510e527fade682d1), I64(0x9b05688c2b3e6c1f),
+    I64(0x1f83d9abfb41bd6b), I64(0x5be0cd19137e2179)
+  };
+
+  ctx->length = 0;
+  ctx->digest_length = sha512_hash_size;
+
+  /* initialize algorithm state */
+  memcpy(ctx->hash, SHA512_H0, sizeof(ctx->hash));
+}
+
+/**
+ * Initialize context before calculaing hash.
+ *
+ * @param ctx context to initialize
+ */
+void rhash_sha384_init()
+{
+  /* Initial values from FIPS 180-3. These words were obtained by taking
+   * the first sixty-four bits of the fractional parts of the square
+   * roots of ninth through sixteenth prime numbers. */
+  static const uint64_t SHA384_H0[8] = {
+    I64(0xcbbb9d5dc1059ed8), I64(0x629a292a367cd507), I64(0x9159015a3070dd17),
+    I64(0x152fecd8f70e5939), I64(0x67332667ffc00b31), I64(0x8eb44a8768581511),
+    I64(0xdb0c2e0d64f98fa7), I64(0x47b5481dbefa4fa4)
+  };
+
+  ctx->length = 0;
+  ctx->digest_length = sha384_hash_size;
+
+  memcpy(ctx->hash, SHA384_H0, sizeof(ctx->hash));
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final() {
-  unsigned char *digest = array;
-  struct SHA512_State *s = state;
+void Hash_Init(unsigned long bits)
+{
+  if (bits == 384) {
+    rhash_sha384_init();
+  } else {
+    rhash_sha512_init();
+  }
+}
+
+/**
+ * The core transformation. Process a 512-bit block.
+ *
+ * @param hash algorithm state
+ * @param block the message block to process
+ */
+static void rhash_sha512_process_block(uint64_t hash[8], uint64_t block[16])
+{
+  uint64_t A, B, C, D, E, F, G, H;
+  uint64_t W[16];
+  const uint64_t* k;
   int i;
-  int pad;
-  unsigned char c[BLKSIZE];
-  uint32 len[4];
 
-  if (s->blkused >= BLKSIZE-16)
-    pad = (BLKSIZE-16) + BLKSIZE - s->blkused;
-  else
-    pad = (BLKSIZE-16) - s->blkused;
+  A = hash[0], B = hash[1], C = hash[2], D = hash[3];
+  E = hash[4], F = hash[5], G = hash[6], H = hash[7];
 
-  for (i = 4; i-- ;) {
-    uint32 lenhi = s->len[i];
-    uint32 lenlo = i > 0 ? s->len[i-1] : 0;
-    len[i] = (lenhi << 3) | (lenlo >> (32-3));
+  /* Compute SHA using alternate Method: FIPS 180-3 6.1.3 */
+  ROUND_1_16(A, B, C, D, E, F, G, H, 0);
+  ROUND_1_16(H, A, B, C, D, E, F, G, 1);
+  ROUND_1_16(G, H, A, B, C, D, E, F, 2);
+  ROUND_1_16(F, G, H, A, B, C, D, E, 3);
+  ROUND_1_16(E, F, G, H, A, B, C, D, 4);
+  ROUND_1_16(D, E, F, G, H, A, B, C, 5);
+  ROUND_1_16(C, D, E, F, G, H, A, B, 6);
+  ROUND_1_16(B, C, D, E, F, G, H, A, 7);
+  ROUND_1_16(A, B, C, D, E, F, G, H, 8);
+  ROUND_1_16(H, A, B, C, D, E, F, G, 9);
+  ROUND_1_16(G, H, A, B, C, D, E, F, 10);
+  ROUND_1_16(F, G, H, A, B, C, D, E, 11);
+  ROUND_1_16(E, F, G, H, A, B, C, D, 12);
+  ROUND_1_16(D, E, F, G, H, A, B, C, 13);
+  ROUND_1_16(C, D, E, F, G, H, A, B, 14);
+  ROUND_1_16(B, C, D, E, F, G, H, A, 15);
+
+  for (i = 16, k = &rhash_k512[16]; i < 80; i += 16, k += 16) {
+    ROUND_17_80(A, B, C, D, E, F, G, H,  0);
+    ROUND_17_80(H, A, B, C, D, E, F, G,  1);
+    ROUND_17_80(G, H, A, B, C, D, E, F,  2);
+    ROUND_17_80(F, G, H, A, B, C, D, E,  3);
+    ROUND_17_80(E, F, G, H, A, B, C, D,  4);
+    ROUND_17_80(D, E, F, G, H, A, B, C,  5);
+    ROUND_17_80(C, D, E, F, G, H, A, B,  6);
+    ROUND_17_80(B, C, D, E, F, G, H, A,  7);
+    ROUND_17_80(A, B, C, D, E, F, G, H,  8);
+    ROUND_17_80(H, A, B, C, D, E, F, G,  9);
+    ROUND_17_80(G, H, A, B, C, D, E, F, 10);
+    ROUND_17_80(F, G, H, A, B, C, D, E, 11);
+    ROUND_17_80(E, F, G, H, A, B, C, D, 12);
+    ROUND_17_80(D, E, F, G, H, A, B, C, 13);
+    ROUND_17_80(C, D, E, F, G, H, A, B, 14);
+    ROUND_17_80(B, C, D, E, F, G, H, A, 15);
   }
 
-  memset(c, 0, pad);
-  c[0] = 0x80;
-  SHA512_Bytes(&c, pad);
+  hash[0] += A, hash[1] += B, hash[2] += C, hash[3] += D;
+  hash[4] += E, hash[5] += F, hash[6] += G, hash[7] += H;
+}
 
-  for (i = 0; i < 4; i++) {
-    c[i*4+0] = (len[3-i] >> 24) & 0xFF;
-    c[i*4+1] = (len[3-i] >> 16) & 0xFF;
-    c[i*4+2] = (len[3-i] >>  8) & 0xFF;
-    c[i*4+3] = (len[3-i] >>  0) & 0xFF;
+/**
+ * Calculate message hash.
+ * Can be called repeatedly with chunks of the message to be hashed.
+ *
+ * @param ctx the algorithm context containing current hashing state
+ * @param msg message chunk
+ * @param size length of the message chunk
+ */
+EMSCRIPTEN_KEEPALIVE
+void Hash_Update(size_t size)
+{
+  const unsigned char *msg = array;
+  size_t index = (size_t)ctx->length & 127;
+  ctx->length += size;
+
+  /* fill partial block */
+  if (index) {
+    size_t left = sha512_block_size - index;
+    memcpy((char*)ctx->message + index, msg, (size < left ? size : left));
+    if (size < left) return;
+
+    /* process partial block */
+    rhash_sha512_process_block(ctx->hash, ctx->message);
+    msg  += left;
+    size -= left;
   }
+  while (size >= sha512_block_size) {
+    uint64_t* aligned_message_block;
+    if (IS_ALIGNED_64(msg)) {
+      /* the most common case is processing of an already aligned message
+      without copying it */
+      aligned_message_block = (uint64_t*)msg;
+    } else {
+      memcpy(ctx->message, msg, sha512_block_size);
+      aligned_message_block = ctx->message;
+    }
 
-  SHA512_Bytes(&c, 16);
-
-  for (i = 0; i < 8; i++) {
-    uint32 h, l;
-    EXTRACT(h, l, s->h[i]);
-    digest[i*8+0] = (h >> 24) & 0xFF;
-    digest[i*8+1] = (h >> 16) & 0xFF;
-    digest[i*8+2] = (h >>  8) & 0xFF;
-    digest[i*8+3] = (h >>  0) & 0xFF;
-    digest[i*8+4] = (l >> 24) & 0xFF;
-    digest[i*8+5] = (l >> 16) & 0xFF;
-    digest[i*8+6] = (l >>  8) & 0xFF;
-    digest[i*8+7] = (l >>  0) & 0xFF;
+    rhash_sha512_process_block(ctx->hash, aligned_message_block);
+    msg  += sha512_block_size;
+    size -= sha512_block_size;
   }
+  if (size) {
+    memcpy(ctx->message, msg, size); /* save leftovers */
+  }
+}
+
+/**
+ * Store calculated hash into the given array.
+ *
+ * @param ctx the algorithm context containing current hashing state
+ * @param result calculated hash in binary form
+ */
+EMSCRIPTEN_KEEPALIVE
+void Hash_Final()
+{
+  unsigned char *result = array;
+  size_t index = ((unsigned)ctx->length & 127) >> 3;
+  unsigned shift = ((unsigned)ctx->length & 7) * 8;
+
+  /* pad message and process the last block */
+
+  /* append the byte 0x80 to the message */
+  ctx->message[index]   &= le2me_64( ~(I64(0xFFFFFFFFFFFFFFFF) << shift) );
+  ctx->message[index++] ^= le2me_64( I64(0x80) << shift );
+
+  /* if no room left in the message to store 128-bit message length */
+  if (index >= 15) {
+    if (index == 15) ctx->message[index] = 0;
+    rhash_sha512_process_block(ctx->hash, ctx->message);
+    index = 0;
+  }
+  while (index < 15) {
+    ctx->message[index++] = 0;
+  }
+  ctx->message[15] = be2me_64(ctx->length << 3);
+  rhash_sha512_process_block(ctx->hash, ctx->message);
+
+  if (result) be64_copy(result, 0, ctx->hash, ctx->digest_length);
 }

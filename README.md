@@ -1,6 +1,6 @@
 # hash-wasm
 
-Hash-WASM is a fast, portable hash function library.
+Hash-WASM is a fast and portable hash function library.
 It's using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
 
 
@@ -120,7 +120,7 @@ sha1 (npm library)       | 2       | 8 MB/s
 SHA256                   | ops/s   | throughput
 -------------------------|---------|-----------
 node.js crypto module    | 120     | 480 MB/s
-**hash-wasm**            | **41**  | **164 MB/s**
+**hash-wasm**            | **56**  | **224 MB/s**
 node-forge (npm library) | 17      | 68 MB/s
 jsSHA (npm library)      | 10      | 40 MB/s
 crypto-js (npm library)  | 6       | 24 MB/s
@@ -130,8 +130,8 @@ crypto-js (npm library)  | 6       | 24 MB/s
 SHA512                   | ops/s   | throughput
 -------------------------|---------|-----------
 node.js crypto module    | 171     | 684 MB/s
-**hash-wasm**            | **18**  | **72 MB/s**
-node-forge (npm library) | 10      | 40 MB/s
+**hash-wasm**            | **79**  | **316 MB/s**
+node-forge (npm library) | 11      | 44 MB/s
 jsSHA (npm library)      | 2       | 8 MB/s
 crypto-js (npm library)  | 1       | 4 MB/s
 
