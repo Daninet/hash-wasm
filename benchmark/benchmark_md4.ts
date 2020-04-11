@@ -1,11 +1,9 @@
-export {}
+import benny from 'benny';
+import nodeCrypto from 'crypto';
+import jsMD4 from 'js-md4';
+import { md4 as wasmMD4 } from '../dist/index.umd';
 
-const benny = require('benny');
-const nodeCrypto = require('crypto');
-const jsMD4 = require('js-md4');
-const wasmMD4 = require('../src/md4').default;
-
-const SIZE = 8 * 1024 * 1024;
+const SIZE = 4 * 1024 * 1024;
 const buf = Buffer.alloc(SIZE);
 buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
 const result = nodeCrypto.createHash('MD4').update(buf).digest('hex');

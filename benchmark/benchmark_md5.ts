@@ -1,12 +1,10 @@
-export {}
+import benny from 'benny';
+import nodeCrypto from 'crypto';
+import npmMD5 from 'md5';
+import nodeForge from 'node-forge';
+import { md5 as wasmMD5 } from '../dist/index.umd';
 
-const benny = require('benny');
-const nodeCrypto = require('crypto');
-const npmMD5 = require('md5');
-const nodeForge = require('node-forge');
-const wasmMD5 = require('../src/md5').default;
-
-const SIZE = 8 * 1024 * 1024;
+const SIZE = 4 * 1024 * 1024;
 const buf = Buffer.alloc(SIZE);
 buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
 const result = nodeCrypto.createHash('MD5').update(buf).digest('hex');

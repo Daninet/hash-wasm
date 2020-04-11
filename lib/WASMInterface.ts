@@ -27,7 +27,7 @@ async function WASMInterface (binary: any, hashLength: number) {
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, MAX_HEAP);
   }
 
-  const init = async () => {
+  const init = () => {
     wasmInstance.exports.Hash_Init();
   }
 
