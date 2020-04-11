@@ -7,7 +7,7 @@ docker run \
   --rm \
   -v $(pwd):/app \
   -u $(id -u):$(id -g) \
-  trzeci/emscripten-upstream \
+  trzeci/emscripten-upstream:1.39.10 \
   sh -c /app/scripts/build_all.sh
 
 node scripts/make_json
