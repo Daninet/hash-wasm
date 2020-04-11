@@ -8,3 +8,6 @@ emcc -O3 -s WASM=1 \
 
 emcc -O3 -s WASM=1 \
   -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/crc32.c -o /app/wasm/crc32.wasm
+
+emcc -O3 -s WASM=1 \
+  -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/sha1.c -o /app/wasm/sha1.wasm

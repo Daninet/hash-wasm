@@ -24,6 +24,7 @@
     "md5",
     "md4",
     "crc32",
+    "sha1",
     "wasm",
     "webassembly",
     "fast",
