@@ -13,6 +13,10 @@ async function WASMInterface (binary: any, hashLength: number) {
   let arrayOffset: number = -1;
   let memoryView: Uint8Array = null;
 
+  if (!WebAssembly) {
+    throw new Error('WebAssembly is not supported in this environment!');
+  }
+
   const getBinary = async (): Promise<Uint8Array> => {
     const buf = Buffer.from(binary.data, 'base64');
     return Promise.resolve(new Uint8Array(buf.buffer, buf.byteOffset, buf.length));
