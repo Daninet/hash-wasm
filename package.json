@@ -25,6 +25,8 @@
     "md4",
     "crc32",
     "sha1",
+    "sha2",
+    "sha256",
     "wasm",
     "webassembly",
     "fast",

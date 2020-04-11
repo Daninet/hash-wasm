@@ -6,7 +6,7 @@ It's using WebAssembly to calculate the hash faster than other JavaScript-based 
 Features
 =======
 
-- Supported hash functions: MD4, MD5, CRC32, SHA1 (more to come)
+- Supported hash functions: MD4, MD5, CRC32, SHA1, SHA256 (more to come)
 - A lot faster than JS implementations (see benchmarks)
 - Supports all modern browsers and Node.js
 - Optimized for large files
@@ -100,25 +100,35 @@ node-forge (npm library) | 23      | 92 MB/s
 crypto-js (npm library)  | 6       | 24 MB/s
 sha1 (npm library)       | 2       | 8 MB/s
 
+#
+
+SHA256                   | ops/s   | throughput
+-------------------------|---------|-----------
+node.js crypto module    | 120     | 480 MB/s
+**hash-wasm**            | **41**  | ** 164 MB/s**
+node-forge (npm library) | 17      | 68 MB/s
+crypto-js (npm library)  | 6       | 24 MB/s
 
 API
 =====
 
 ```javascript
 // simple usage
-import { md4, md5, crc32, sha1 } from 'hash-wasm';
+import { md4, md5, crc32, sha1, sha256 } from 'hash-wasm';
 
 md4(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
 md5(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
 crc32(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
 sha1(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
+sha256(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
 
 // usage with chunked data
-import { createMD4, createMD5, createCRC32, createSHA1 } from 'hash-wasm';
+import { createMD4, createMD5, createCRC32, createSHA1, createSHA256 } from 'hash-wasm';
 createMD4(): Promise<IHasher>
 createMD5(): Promise<IHasher>
 createCRC32(): Promise<IHasher>
 createSHA1(): Promise<IHasher>
+createSHA256(): Promise<IHasher>
 
 interface IHasher {
   init: () => void;
