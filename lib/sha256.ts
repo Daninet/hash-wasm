@@ -8,7 +8,7 @@ export async function sha256 (data: string | Buffer | ITypedArray): Promise<stri
     wasm = await WASMInterface(wasmJson, 32);
   }
 
-  return wasm.hash(data);
+  return wasm.hash(data, 256);
 }
 
 export async function createSHA256() {
@@ -18,7 +18,7 @@ export async function createSHA256() {
   }
 
   return {
-    init: () => wasm.init(),
+    init: () => wasm.init(256),
     update: wasm.update,
     digest: wasm.digest,
   };

@@ -76,6 +76,22 @@ unsigned char* Hash_GetBuffer()
   (cp)[2] = (unsigned char)((value) >> 8), \
   (cp)[3] = (unsigned char)(value))
 
+static void SHA384_Core_Init(struct SHA512_State *s) {
+  static const uint64 iv[] = {
+    INIT(0xcbbb9d5d, 0xc1059ed8),
+    INIT(0x629a292a, 0x367cd507),
+    INIT(0x9159015a, 0x3070dd17),
+    INIT(0x152fecd8, 0xf70e5939),
+    INIT(0x67332667, 0xffc00b31),
+    INIT(0x8eb44a87, 0x68581511),
+    INIT(0xdb0c2e0d, 0x64f98fa7),
+    INIT(0x47b5481d, 0xbefa4fa4),
+  };
+  int i;
+  for (i = 0; i < 8; i++)
+    s->h[i] = iv[i];
+}
+
 static void SHA512_Core_Init(struct SHA512_State *s) {
   static const uint64 iv[] = {
     INIT(0x6a09e667, 0xf3bcc908),
@@ -199,10 +215,15 @@ static void SHA512_Block(struct SHA512_State *s, uint64 *block) {
  */
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init() {
-  int i;
-  SHA512_Core_Init(state);
+void Hash_Init(unsigned long bits) {
+  if (bits == 384) {
+    SHA384_Core_Init(state);
+  } else {
+    SHA512_Core_Init(state);
+  }
+
   state->blkused = 0;
+  int i;
   for (i = 0; i < 4; i++)
     state->len[i] = 0;
 }

@@ -3,11 +3,21 @@
 Hash-WASM is a fast, portable hash function library.
 It's using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
 
+
+Supported hash functions
+=======
+
+- MD4, MD5
+- CRC32
+- SHA-1
+- SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
+- SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
+
+
 Features
 =======
 
-- Supported hash functions: MD4, MD5, CRC32, SHA1, SHA256, SHA512, SHA3-224, SHA3-256, SHA3-384, SHA3-512
-- A lot faster than JS implementations (see benchmarks)
+- A lot faster than JS implementations (see [benchmarks](#benchmark) below)
 - Supports all modern browsers and Node.js
 - Optimized for large files
 - Supports chunked input streams
@@ -16,11 +26,13 @@ Features
 - Includes TypeScript type definitions
 - Easy to use Promise-based async API
 
+
 Install
 =======
 ```
 npm i hash-wasm
 ```
+
 
 Examples
 =======
@@ -62,6 +74,7 @@ Browser support
 Chrome | Safari | Firefox | Edge | IE
 -------|--------|---------|------|--------------
 57+    | 11+    | 53+     | 16+  | Not supported
+
 
 Benchmark
 =====
@@ -130,34 +143,42 @@ node.js crypto module    | 61      | 244 MB/s
 sha3 (npm library)       | 2       | 8 MB/s
 jsSHA (npm library)      | 0       | < 4 MB/s
 
+
 API
 =====
 
 ```javascript
 // simple usage
-import { md4, md5, crc32, sha1, sha256, sha512, sha3 } from 'hash-wasm';
+import { md4, md5, crc32, sha1, sha224, sha256, sha384, sha512, sha3 } from 'hash-wasm';
 
 // all functions return hash in hex format
 md4(data: string | typedArray | Buffer): Promise<string>
 md5(data: string | typedArray | Buffer): Promise<string>
 crc32(data: string | typedArray | Buffer): Promise<string>
 sha1(data: string | typedArray | Buffer): Promise<string>
+sha224(data: string | typedArray | Buffer): Promise<string>
 sha256(data: string | typedArray | Buffer): Promise<string>
+sha384(data: string | typedArray | Buffer): Promise<string>
 sha512(data: string | typedArray | Buffer): Promise<string>
 sha3(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 
 
 // usage with chunked data
 import {
-  createMD4, createMD5, createCRC32,
-  createSHA1, createSHA256, createSHA512, createSHA3,
+  createMD4, createMD5,
+  createCRC32,
+  createSHA1,
+  createSHA224, createSHA256, createSHA384, createSHA512,
+  createSHA3,
 } from 'hash-wasm';
 
 createMD4(): Promise<IHasher>
 createMD5(): Promise<IHasher>
 createCRC32(): Promise<IHasher>
 createSHA1(): Promise<IHasher>
+createSHA224(): Promise<IHasher>
 createSHA256(): Promise<IHasher>
+createSHA384(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
 createSHA3(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 

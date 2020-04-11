@@ -42,6 +42,17 @@ unsigned char* Hash_GetBuffer()
   (cp)[2] = (unsigned char)((value) >> 8), \
   (cp)[3] = (unsigned char)(value) )
 
+void SHA224_Core_Init(struct SHA256_State *s) {
+  s->h[0] = 0xc1059ed8ul;
+  s->h[1] = 0x367cd507ul;
+  s->h[2] = 0x3070dd17ul;
+  s->h[3] = 0xf70e5939ul;
+  s->h[4] = 0xffc00b31ul;
+  s->h[5] = 0x68581511ul;
+  s->h[6] = 0x64f98fa7ul;
+  s->h[7] = 0xbefa4fa4ul;
+}
+
 void SHA256_Core_Init(struct SHA256_State *s) {
   s->h[0] = 0x6a09e667;
   s->h[1] = 0xbb67ae85;
@@ -117,8 +128,12 @@ void SHA256_Block(struct SHA256_State *s, uint32 *block) {
 #define BLKSIZE 64
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init() {
-  SHA256_Core_Init(state);
+void Hash_Init(unsigned long bits) {
+  if (bits == 224) {
+    SHA224_Core_Init(state);
+  } else {
+    SHA256_Core_Init(state);
+  }
   state->blkused = 0;
   state->lenhi = state->lenlo = 0;
 }
