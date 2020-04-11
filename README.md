@@ -6,12 +6,12 @@ It's using WebAssembly to calculate the hash faster than other JavaScript-based 
 Features
 =======
 
-- Supported hash functions: MD4, MD5, CRC32, SHA1, SHA256, SHA512, SHA3
+- Supported hash functions: MD4, MD5, CRC32, SHA1, SHA256, SHA512, SHA3-224, SHA3-256, SHA3-384, SHA3-512
 - A lot faster than JS implementations (see benchmarks)
 - Supports all modern browsers and Node.js
 - Optimized for large files
 - Supports chunked input streams
-- WASM is bundled as base64 strings, so it can be easily deployed
+- WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
 - Includes TypeScript type definitions
 - Easy to use Promise-based async API
