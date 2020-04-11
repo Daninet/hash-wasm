@@ -1,13 +1,13 @@
 {
   "name": "hash-wasm",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Fast hash functions compiled to WebAssembly",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
   "types": "dist/lib/index.d.ts",
   "scripts": {
     "start": "ts-node lib/index.ts",
-    "benchmark": "ts-node benchmark/benchmark.ts",
+    "benchmark": "ts-node --project benchmark/tsconfig.json benchmark/benchmark.ts",
     "build": "sh -c ./scripts/build.sh",
     "prepublishOnly": "sh -c ./scripts/build.sh",
     "test": "jest --coverage",
