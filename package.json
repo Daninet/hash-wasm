@@ -27,6 +27,7 @@
     "sha1",
     "sha2",
     "sha256",
+    "sha512",
     "wasm",
     "webassembly",
     "fast",
