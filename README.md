@@ -23,6 +23,7 @@ Features
 - Supports chunked input streams
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
+- It's lightweight. Only ~60kb including all algorithms (or less with tree shaking)
 - Includes TypeScript type definitions
 - Easy to use Promise-based async API
 
