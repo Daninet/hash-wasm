@@ -144,6 +144,7 @@ node.js crypto module    | 61      | 244 MB/s
 sha3 (npm library)       | 2       | 8 MB/s
 jsSHA (npm library)      | 0       | < 4 MB/s
 
+*\* These measurements were made using `Node.js v12.16.2`.*
 
 API
 =====
