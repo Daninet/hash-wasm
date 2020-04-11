@@ -27,8 +27,12 @@ async function WASMInterface (binary: any, hashLength: number) {
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, MAX_HEAP);
   }
 
-  const init = () => {
-    wasmInstance.exports.Hash_Init();
+  const init = (bits: number = null) => {
+    if (bits) {
+      wasmInstance.exports.Hash_Init(bits);
+    } else {
+      wasmInstance.exports.Hash_Init();
+    }
   }
 
   const updateUInt8Array = (data: Uint8Array): void => {
@@ -68,8 +72,8 @@ async function WASMInterface (binary: any, hashLength: number) {
     return Buffer.from(result).toString('hex');
   }
 
-  const hash = (data: string | Buffer | ITypedArray): string => {
-    init();
+  const hash = (data: string | Buffer | ITypedArray, bits: number = null): string => {
+    init(bits);
     update(data);
     return digest();
   }

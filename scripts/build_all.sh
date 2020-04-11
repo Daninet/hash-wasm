@@ -17,3 +17,6 @@ emcc -O3 -s WASM=1 \
 
 emcc -O3 -s WASM=1 \
   -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/sha512.c -o /app/wasm/sha512.wasm
+
+emcc -O3 -s WASM=1 \
+  -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/sha3.c -o /app/wasm/sha3.wasm

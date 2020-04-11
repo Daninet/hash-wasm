@@ -18,7 +18,7 @@ export async function createSHA256() {
   }
 
   return {
-    init: wasm.init,
+    init: () => wasm.init(),
     update: wasm.update,
     digest: wasm.digest,
   };

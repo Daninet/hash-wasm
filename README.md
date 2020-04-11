@@ -6,7 +6,7 @@ It's using WebAssembly to calculate the hash faster than other JavaScript-based 
 Features
 =======
 
-- Supported hash functions: MD4, MD5, CRC32, SHA1, SHA256, SHA512 (more to come)
+- Supported hash functions: MD4, MD5, CRC32, SHA1, SHA256, SHA512, SHA3
 - A lot faster than JS implementations (see benchmarks)
 - Supports all modern browsers and Node.js
 - Optimized for large files
@@ -95,8 +95,9 @@ crc (npm library) | 131     | 524 MB/s
 SHA1                     | ops/s   | throughput
 -------------------------|---------|-----------
 node.js crypto module    | 266     | 1064 MB/s
-**hash-wasm**            | **128** | ** 512 MB/s**
+**hash-wasm**            | **128** | **512 MB/s**
 node-forge (npm library) | 23      | 92 MB/s
+jsSHA (npm library)      | 13      | 52 MB/s
 crypto-js (npm library)  | 6       | 24 MB/s
 sha1 (npm library)       | 2       | 8 MB/s
 
@@ -105,8 +106,9 @@ sha1 (npm library)       | 2       | 8 MB/s
 SHA256                   | ops/s   | throughput
 -------------------------|---------|-----------
 node.js crypto module    | 120     | 480 MB/s
-**hash-wasm**            | **41**  | ** 164 MB/s**
+**hash-wasm**            | **41**  | **164 MB/s**
 node-forge (npm library) | 17      | 68 MB/s
+jsSHA (npm library)      | 10      | 40 MB/s
 crypto-js (npm library)  | 6       | 24 MB/s
 
 #
@@ -114,28 +116,41 @@ crypto-js (npm library)  | 6       | 24 MB/s
 SHA512                   | ops/s   | throughput
 -------------------------|---------|-----------
 node.js crypto module    | 171     | 684 MB/s
-**hash-wasm**            | **18**  | ** 72 MB/s**
+**hash-wasm**            | **18**  | **72 MB/s**
 node-forge (npm library) | 10      | 40 MB/s
+jsSHA (npm library)      | 2       | 8 MB/s
 crypto-js (npm library)  | 1       | 4 MB/s
+
+#
+
+SHA3-512                 | ops/s   | throughput
+-------------------------|---------|-----------
+node.js crypto module    | 61      | 244 MB/s
+**hash-wasm**            | **40**  | **160 MB/s**
+sha3 (npm library)       | 2       | 8 MB/s
+jsSHA (npm library)      | 0       | < 4 MB/s
 
 API
 =====
 
 ```javascript
 // simple usage
-import { md4, md5, crc32, sha1, sha256, sha512 } from 'hash-wasm';
+import { md4, md5, crc32, sha1, sha256, sha512, sha3 } from 'hash-wasm';
 
-md4(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
-md5(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
-crc32(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
-sha1(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
-sha256(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
-sha512(data: string | typedArray | Buffer): Promise<string> // returns hash in hex format
+// all functions return hash in hex format
+md4(data: string | typedArray | Buffer): Promise<string>
+md5(data: string | typedArray | Buffer): Promise<string>
+crc32(data: string | typedArray | Buffer): Promise<string>
+sha1(data: string | typedArray | Buffer): Promise<string>
+sha256(data: string | typedArray | Buffer): Promise<string>
+sha512(data: string | typedArray | Buffer): Promise<string>
+sha3(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+
 
 // usage with chunked data
 import {
   createMD4, createMD5, createCRC32,
-  createSHA1, createSHA256, createSHA512,
+  createSHA1, createSHA256, createSHA512, createSHA3,
 } from 'hash-wasm';
 
 createMD4(): Promise<IHasher>
@@ -144,6 +159,7 @@ createCRC32(): Promise<IHasher>
 createSHA1(): Promise<IHasher>
 createSHA256(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
+createSHA3(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 
 interface IHasher {
   init: () => void;

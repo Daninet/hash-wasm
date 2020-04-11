@@ -3,6 +3,7 @@ import nodeCrypto from 'crypto';
 import nodeForge from 'node-forge';
 import cryptoJsSHA512 from 'crypto-js/sha512';
 import cryptoJsHex from 'crypto-js/enc-hex';
+import jsSHA from 'jssha';
 import { sha512 as wasmSHA512 } from '../dist/index.umd';
 
 const SIZE = 4 * 1024 * 1024;
@@ -34,6 +35,13 @@ module.exports = () => benny.suite(
 
   benny.add('crypto-js', async () => {
     const hash = cryptoJsHex.stringify(cryptoJsSHA512(buf.toString('utf8')));
+    if (hash !== result) throw new Error('Hash error');
+  }),
+
+  benny.add('jsSHA', async () => {
+    const hasher = new jsSHA('SHA-512', 'UINT8ARRAY' as any, { encoding: 'UTF8' });
+    hasher.update(buf);
+    const hash = hasher.getHash('HEX');
     if (hash !== result) throw new Error('Hash error');
   }),
 
