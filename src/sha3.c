@@ -21,10 +21,9 @@
 #include <sys/types.h>
 #include <emscripten.h>
 
+#define NumberOfRounds 24
 #define sha3_max_permutation_size 25
 #define sha3_max_rate_in_qwords 24
-#define le2me_64(x) (x)
-#define me64_to_le_str(to, from, length) memcpy((to), (from), (length))
 
 #define IS_ALIGNED_64(p) (0 == (7 & ((const char*)(p) - (const char*)0)))
 #define I64(x) x##ULL
@@ -44,16 +43,13 @@ struct SHA3_CTX
 
 struct SHA3_CTX sctx;
 struct SHA3_CTX* ctx = &sctx;
-unsigned char array[16 * 1024];
+uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-unsigned char* Hash_GetBuffer()
+uint8_t* Hash_GetBuffer()
 {
   return array;
 }
-
-/* constants */
-#define NumberOfRounds 24
 
 /* SHA3 (Keccak) constants for 24 rounds */
 static uint64_t keccak_round_constants[NumberOfRounds] = {
@@ -67,10 +63,10 @@ static uint64_t keccak_round_constants[NumberOfRounds] = {
 
 /* Initializing a sha3 context for given number of output bits */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init(unsigned bits)
+void Hash_Init(uint32_t bits)
 {
   /* NB: The Keccak capacity parameter = bits * 2 */
-  unsigned rate = 1600 - bits * 2;
+  uint32_t rate = 1600 - bits * 2;
 
   memset(ctx, 0, sizeof(struct SHA3_CTX));
   ctx->block_size = rate / 8;
@@ -152,11 +148,9 @@ static void keccak_chi(uint64_t* A)
   CHI_STEP(20);
 }
 
-static void rhash_sha3_permutation(uint64_t* state)
+static void sha3_permutation(uint64_t* state)
 {
-  int round;
-  for (round = 0; round < NumberOfRounds; round++)
-  {
+  for (int round = 0; round < NumberOfRounds; round++) {
     keccak_theta(state);
 
     /* apply Keccak rho() transformation */
@@ -200,50 +194,50 @@ static void rhash_sha3_permutation(uint64_t* state)
  * @param block the message block to process
  * @param block_size the size of the processed block in bytes
  */
-static void rhash_sha3_process_block(uint64_t hash[25], const uint64_t* block, size_t block_size)
+static void sha3_process_block(uint64_t hash[25], const uint64_t* block, uint32_t block_size)
 {
   /* expanded loop */
-  hash[ 0] ^= le2me_64(block[ 0]);
-  hash[ 1] ^= le2me_64(block[ 1]);
-  hash[ 2] ^= le2me_64(block[ 2]);
-  hash[ 3] ^= le2me_64(block[ 3]);
-  hash[ 4] ^= le2me_64(block[ 4]);
-  hash[ 5] ^= le2me_64(block[ 5]);
-  hash[ 6] ^= le2me_64(block[ 6]);
-  hash[ 7] ^= le2me_64(block[ 7]);
-  hash[ 8] ^= le2me_64(block[ 8]);
+  hash[ 0] ^= block[0];
+  hash[ 1] ^= block[1];
+  hash[ 2] ^= block[2];
+  hash[ 3] ^= block[3];
+  hash[ 4] ^= block[4];
+  hash[ 5] ^= block[5];
+  hash[ 6] ^= block[6];
+  hash[ 7] ^= block[7];
+  hash[ 8] ^= block[8];
   /* if not sha3-512 */
   if (block_size > 72) {
-    hash[ 9] ^= le2me_64(block[ 9]);
-    hash[10] ^= le2me_64(block[10]);
-    hash[11] ^= le2me_64(block[11]);
-    hash[12] ^= le2me_64(block[12]);
+    hash[ 9] ^= block[9];
+    hash[10] ^= block[10];
+    hash[11] ^= block[11];
+    hash[12] ^= block[12];
     /* if not sha3-384 */
     if (block_size > 104) {
-      hash[13] ^= le2me_64(block[13]);
-      hash[14] ^= le2me_64(block[14]);
-      hash[15] ^= le2me_64(block[15]);
-      hash[16] ^= le2me_64(block[16]);
+      hash[13] ^= block[13];
+      hash[14] ^= block[14];
+      hash[15] ^= block[15];
+      hash[16] ^= block[16];
       /* if not sha3-256 */
       if (block_size > 136) {
-        hash[17] ^= le2me_64(block[17]);
+        hash[17] ^= block[17];
 #ifdef FULL_SHA3_FAMILY_SUPPORT
         /* if not sha3-224 */
         if (block_size > 144) {
-          hash[18] ^= le2me_64(block[18]);
-          hash[19] ^= le2me_64(block[19]);
-          hash[20] ^= le2me_64(block[20]);
-          hash[21] ^= le2me_64(block[21]);
-          hash[22] ^= le2me_64(block[22]);
-          hash[23] ^= le2me_64(block[23]);
-          hash[24] ^= le2me_64(block[24]);
+          hash[18] ^= block[18];
+          hash[19] ^= block[19];
+          hash[20] ^= block[20];
+          hash[21] ^= block[21];
+          hash[22] ^= block[22];
+          hash[23] ^= block[23];
+          hash[24] ^= block[24];
         }
 #endif
       }
     }
   }
   /* make a permutation of the hash */
-  rhash_sha3_permutation(hash);
+  sha3_permutation(hash);
 }
 
 #define SHA3_FINALIZED 0x80000000
@@ -252,31 +246,31 @@ static void rhash_sha3_process_block(uint64_t hash[25], const uint64_t* block, s
  * Calculate message hash.
  * Can be called repeatedly with chunks of the message to be hashed.
  *
- * @param ctx the algorithm context containing current hashing state
  * @param msg message chunk
  * @param size length of the message chunk
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(size_t size)
+void Hash_Update(uint32_t size)
 {
-  const unsigned char *msg = array;
-  size_t index = (size_t)ctx->rest;
-  size_t block_size = (size_t)ctx->block_size;
+  const uint8_t *msg = array;
+  uint32_t index = (uint32_t)ctx->rest;
+  uint32_t block_size = (uint32_t)ctx->block_size;
 
   if (ctx->rest & SHA3_FINALIZED) return; /* too late for additional input */
   ctx->rest = (unsigned)((ctx->rest + size) % block_size);
 
   /* fill partial block */
   if (index) {
-    size_t left = block_size - index;
-    memcpy((char*)ctx->message + index, msg, (size < left ? size : left));
+    uint32_t left = block_size - index;
+    memcpy((uint8_t*)ctx->message + index, msg, (size < left ? size : left));
     if (size < left) return;
 
     /* process partial block */
-    rhash_sha3_process_block(ctx->hash, ctx->message, block_size);
+    sha3_process_block(ctx->hash, ctx->message, block_size);
     msg  += left;
     size -= left;
   }
+
   while (size >= block_size) {
     uint64_t* aligned_message_block;
     if (IS_ALIGNED_64(msg)) {
@@ -288,10 +282,11 @@ void Hash_Update(size_t size)
       aligned_message_block = ctx->message;
     }
 
-    rhash_sha3_process_block(ctx->hash, aligned_message_block, block_size);
+    sha3_process_block(ctx->hash, aligned_message_block, block_size);
     msg  += block_size;
     size -= block_size;
   }
+
   if (size) {
     memcpy(ctx->message, msg, size); /* save leftovers */
   }
@@ -299,28 +294,23 @@ void Hash_Update(size_t size)
 
 /**
  * Store calculated hash into the given array.
- *
- * @param ctx the algorithm context containing current hashing state
- * @param result calculated hash in binary form
  */
 EMSCRIPTEN_KEEPALIVE
 void Hash_Final()
 {
-  unsigned char *result = array;
-  size_t digest_length = 100 - ctx->block_size / 2;
-  const size_t block_size = ctx->block_size;
+  uint32_t digest_length = 100 - ctx->block_size / 2;
+  const uint32_t block_size = ctx->block_size;
 
-  if (!(ctx->rest & SHA3_FINALIZED))
-  {
+  if (!(ctx->rest & SHA3_FINALIZED)) {
     /* clear the rest of the data queue */
-    memset((char*)ctx->message + ctx->rest, 0, block_size - ctx->rest);
-    ((char*)ctx->message)[ctx->rest] |= 0x06;
-    ((char*)ctx->message)[block_size - 1] |= 0x80;
+    memset((int8_t*)ctx->message + ctx->rest, 0, block_size - ctx->rest);
+    ((int8_t*)ctx->message)[ctx->rest] |= 0x06;
+    ((int8_t*)ctx->message)[block_size - 1] |= 0x80;
 
     /* process final block */
-    rhash_sha3_process_block(ctx->hash, ctx->message, block_size);
+    sha3_process_block(ctx->hash, ctx->message, block_size);
     ctx->rest = SHA3_FINALIZED; /* mark context as finalized */
   }
 
-  if (result) me64_to_le_str(result, ctx->hash, digest_length);
+  memcpy(array, ctx->hash, digest_length);
 }

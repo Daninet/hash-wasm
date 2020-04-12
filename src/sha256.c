@@ -23,61 +23,31 @@
 #define sha256_hash_size  32
 #define sha224_hash_size  28
 #define ROTR32(dword, n) ((dword) >> (n) ^ ((dword) << (32 - (n))))
-#define be2me_32(x) bswap_32(x)
-#define le2me_32(x) (x)
 #define bswap_32(x) __builtin_bswap32(x)
 #define IS_ALIGNED_32(p) (0 == (3 & ((const char*)(p) - (const char*)0)))
-#define be32_copy(to, index, from, length) rhash_swap_copy_str_to_u32((to), (index), (from), (length))
 
 struct sha256_ctx
 {
-  unsigned message[16];   /* 512-bit buffer for leftovers */
+  uint32_t message[16];   /* 512-bit buffer for leftovers */
   uint64_t length;        /* number of processed bytes */
-  unsigned hash[8];       /* 256-bit algorithm internal hashing state */
-  unsigned digest_length; /* length of the algorithm digest in bytes */
+  uint32_t hash[8];       /* 256-bit algorithm internal hashing state */
+  uint32_t digest_length; /* length of the algorithm digest in bytes */
 };
 
 struct sha256_ctx sctx;
 struct sha256_ctx* ctx = &sctx;
-unsigned char array[16 * 1024];
+uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-unsigned char* Hash_GetBuffer()
+uint8_t* Hash_GetBuffer()
 {
   return array;
-}
-
-/**
- * Copy a memory block with simultaneous exchanging byte order.
- * The byte order is changed from little-endian 32-bit integers
- * to big-endian (or vice-versa).
- *
- * @param to the pointer where to copy memory block
- * @param index the index to start writing from
- * @param from  the source block to copy
- * @param length length of the memory block
- */
-void rhash_swap_copy_str_to_u32(void* to, int index, const void* from, size_t length)
-{
-  /* if all pointers and length are 32-bits aligned */
-  if ( 0 == (( (int)((char*)to - (char*)0) | ((char*)from - (char*)0) | index | length ) & 3) ) {
-    /* copy memory as 32-bit words */
-    const uint32_t* src = (const uint32_t*)from;
-    const uint32_t* end = (const uint32_t*)((const char*)src + length);
-    uint32_t* dst = (uint32_t*)((char*)to + index);
-    for (; src < end; dst++, src++)
-      *dst = bswap_32(*src);
-  } else {
-    const char* src = (const char*)from;
-    for (length += index; (size_t)index < length; index++)
-      ((char*)to)[index ^ 3] = *(src++);
-  }
 }
 
 /* SHA-224 and SHA-256 constants for 64 rounds. These words represent
  * the first 32 bits of the fractional parts of the cube
  * roots of the first 64 prime numbers. */
-static const unsigned rhash_k256[64] = {
+static const uint32_t rhash_k256[64] = {
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
   0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
   0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
@@ -108,10 +78,10 @@ static const unsigned rhash_k256[64] = {
   (sigma1(W[(n - 2) & 15]) + W[(n - 7) & 15] + sigma0(W[(n - 15) & 15])))
 
 #define ROUND(a,b,c,d,e,f,g,h,k,data) { \
-  unsigned T1 = h + Sigma1(e) + Ch(e,f,g) + k + (data); \
+  uint32_t T1 = h + Sigma1(e) + Ch(e,f,g) + k + (data); \
   d += T1, h = T1 + Sigma0(a) + Maj(a,b,c); }
 #define ROUND_1_16(a,b,c,d,e,f,g,h,n) \
-  ROUND(a,b,c,d,e,f,g,h, rhash_k256[n], W[n] = be2me_32(block[n]))
+  ROUND(a,b,c,d,e,f,g,h, rhash_k256[n], W[n] = bswap_32(block[n]))
 #define ROUND_17_64(a,b,c,d,e,f,g,h,n) \
   ROUND(a,b,c,d,e,f,g,h, k[n], RECALCULATE_W(W, n))
 
@@ -119,14 +89,13 @@ static const unsigned rhash_k256[64] = {
 /**
  * Initialize context before calculaing hash.
  *
- * @param ctx context to initialize
  */
-void rhash_sha256_init()
+void sha256_init()
 {
   /* Initial values. These words were obtained by taking the first 32
    * bits of the fractional parts of the square roots of the first
    * eight prime numbers. */
-  static const unsigned SHA256_H0[8] = {
+  static const uint32_t SHA256_H0[8] = {
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
   };
@@ -141,14 +110,13 @@ void rhash_sha256_init()
 /**
  * Initialize context before calculaing hash.
  *
- * @param ctx context to initialize
  */
-void rhash_sha224_init()
+void sha224_init()
 {
   /* Initial values from FIPS 180-3. These words were obtained by taking
    * bits from 33th to 64th of the fractional parts of the square
    * roots of ninth through sixteenth prime numbers. */
-  static const unsigned SHA224_H0[8] = {
+  static const uint32_t SHA224_H0[8] = {
     0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
     0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4
   };
@@ -160,12 +128,12 @@ void rhash_sha224_init()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init(unsigned long bits)
+void Hash_Init(uint32_t bits)
 {
   if (bits == 224) {
-    rhash_sha224_init();
+    sha224_init();
   } else {
-    rhash_sha256_init();
+    sha256_init();
   }
 }
 
@@ -175,11 +143,11 @@ void Hash_Init(unsigned long bits)
  * @param hash algorithm state
  * @param block the message block to process
  */
-static void rhash_sha256_process_block(unsigned hash[8], unsigned block[16])
+static void sha256_process_block(uint32_t hash[8], uint32_t block[16])
 {
-  unsigned A, B, C, D, E, F, G, H;
-  unsigned W[16];
-  const unsigned* k;
+  uint32_t A, B, C, D, E, F, G, H;
+  uint32_t W[16];
+  const uint32_t* k;
   int i;
 
   A = hash[0], B = hash[1], C = hash[2], D = hash[3];
@@ -230,40 +198,38 @@ static void rhash_sha256_process_block(unsigned hash[8], unsigned block[16])
  * Calculate message hash.
  * Can be called repeatedly with chunks of the message to be hashed.
  *
- * @param ctx the algorithm context containing current hashing state
- * @param msg message chunk
  * @param size length of the message chunk
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(size_t size)
+void Hash_Update(uint32_t size)
 {
-  const unsigned char *msg = array;
-  size_t index = (size_t)ctx->length & 63;
+  const uint8_t *msg = array;
+  uint32_t index = (uint32_t)ctx->length & 63;
   ctx->length += size;
 
   /* fill partial block */
   if (index) {
-    size_t left = sha256_block_size - index;
+    uint32_t left = sha256_block_size - index;
     memcpy((char*)ctx->message + index, msg, (size < left ? size : left));
     if (size < left) return;
 
     /* process partial block */
-    rhash_sha256_process_block(ctx->hash, (unsigned*)ctx->message);
+    sha256_process_block(ctx->hash, (uint32_t*)ctx->message);
     msg  += left;
     size -= left;
   }
   while (size >= sha256_block_size) {
-    unsigned* aligned_message_block;
+    uint32_t* aligned_message_block;
     if (IS_ALIGNED_32(msg)) {
       /* the most common case is processing of an already aligned message
       without copying it */
-      aligned_message_block = (unsigned*)msg;
+      aligned_message_block = (uint32_t*)msg;
     } else {
       memcpy(ctx->message, msg, sha256_block_size);
-      aligned_message_block = (unsigned*)ctx->message;
+      aligned_message_block = (uint32_t*)ctx->message;
     }
 
-    rhash_sha256_process_block(ctx->hash, aligned_message_block);
+    sha256_process_block(ctx->hash, aligned_message_block);
     msg  += sha256_block_size;
     size -= sha256_block_size;
   }
@@ -275,21 +241,18 @@ void Hash_Update(size_t size)
 /**
  * Store calculated hash into the given array.
  *
- * @param ctx the algorithm context containing current hashing state
- * @param result calculated hash in binary form
  */
 EMSCRIPTEN_KEEPALIVE
 void Hash_Final()
 {
-  unsigned char *result = array;
-  size_t index = ((unsigned)ctx->length & 63) >> 2;
-  unsigned shift = ((unsigned)ctx->length & 3) * 8;
+  uint32_t index = ((uint32_t)ctx->length & 63) >> 2;
+  uint32_t shift = ((uint32_t)ctx->length & 3) * 8;
 
   /* pad message and run for last block */
 
   /* append the byte 0x80 to the message */
-  ctx->message[index]   &= le2me_32(~(0xFFFFFFFFu << shift));
-  ctx->message[index++] ^= le2me_32(0x80u << shift);
+  ctx->message[index]   &= ~(0xFFFFFFFFu << shift);
+  ctx->message[index++] ^= 0x80u << shift;
 
   /* if no room left in the message to store 64-bit message length */
   if (index > 14) {
@@ -297,15 +260,19 @@ void Hash_Final()
     while (index < 16) {
       ctx->message[index++] = 0;
     }
-    rhash_sha256_process_block(ctx->hash, ctx->message);
+    sha256_process_block(ctx->hash, ctx->message);
     index = 0;
   }
   while (index < 14) {
     ctx->message[index++] = 0;
   }
-  ctx->message[14] = be2me_32( (unsigned)(ctx->length >> 29) );
-  ctx->message[15] = be2me_32( (unsigned)(ctx->length << 3) );
-  rhash_sha256_process_block(ctx->hash, ctx->message);
+  ctx->message[14] = bswap_32( (uint32_t)(ctx->length >> 29) );
+  ctx->message[15] = bswap_32( (uint32_t)(ctx->length << 3) );
+  sha256_process_block(ctx->hash, ctx->message);
 
-  if (result) be32_copy(result, 0, ctx->hash, ctx->digest_length);
+  for(int32_t i = 7; i >= 0; i--) {
+    ctx->hash[i] = bswap_32(ctx->hash[i]);
+  }
+
+  memcpy(array, ctx->hash, ctx->digest_length);
 }

@@ -24,26 +24,23 @@
 #define sha384_hash_size  48
 #define I64(x) x##ULL
 #define ROTR64(qword, n) ((qword) >> (n) ^ ((qword) << (64 - (n))))
-#define be2me_64(x) bswap_64(x)
 #define bswap_64(x) __builtin_bswap64(x)
 #define IS_ALIGNED_64(p) (0 == (7 & ((const char*)(p) - (const char*)0)))
-#define le2me_64(x) (x)
-#define be64_copy(to, index, from, length) rhash_swap_copy_str_to_u64((to), (index), (from), (length))
 
 struct sha512_ctx
 {
   uint64_t message[16];   /* 1024-bit buffer for leftovers */
   uint64_t length;        /* number of processed bytes */
   uint64_t hash[8];       /* 512-bit algorithm internal hashing state */
-  unsigned digest_length; /* length of the algorithm digest in bytes */
+  uint32_t digest_length; /* length of the algorithm digest in bytes */
 };
 
 struct sha512_ctx sctx;
 struct sha512_ctx* ctx = &sctx;
-unsigned char array[16 * 1024];
+uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-unsigned char* Hash_GetBuffer()
+uint8_t* Hash_GetBuffer()
 {
   return array;
 }
@@ -101,41 +98,15 @@ static const uint64_t rhash_k512[80] = {
   uint64_t T1 = h + Sigma1(e) + Ch(e,f,g) + k + (data); \
   d += T1, h = T1 + Sigma0(a) + Maj(a,b,c); }
 #define ROUND_1_16(a,b,c,d,e,f,g,h,n) \
-  ROUND(a,b,c,d,e,f,g,h, rhash_k512[n], W[n] = be2me_64(block[n]))
+  ROUND(a,b,c,d,e,f,g,h, rhash_k512[n], W[n] = bswap_64(block[n]))
 #define ROUND_17_80(a,b,c,d,e,f,g,h,n) \
   ROUND(a,b,c,d,e,f,g,h, k[n], RECALCULATE_W(W, n))
 
 /**
- * Copy a memory block with changed byte order.
- * The byte order is changed from little-endian 64-bit integers
- * to big-endian (or vice-versa).
- *
- * @param to     the pointer where to copy memory block
- * @param index  the index to start writing from
- * @param from   the source block to copy
- * @param length length of the memory block
- */
-void rhash_swap_copy_str_to_u64(void* to, int index, const void* from, size_t length)
-{
-  /* if all pointers and length are 64-bits aligned */
-  if ( 0 == (( (int)((char*)to - (char*)0) | ((char*)from - (char*)0) | index | length ) & 7) ) {
-    /* copy aligned memory block as 64-bit integers */
-    const uint64_t* src = (const uint64_t*)from;
-    const uint64_t* end = (const uint64_t*)((const char*)src + length);
-    uint64_t* dst = (uint64_t*)((char*)to + index);
-    while (src < end) *(dst++) = bswap_64( *(src++) );
-  } else {
-    const char* src = (const char*)from;
-    for (length += index; (size_t)index < length; index++) ((char*)to)[index ^ 7] = *(src++);
-  }
-}
-
-/**
  * Initialize context before calculating hash.
  *
- * @param ctx context to initialize
  */
-void rhash_sha512_init()
+void sha512_init()
 {
   /* Initial values. These words were obtained by taking the first 32
    * bits of the fractional parts of the square roots of the first
@@ -156,9 +127,8 @@ void rhash_sha512_init()
 /**
  * Initialize context before calculaing hash.
  *
- * @param ctx context to initialize
  */
-void rhash_sha384_init()
+void sha384_init()
 {
   /* Initial values from FIPS 180-3. These words were obtained by taking
    * the first sixty-four bits of the fractional parts of the square
@@ -176,12 +146,12 @@ void rhash_sha384_init()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init(unsigned long bits)
+void Hash_Init(uint32_t bits)
 {
   if (bits == 384) {
-    rhash_sha384_init();
+    sha384_init();
   } else {
-    rhash_sha512_init();
+    sha512_init();
   }
 }
 
@@ -191,7 +161,7 @@ void Hash_Init(unsigned long bits)
  * @param hash algorithm state
  * @param block the message block to process
  */
-static void rhash_sha512_process_block(uint64_t hash[8], uint64_t block[16])
+static void sha512_process_block(uint64_t hash[8], uint64_t block[16])
 {
   uint64_t A, B, C, D, E, F, G, H;
   uint64_t W[16];
@@ -246,28 +216,27 @@ static void rhash_sha512_process_block(uint64_t hash[8], uint64_t block[16])
  * Calculate message hash.
  * Can be called repeatedly with chunks of the message to be hashed.
  *
- * @param ctx the algorithm context containing current hashing state
- * @param msg message chunk
  * @param size length of the message chunk
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(size_t size)
+void Hash_Update(uint32_t size)
 {
-  const unsigned char *msg = array;
-  size_t index = (size_t)ctx->length & 127;
+  const uint8_t *msg = array;
+  uint32_t index = (uint32_t)ctx->length & 127;
   ctx->length += size;
 
   /* fill partial block */
   if (index) {
-    size_t left = sha512_block_size - index;
+    uint32_t left = sha512_block_size - index;
     memcpy((char*)ctx->message + index, msg, (size < left ? size : left));
     if (size < left) return;
 
     /* process partial block */
-    rhash_sha512_process_block(ctx->hash, ctx->message);
+    sha512_process_block(ctx->hash, ctx->message);
     msg  += left;
     size -= left;
   }
+
   while (size >= sha512_block_size) {
     uint64_t* aligned_message_block;
     if (IS_ALIGNED_64(msg)) {
@@ -279,10 +248,11 @@ void Hash_Update(size_t size)
       aligned_message_block = ctx->message;
     }
 
-    rhash_sha512_process_block(ctx->hash, aligned_message_block);
+    sha512_process_block(ctx->hash, aligned_message_block);
     msg  += sha512_block_size;
     size -= sha512_block_size;
   }
+
   if (size) {
     memcpy(ctx->message, msg, size); /* save leftovers */
   }
@@ -290,34 +260,36 @@ void Hash_Update(size_t size)
 
 /**
  * Store calculated hash into the given array.
- *
- * @param ctx the algorithm context containing current hashing state
- * @param result calculated hash in binary form
  */
 EMSCRIPTEN_KEEPALIVE
 void Hash_Final()
 {
-  unsigned char *result = array;
-  size_t index = ((unsigned)ctx->length & 127) >> 3;
-  unsigned shift = ((unsigned)ctx->length & 7) * 8;
+  uint32_t index = ((uint32_t)ctx->length & 127) >> 3;
+  uint32_t shift = ((uint32_t)ctx->length & 7) * 8;
 
   /* pad message and process the last block */
 
   /* append the byte 0x80 to the message */
-  ctx->message[index]   &= le2me_64( ~(I64(0xFFFFFFFFFFFFFFFF) << shift) );
-  ctx->message[index++] ^= le2me_64( I64(0x80) << shift );
+  ctx->message[index]   &=  ~(I64(0xFFFFFFFFFFFFFFFF) << shift);
+  ctx->message[index++] ^=  I64(0x80) << shift;
 
   /* if no room left in the message to store 128-bit message length */
   if (index >= 15) {
     if (index == 15) ctx->message[index] = 0;
-    rhash_sha512_process_block(ctx->hash, ctx->message);
+    sha512_process_block(ctx->hash, ctx->message);
     index = 0;
   }
+
   while (index < 15) {
     ctx->message[index++] = 0;
   }
-  ctx->message[15] = be2me_64(ctx->length << 3);
-  rhash_sha512_process_block(ctx->hash, ctx->message);
 
-  if (result) be64_copy(result, 0, ctx->hash, ctx->digest_length);
+  ctx->message[15] = bswap_64(ctx->length << 3);
+  sha512_process_block(ctx->hash, ctx->message);
+
+  for(int32_t i = 7; i >= 0; i--) {
+    ctx->hash[i] = bswap_64(ctx->hash[i]);
+  }
+
+  memcpy(array, ctx->hash, ctx->digest_length);
 }

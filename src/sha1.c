@@ -1,100 +1,36 @@
-/* ================ sha1.c ================ */
 /*
 SHA-1 in C
 By Steve Reid <steve@edmweb.com>
 100% Public Domain
-Test Vectors (from FIPS PUB 180-1)
-"abc"
-  A9993E36 4706816A BA3E2571 7850C26C 9CD0D89D
-"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
-  84983E44 1C3BD26E BAAE4AA1 F95129E5 E54670F1
-A million repetitions of "a"
-  34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
 */
-
-#define SHA1HANDSOFF
 
 #include <emscripten.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>	/* for u_int*_t */
-
-#ifndef BYTE_ORDER
-#if (BSD >= 199103)
-# include <machine/endian.h>
-#else
-#if defined(linux) || defined(__linux__)
-# include <endian.h>
-#else
-#define	LITTLE_ENDIAN	1234	/* least-significant byte first (vax, pc) */
-#define	BIG_ENDIAN	4321	/* most-significant byte first (IBM, net) */
-#define	PDP_ENDIAN	3412	/* LSB first in word, MSW first in long (pdp)*/
-
-#if defined(vax) || defined(ns32000) || defined(sun386) || defined(__i386__) || \
-    defined(MIPSEL) || defined(_MIPSEL) || defined(BIT_ZERO_ON_RIGHT) || \
-    defined(__alpha__) || defined(__alpha)
-#define BYTE_ORDER	LITTLE_ENDIAN
-#endif
-
-#if defined(sel) || defined(pyr) || defined(mc68000) || defined(sparc) || \
-    defined(is68k) || defined(tahoe) || defined(ibm032) || defined(ibm370) || \
-    defined(MIPSEB) || defined(_MIPSEB) || defined(_IBMR2) || defined(DGUX) ||\
-    defined(apollo) || defined(__convex__) || defined(_CRAY) || \
-    defined(__hppa) || defined(__hp9000) || \
-    defined(__hp9000s300) || defined(__hp9000s700) || \
-    defined (BIT_ZERO_ON_LEFT) || defined(m68k) || defined(__sparc)
-#define BYTE_ORDER	BIG_ENDIAN
-#endif
-#endif /* linux */
-#endif /* BSD */
-#endif /* BYTE_ORDER */
-
-#if defined(__BYTE_ORDER) && !defined(BYTE_ORDER)
-#if (__BYTE_ORDER == __LITTLE_ENDIAN)
-#define BYTE_ORDER LITTLE_ENDIAN
-#else
-#define BYTE_ORDER BIG_ENDIAN
-#endif
-#endif
-
-#if !defined(BYTE_ORDER) || \
-    (BYTE_ORDER != BIG_ENDIAN && BYTE_ORDER != LITTLE_ENDIAN && \
-    BYTE_ORDER != PDP_ENDIAN)
-	/* you must determine what the correct bit order is for
-	 * your compiler - the next line is an intentional error
-	 * which will force your compiles to bomb until you fix
-	 * the above macros.
-	 */
-#error "Undefined or invalid BYTE_ORDER"
-#endif
+#include <sys/types.h>
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
 /* blk0() and blk() perform the initial expand. */
 /* I got the idea of expanding during the round function from SSLeay */
-#if BYTE_ORDER == LITTLE_ENDIAN
 #define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) \
     |(rol(block->l[i],8)&0x00FF00FF))
-#elif BYTE_ORDER == BIG_ENDIAN
-#define blk0(i) block->l[i]
-#else
-#error "Endianness not defined!"
-#endif
+
 #define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
     ^block->l[(i+2)&15]^block->l[i&15],1))
 
 struct SHA1_CTX {
-  u_int32_t state[5];
-  u_int32_t count[2];
-  unsigned char buffer[64];
+  uint32_t state[5];
+  uint32_t count[2];
+  uint8_t buffer[64];
 };
 
 struct SHA1_CTX sctx;
 struct SHA1_CTX* context = &sctx;
-unsigned char array[16 * 1024];
+uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-unsigned char* Hash_GetBuffer()
+uint8_t* Hash_GetBuffer()
 {
   return array;
 }
@@ -107,31 +43,24 @@ unsigned char* Hash_GetBuffer()
 #define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
-
-void SHA1Transform(u_int32_t state[5], const unsigned char buffer[64])
+void SHA1Transform(uint32_t state[5], const uint8_t buffer[64])
 {
-  u_int32_t a, b, c, d, e;
+  uint32_t a, b, c, d, e;
   typedef union {
-    unsigned char c[64];
-    u_int32_t l[16];
+    uint8_t c[64];
+    uint32_t l[16];
   } CHAR64LONG16;
-#ifdef SHA1HANDSOFF
-  CHAR64LONG16 block[1];  /* use array to appear as a pointer */
+
+  CHAR64LONG16 block[1]; /* use array to appear as a pointer */
   memcpy(block, buffer, 64);
-#else
-  /* The following had better never be used because it causes the
-  * pointer-to-const buffer to be cast into a pointer to non-const.
-  * And the result is written through.  I threw a "const" in, hoping
-  * this will cause a diagnostic.
-  */
-  CHAR64LONG16* block = (const CHAR64LONG16*)buffer;
-#endif
+
   /* Copy context->state[] to working vars */
   a = state[0];
   b = state[1];
   c = state[2];
   d = state[3];
   e = state[4];
+
   /* 4 rounds of 20 operations each. Loop unrolled. */
   R0(a,b,c,d,e, 0); R0(e,a,b,c,d, 1); R0(d,e,a,b,c, 2); R0(c,d,e,a,b, 3);
   R0(b,c,d,e,a, 4); R0(a,b,c,d,e, 5); R0(e,a,b,c,d, 6); R0(d,e,a,b,c, 7);
@@ -152,25 +81,22 @@ void SHA1Transform(u_int32_t state[5], const unsigned char buffer[64])
   R4(b,c,d,e,a,64); R4(a,b,c,d,e,65); R4(e,a,b,c,d,66); R4(d,e,a,b,c,67);
   R4(c,d,e,a,b,68); R4(b,c,d,e,a,69); R4(a,b,c,d,e,70); R4(e,a,b,c,d,71);
   R4(d,e,a,b,c,72); R4(c,d,e,a,b,73); R4(b,c,d,e,a,74); R4(a,b,c,d,e,75);
-  R4(e,a,b,c,d,76); R4(d,e,a,b,c,77); R4(c,d,e,a,b,78); R4(b,c,d,e,a,79);
+  R4(e,a,b,c,d,76); R4(d,e,a,b,c,77); R4(c,d,e,a,b,78); R4(b,c,d,e,a,79)
+
   /* Add the working vars back into context.state[] */
   state[0] += a;
   state[1] += b;
   state[2] += c;
   state[3] += d;
   state[4] += e;
-  /* Wipe variables */
-  a = b = c = d = e = 0;
-#ifdef SHA1HANDSOFF
-  memset(block, '\0', sizeof(block));
-#endif
+
+  // memset(block, '\0', sizeof(block));
 }
 
 /* SHA1Init - Initialize new context */
 EMSCRIPTEN_KEEPALIVE
 void Hash_Init()
 {
-  /* SHA1 initialization constants */
   context->state[0] = 0x67452301;
   context->state[1] = 0xEFCDAB89;
   context->state[2] = 0x98BADCFE;
@@ -179,14 +105,14 @@ void Hash_Init()
   context->count[0] = context->count[1] = 0;
 }
 
-void SHA1Update(const unsigned char* data, u_int32_t len)
+void SHA1Update(const uint8_t* data, uint32_t len)
 {
-  u_int32_t i;
-  u_int32_t j;
+  uint32_t i;
 
-  j = context->count[0];
-  if ((context->count[0] += len << 3) < j)
+  uint32_t j = context->count[0];
+  if ((context->count[0] += len << 3) < j) {
     context->count[1]++;
+  }
 
   context->count[1] += (len>>29);
   j = (j >> 3) & 63;
@@ -205,56 +131,39 @@ void SHA1Update(const unsigned char* data, u_int32_t len)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(u_int32_t len)
+void Hash_Update(uint32_t len)
 {
-  const unsigned char *data = array;
-  SHA1Update(data, len);
+  SHA1Update(array, len);
 }
 
 /* Add padding and return the message digest. */
 EMSCRIPTEN_KEEPALIVE
 void Hash_Final()
 {
-  unsigned char *result = array;
-  unsigned i;
-  unsigned char finalcount[8];
-  unsigned char c;
+  uint8_t *result = array;
+  uint8_t finalcount[8];
+  uint8_t c;
 
-#if 0	/* untested "improvement" by DHR */
-    /* Convert context->count to a sequence of bytes
-     * in finalcount.  Second element first, but
-     * big-endian order within element.
-     * But we do it all backwards.
-     */
-    unsigned char *fcp = &finalcount[8];
-
-    for (i = 0; i < 2; i++)
-    {
-	u_int32_t t = context->count[i];
-	int j;
-
-	for (j = 0; j < 4; t >>= 8, j++)
-	    *--fcp = (unsigned char) t
-    }
-#else
-  for (i = 0; i < 8; i++) {
-    finalcount[i] = (unsigned char)((context->count[(i >= 4 ? 0 : 1)]
-      >> ((3-(i & 3)) * 8) ) & 255);  /* Endian independent */
+  for (uint8_t i = 0; i < 8; i++) {
+    finalcount[i] = (uint8_t)((context->count[(i >= 4 ? 0 : 1)]
+      >> ((3-(i & 3)) * 8) ) & 255);
   }
-#endif
+
   c = 0200;
   SHA1Update(&c, 1);
   while ((context->count[0] & 504) != 448) {
     c = 0000;
     SHA1Update(&c, 1);
   }
-  SHA1Update(finalcount, 8);  /* Should cause a SHA1Transform() */
-  for (i = 0; i < 20; i++) {
-    result[i] = (unsigned char)
+
+  SHA1Update(finalcount, 8); /* Should cause a SHA1Transform() */
+
+  for (uint8_t i = 0; i < 20; i++) {
+    result[i] = (uint8_t)
       ((context->state[i>>2] >> ((3-(i & 3)) * 8) ) & 255);
   }
+
   /* Wipe variables */
   memset(context, '\0', sizeof(*context));
   memset(&finalcount, '\0', sizeof(finalcount));
 }
-/* ================ end of sha1.c ================ */

@@ -8,20 +8,9 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <sys/param.h>
 #include <emscripten.h>
 
-static inline uint32_t swap(uint32_t x)
-{
-#if defined(__GNUC__) || defined(__clang__)
-  return __builtin_bswap32(x);
-#else
-  return (x >> 24) |
-        ((x >>  8) & 0x0000FF00) |
-        ((x <<  8) & 0x00FF0000) |
-        (x << 24);
-#endif
-}
+#define bswap_32(x) __builtin_bswap32(x)
 
 const uint32_t Crc32Lookup[8][256] =
 {
@@ -291,7 +280,7 @@ const uint32_t Crc32Lookup[8][256] =
 };
 
 uint32_t previousCrc32 = 0;
-unsigned char array[16 * 1024];
+uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
 void Hash_Init()
@@ -300,34 +289,21 @@ void Hash_Init()
 }
 
 EMSCRIPTEN_KEEPALIVE
-unsigned char* Hash_GetBuffer()
+uint8_t* Hash_GetBuffer()
 {
   return array;
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(unsigned long length)
+void Hash_Update(uint32_t length)
 {
-  const unsigned char *data = array;
+  const uint8_t *data = array;
 
   uint32_t crc = ~previousCrc32; // same as previousCrc32 ^ 0xFFFFFFFF
   const uint32_t* current = (const uint32_t*) data;
 
   // process eight bytes at once (Slicing-by-8)
-  while (length >= 8)
-  {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    uint32_t one = *current++ ^ swap(crc);
-    uint32_t two = *current++;
-    crc = Crc32Lookup[0][ two      & 0xFF] ^
-          Crc32Lookup[1][(two>> 8) & 0xFF] ^
-          Crc32Lookup[2][(two>>16) & 0xFF] ^
-          Crc32Lookup[3][(two>>24) & 0xFF] ^
-          Crc32Lookup[4][ one      & 0xFF] ^
-          Crc32Lookup[5][(one>> 8) & 0xFF] ^
-          Crc32Lookup[6][(one>>16) & 0xFF] ^
-          Crc32Lookup[7][(one>>24) & 0xFF];
-#else
+  while (length >= 8) {
     uint32_t one = *current++ ^ crc;
     uint32_t two = *current++;
     crc = Crc32Lookup[0][(two>>24) & 0xFF] ^
@@ -338,15 +314,16 @@ void Hash_Update(unsigned long length)
           Crc32Lookup[5][(one>>16) & 0xFF] ^
           Crc32Lookup[6][(one>> 8) & 0xFF] ^
           Crc32Lookup[7][ one      & 0xFF];
-#endif
 
     length -= 8;
   }
 
   const uint8_t* currentChar = (const uint8_t*) current;
+
   // remaining 1 to 7 bytes (standard algorithm)
-  while (length-- != 0)
+  while (length-- != 0) {
     crc = (crc >> 8) ^ Crc32Lookup[0][(crc & 0xFF) ^ *currentChar++];
+  }
 
   previousCrc32 = ~crc; // same as crc ^ 0xFFFFFFFF
 }
