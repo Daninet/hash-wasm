@@ -8,7 +8,9 @@ export async function sha224 (data: string | Buffer | ITypedArray): Promise<stri
     wasm = await WASMInterface(wasmJson, 28);
   }
 
-  return wasm.hash(data, 224);
+  wasm.init(224);
+  wasm.update(data);
+  return wasm.digest();
 }
 
 export async function createSHA224() {
@@ -20,7 +22,7 @@ export async function createSHA224() {
   return {
     init: () => wasm.init(224),
     update: wasm.update,
-    digest: wasm.digest,
+    digest: () => wasm.digest(),
   };
 };
 

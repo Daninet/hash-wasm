@@ -10,7 +10,7 @@ function validateBits (bits: IValidBits) {
   }
 }
 
-export async function sha3 (data: string | Buffer | ITypedArray, bits: IValidBits = 512): Promise<string> {
+export async function keccak (data: string | Buffer | ITypedArray, bits: IValidBits = 512): Promise<string> {
   validateBits(bits);
 
   if (!wasm) {
@@ -19,10 +19,10 @@ export async function sha3 (data: string | Buffer | ITypedArray, bits: IValidBit
 
   wasm.init(bits);
   wasm.update(data);
-  return wasm.digest(0x06);
+  return wasm.digest(0x01);
 }
 
-export async function createSHA3(bits: IValidBits = 512) {
+export async function createKeccak(bits: IValidBits = 512) {
   validateBits(bits);
 
   if (!wasm) {
@@ -33,8 +33,8 @@ export async function createSHA3(bits: IValidBits = 512) {
   return {
     init: () => wasm.init(bits),
     update: wasm.update,
-    digest: () => wasm.digest(0x06),
+    digest: () => wasm.digest(0x01),
   };
 };
 
-export default sha3;
+export default keccak;

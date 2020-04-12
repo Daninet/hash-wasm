@@ -8,7 +8,9 @@ export async function sha512 (data: string | Buffer | ITypedArray): Promise<stri
     wasm = await WASMInterface(wasmJson, 64);
   }
 
-  return wasm.hash(data, 512);
+  wasm.init(512);
+  wasm.update(data);
+  return wasm.digest();
 }
 
 export async function createSHA512() {
@@ -20,7 +22,7 @@ export async function createSHA512() {
   return {
     init: () => wasm.init(512),
     update: wasm.update,
-    digest: wasm.digest,
+    digest: () => wasm.digest(),
   };
 };
 

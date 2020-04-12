@@ -8,7 +8,9 @@ export async function sha384 (data: string | Buffer | ITypedArray): Promise<stri
     wasm = await WASMInterface(wasmJson, 48);
   }
 
-  return wasm.hash(data, 384);
+  wasm.init(384);
+  wasm.update(data);
+  return wasm.digest();
 }
 
 export async function createSHA384() {
@@ -20,7 +22,7 @@ export async function createSHA384() {
   return {
     init: () => wasm.init(384),
     update: wasm.update,
-    digest: wasm.digest,
+    digest: () => wasm.digest(),
   };
 };
 

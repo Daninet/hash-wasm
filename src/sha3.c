@@ -296,7 +296,7 @@ void Hash_Update(uint32_t size)
  * Store calculated hash into the given array.
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final()
+void Hash_Final(uint8_t padding)
 {
   uint32_t digest_length = 100 - ctx->block_size / 2;
   const uint32_t block_size = ctx->block_size;
@@ -304,7 +304,7 @@ void Hash_Final()
   if (!(ctx->rest & SHA3_FINALIZED)) {
     /* clear the rest of the data queue */
     memset((int8_t*)ctx->message + ctx->rest, 0, block_size - ctx->rest);
-    ((int8_t*)ctx->message)[ctx->rest] |= 0x06;
+    ((int8_t*)ctx->message)[ctx->rest] |= padding;
     ((int8_t*)ctx->message)[block_size - 1] |= 0x80;
 
     /* process final block */

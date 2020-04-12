@@ -46,7 +46,8 @@
     "sha3-224",
     "sha3-256",
     "sha3-384",
-    "sha3-512"
+    "sha3-512",
+    "keccak"
   ],
   "bugs": {
     "url": "https://github.com/Daninet/hash-wasm/issues"

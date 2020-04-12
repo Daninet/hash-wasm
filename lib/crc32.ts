@@ -8,7 +8,9 @@ export async function crc32 (data: string | Buffer | ITypedArray): Promise<strin
     wasm = await WASMInterface(wasmJson, 4);
   }
 
-  return wasm.hash(data);
+  wasm.init();
+  wasm.update(data);
+  return wasm.digest();
 }
 
 export async function createCRC32() {
@@ -20,7 +22,7 @@ export async function createCRC32() {
   return {
     init: () => wasm.init(),
     update: wasm.update,
-    digest: wasm.digest,
+    digest: () => wasm.digest(),
   };
 };
 

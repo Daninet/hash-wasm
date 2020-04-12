@@ -32,11 +32,7 @@ async function WASMInterface (binary: any, hashLength: number) {
   }
 
   const init = (bits: number = null) => {
-    if (bits) {
-      wasmInstance.exports.Hash_Init(bits);
-    } else {
-      wasmInstance.exports.Hash_Init();
-    }
+    wasmInstance.exports.Hash_Init.apply(null, bits ? [bits] : []);
   }
 
   const updateUInt8Array = (data: Uint8Array): void => {
@@ -70,16 +66,10 @@ async function WASMInterface (binary: any, hashLength: number) {
     updateUInt8Array(uintBuffer);
   }
 
-  const digest = (): string => {
-    wasmInstance.exports.Hash_Final();
+  const digest = (padding: number = null): string => {
+    wasmInstance.exports.Hash_Final.apply(null, padding ? [padding] : []);
     const result = memoryView.subarray(0, hashLength);
     return Buffer.from(result).toString('hex');
-  }
-
-  const hash = (data: string | Buffer | ITypedArray, bits: number = null): string => {
-    init(bits);
-    update(data);
-    return digest();
   }
 
   await loadWASM();
@@ -88,7 +78,6 @@ async function WASMInterface (binary: any, hashLength: number) {
     init,
     update,
     digest,
-    hash,
   };
 }
 

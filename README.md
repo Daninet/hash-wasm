@@ -1,6 +1,7 @@
 # hash-wasm
 
 Hash-WASM is a fast and portable hash function library.
+
 It's using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
 
 
@@ -12,14 +13,17 @@ Supported hash functions
 - SHA-1
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
 - SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
+- Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
 
 
 Features
 =======
 
 - A lot faster than JS implementations (see [benchmarks](#benchmark) below)
+- Compiled from highly optimized algorithms written in C
 - Supports all modern browsers and Node.js
 - Optimized for large files
+- Supports UTF-8 strings and typed arrays
 - Supports chunked input streams
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
@@ -151,7 +155,7 @@ API
 
 ```javascript
 // simple usage
-import { md4, md5, crc32, sha1, sha224, sha256, sha384, sha512, sha3 } from 'hash-wasm';
+import { md4, md5, crc32, sha1, sha224, sha256, sha384, sha512, sha3, keccak } from 'hash-wasm';
 
 // all functions return hash in hex format
 md4(data: string | typedArray | Buffer): Promise<string>
@@ -163,7 +167,7 @@ sha256(data: string | typedArray | Buffer): Promise<string>
 sha384(data: string | typedArray | Buffer): Promise<string>
 sha512(data: string | typedArray | Buffer): Promise<string>
 sha3(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
-
+keccak(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 
 // usage with chunked data
 import {
@@ -172,6 +176,7 @@ import {
   createSHA1,
   createSHA224, createSHA256, createSHA384, createSHA512,
   createSHA3,
+  createKeccak,
 } from 'hash-wasm';
 
 createMD4(): Promise<IHasher>
@@ -183,6 +188,7 @@ createSHA256(): Promise<IHasher>
 createSHA384(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
 createSHA3(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createKeccak(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 
 interface IHasher {
   init: () => void;
