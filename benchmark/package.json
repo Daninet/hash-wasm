@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Dani Biro",
+  "author": "Dani Biró",
   "license": "MIT",
   "devDependencies": {
     "benny": "^3.6.14"
@@ -19,6 +19,10 @@
     "md5": "^2.2.1",
     "node-forge": "^0.9.1",
     "sha1": "^1.1.1",
-    "sha3": "^2.1.2"
+    "sha256-wasm": "^1.2.3",
+    "sha3": "^2.1.2",
+    "xxhash": "^0.3.0",
+    "xxhash-wasm": "^0.4.0",
+    "xxhashjs": "^0.2.2"
   }
 }

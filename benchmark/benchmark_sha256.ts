@@ -4,6 +4,7 @@ import nodeForge from 'node-forge';
 import cryptoJsSHA256 from 'crypto-js/sha256';
 import cryptoJsHex from 'crypto-js/enc-hex';
 import jsSHA from 'jssha';
+import sha256Wasm from 'sha256-wasm';
 import { sha256 as wasmSHA256 } from '../dist/index.umd';
 
 const SIZE = 4 * 1024 * 1024;
@@ -43,6 +44,12 @@ module.exports = () => benny.suite(
     hasher.update(buf);
     const hash = hasher.getHash('HEX');
     if (hash !== result) throw new Error('Hash error');
+  }),
+
+  benny.add('sha256-wasm', async () => {
+    const hashObj = sha256Wasm();
+    hashObj.update(buf);
+    if (hashObj.digest('hex') !== result) throw new Error('Hash error');
   }),
 
   benny.cycle(),

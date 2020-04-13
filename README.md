@@ -14,6 +14,7 @@ Supported hash functions
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
 - SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
 - Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
+- XXHash: XXHash32, XXHash64
 
 
 Features
@@ -27,7 +28,7 @@ Features
 - Supports chunked input streams
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
-- It's lightweight. Only ~60kb including all algorithms (or less with tree shaking)
+- It's lightweight. Only ~75kb including all algorithms (or less with tree shaking)
 - Includes TypeScript type definitions
 - Easy to use Promise-based async API
 
@@ -121,13 +122,14 @@ sha1 (npm library)       | 2       | 8 MB/s
 
 #
 
-SHA256                   | ops/s   | throughput
--------------------------|---------|-----------
-node.js crypto module    | 120     | 480 MB/s
-**hash-wasm**            | **56**  | **224 MB/s**
-node-forge (npm library) | 17      | 68 MB/s
-jsSHA (npm library)      | 10      | 40 MB/s
-crypto-js (npm library)  | 6       | 24 MB/s
+SHA256                    | ops/s  | throughput
+--------------------------|--------|-------------
+node.js crypto module     | 120    | 480 MB/s
+**hash-wasm**             | **56** | **224 MB/s**
+sha256-wasm (npm library) | 27     | 108 MB/s
+node-forge (npm library)  | 17     | 68 MB/s
+jsSHA (npm library)       | 10     | 40 MB/s
+crypto-js (npm library)   | 6      | 24 MB/s
 
 #
 
@@ -148,6 +150,15 @@ node.js crypto module    | 61      | 244 MB/s
 sha3 (npm library)       | 2       | 8 MB/s
 jsSHA (npm library)      | 0       | < 4 MB/s
 
+#
+
+XXHash64                  | ops/s     | throughput
+--------------------------|-----------|---------------
+xxhash (node.js binding)  | 3 852     | 15 408 MB/s
+**hash-wasm**             | **1 354** | **5 416 MB/s**
+xxhash-wasm (npm library) | 59        | 236 MB/s
+xxhashjs (npm library)    | 3         | 12 MB/s
+
 *\* These measurements were made using `Node.js v12.16.2`.*
 
 API
@@ -155,7 +166,15 @@ API
 
 ```javascript
 // simple usage
-import { md4, md5, crc32, sha1, sha224, sha256, sha384, sha512, sha3, keccak } from 'hash-wasm';
+import {
+  md4, md5,
+  crc32,
+  sha1,
+  sha224, sha256, sha384, sha512,
+  sha3,
+  keccak,
+  xxhash32, xxhash64,
+} from 'hash-wasm';
 
 // all functions return hash in hex format
 md4(data: string | typedArray | Buffer): Promise<string>
@@ -168,6 +187,8 @@ sha384(data: string | typedArray | Buffer): Promise<string>
 sha512(data: string | typedArray | Buffer): Promise<string>
 sha3(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 keccak(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+xxhash32(data: string | typedArray | Buffer, seed: number): Promise<string>
+xxhash64(data: string | typedArray | Buffer, seedLow: number, seedHigh: number): Promise<string>
 
 // usage with chunked data
 import {
@@ -177,6 +198,7 @@ import {
   createSHA224, createSHA256, createSHA384, createSHA512,
   createSHA3,
   createKeccak,
+  createXXHash32, createXXHash64,
 } from 'hash-wasm';
 
 createMD4(): Promise<IHasher>
@@ -189,6 +211,8 @@ createSHA384(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
 createSHA3(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createKeccak(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createXXHash32(seed: number): Promise<IHasher>
+createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 
 interface IHasher {
   init: () => void;

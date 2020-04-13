@@ -20,7 +20,11 @@ async function WASMInterface (binary: any, hashLength: number) {
   const getBinary = async (): Promise<Uint8Array> => {
     const buf = Buffer.from(binary.data, 'base64');
     return Promise.resolve(new Uint8Array(buf.buffer, buf.byteOffset, buf.length));
-  } 
+  }
+
+  const writeMemory = (data: Uint32Array) => {
+    memoryView.set(new Uint8Array(data.buffer));
+  }
 
   const loadWASM = async () => {
     let binary = await getBinary();
@@ -75,6 +79,7 @@ async function WASMInterface (binary: any, hashLength: number) {
   await loadWASM();
 
   return {
+    writeMemory,
     init,
     update,
     digest,

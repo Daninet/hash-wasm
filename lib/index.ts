@@ -8,3 +8,5 @@ export * from './sha224';
 export * from './sha256';
 export * from './sha384';
 export * from './sha512';
+export * from './xxhash32';
+export * from './xxhash64';
