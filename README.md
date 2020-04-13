@@ -43,6 +43,10 @@ npm i hash-wasm
 Examples
 =======
 
+### React.js demo app
+
+[Hash calculator](https://3w4be.csb.app/) - [React.js source code](https://codesandbox.io/s/hash-wasm-3w4be?file=/src/App.tsx)
+
 ### Basic usage
 
 ```javascript
