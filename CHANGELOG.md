@@ -1,3 +1,7 @@
+## 2.5.1 (April 13, 2020)
+
+* Add react.js demo app
+
 ## 2.5.0 (April 13, 2020)
 
 * Add xxhash32 and xxhash64
