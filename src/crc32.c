@@ -5,6 +5,8 @@
 // Tableless bytewise CRC contributed by Hagai Gold
 // see http://create.stephan-brumme.com/disclaimer.html
 //
+// Modified for hash-wasm by Dani Biró
+//
 
 #include <stdint.h>
 #include <string.h>

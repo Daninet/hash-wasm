@@ -2,6 +2,8 @@
 SHA-1 in C
 By Steve Reid <steve@edmweb.com>
 100% Public Domain
+
+Modified for hash-wasm by Dani Biró
 */
 
 #include <emscripten.h>

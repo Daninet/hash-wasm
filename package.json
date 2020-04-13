@@ -53,7 +53,7 @@
     "url": "https://github.com/Daninet/hash-wasm/issues"
   },
   "homepage": "https://github.com/Daninet/hash-wasm#readme",
-  "author": "Dani Biro <danibiro93@gmail.com> (http://danibiro.com)",
+  "author": "Dani Biró <danibiro93@gmail.com> (https://danibiro.com)",
   "license": "MIT",
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.2",

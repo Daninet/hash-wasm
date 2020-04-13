@@ -33,6 +33,8 @@
  * It is meant to be fast, but not as fast as possible.  Some known
  * optimizations are not included to reduce source code size and avoid
  * compile-time configuration.
+ *
+ * Modified for hash-wasm by Dani Biró
  */
 
 #include <stdint.h>

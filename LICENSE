@@ -19,3 +19,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Embedded C implementations might use other, similarly permissive licenses.
+Check the beginning of the files from the /src directory.
+
+Special thank you to the authors of original C algorithms:
+- Alexander Peslyak <solar@openwall.com>
+- Aleksey Kravchenko <rhash.admin@gmail.com>
+- Stephan Brumme <create@stephan-brumme.com>
+- Steve Reid <steve@edmweb.com>
