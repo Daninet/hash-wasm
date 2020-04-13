@@ -5,7 +5,8 @@ let wasm: IWASMInterface = null;
 
 export async function crc32 (data: string | Buffer | ITypedArray): Promise<string> {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 4);
+    const tempWasm = await WASMInterface(wasmJson, 4);
+    if (!wasm) wasm = tempWasm;
   }
 
   wasm.init();
@@ -15,8 +16,10 @@ export async function crc32 (data: string | Buffer | ITypedArray): Promise<strin
 
 export async function createCRC32() {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 4);
+    const tempWasm = await WASMInterface(wasmJson, 4);
+    if (!wasm) wasm = tempWasm;
   }
+
   wasm.init();
 
   return {

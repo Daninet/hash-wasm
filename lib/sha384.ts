@@ -5,7 +5,8 @@ let wasm: IWASMInterface = null;
 
 export async function sha384 (data: string | Buffer | ITypedArray): Promise<string> {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 48);
+    const tempWasm = await WASMInterface(wasmJson, 48);
+    if (!wasm) wasm = tempWasm;
   }
 
   wasm.init(384);
@@ -15,7 +16,8 @@ export async function sha384 (data: string | Buffer | ITypedArray): Promise<stri
 
 export async function createSHA384() {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 48);
+    const tempWasm = await WASMInterface(wasmJson, 48);
+    if (!wasm) wasm = tempWasm;
   }
   wasm.init();
 

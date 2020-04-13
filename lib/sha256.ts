@@ -5,7 +5,8 @@ let wasm: IWASMInterface = null;
 
 export async function sha256 (data: string | Buffer | ITypedArray): Promise<string> {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 32);
+    const tempWasm = await WASMInterface(wasmJson, 32);
+    if (!wasm) wasm = tempWasm;
   }
 
   wasm.init(256);
@@ -15,7 +16,8 @@ export async function sha256 (data: string | Buffer | ITypedArray): Promise<stri
 
 export async function createSHA256() {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 32);
+    const tempWasm = await WASMInterface(wasmJson, 32);
+    if (!wasm) wasm = tempWasm;
   }
   wasm.init();
 

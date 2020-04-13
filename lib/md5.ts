@@ -5,7 +5,8 @@ let wasm: IWASMInterface = null;
 
 export async function md5 (data: string | Buffer | ITypedArray): Promise<string> {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 16);
+    const tempWasm = await WASMInterface(wasmJson, 16);
+    if (!wasm) wasm = tempWasm;
   }
 
   wasm.init();
@@ -15,7 +16,8 @@ export async function md5 (data: string | Buffer | ITypedArray): Promise<string>
 
 export async function createMD5() {
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, 16);
+    const tempWasm = await WASMInterface(wasmJson, 16);
+    if (!wasm) wasm = tempWasm;
   }
   wasm.init();
 

@@ -14,7 +14,8 @@ export async function keccak (data: string | Buffer | ITypedArray, bits: IValidB
   validateBits(bits);
 
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, bits / 8);
+    const tempWasm = await WASMInterface(wasmJson, bits / 8);
+    if (!wasm) wasm = tempWasm;
   }
 
   wasm.init(bits);
@@ -26,8 +27,10 @@ export async function createKeccak(bits: IValidBits = 512) {
   validateBits(bits);
 
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, bits / 8);
+    const tempWasm = await WASMInterface(wasmJson, bits / 8);
+    if (!wasm) wasm = tempWasm;
   }
+
   wasm.init();
 
   return {

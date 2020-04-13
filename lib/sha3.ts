@@ -14,7 +14,8 @@ export async function sha3 (data: string | Buffer | ITypedArray, bits: IValidBit
   validateBits(bits);
 
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, bits / 8);
+    const tempWasm = await WASMInterface(wasmJson, bits / 8);
+    if (!wasm) wasm = tempWasm;
   }
 
   wasm.init(bits);
@@ -26,7 +27,8 @@ export async function createSHA3(bits: IValidBits = 512) {
   validateBits(bits);
 
   if (!wasm) {
-    wasm = await WASMInterface(wasmJson, bits / 8);
+    const tempWasm = await WASMInterface(wasmJson, bits / 8);
+    if (!wasm) wasm = tempWasm;
   }
   wasm.init();
 
