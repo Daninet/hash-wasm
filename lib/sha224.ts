@@ -16,8 +16,8 @@ export async function sha224 (data: string | Buffer | ITypedArray): Promise<stri
 export async function createSHA224() {
   if (!wasm) {
     wasm = await WASMInterface(wasmJson, 28);
-    wasm.init();
   }
+  wasm.init();
 
   return {
     init: () => wasm.init(224),

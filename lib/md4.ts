@@ -16,8 +16,8 @@ export async function md4 (data: string | Buffer | ITypedArray): Promise<string>
 export async function createMD4() {
   if (!wasm) {
     wasm = await WASMInterface(wasmJson, 16);
-    wasm.init();
   }
+  wasm.init();
 
   return {
     init: () => wasm.init(),

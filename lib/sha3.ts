@@ -27,8 +27,8 @@ export async function createSHA3(bits: IValidBits = 512) {
 
   if (!wasm) {
     wasm = await WASMInterface(wasmJson, bits / 8);
-    wasm.init();
   }
+  wasm.init();
 
   return {
     init: () => wasm.init(bits),

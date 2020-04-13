@@ -16,8 +16,8 @@ export async function sha512 (data: string | Buffer | ITypedArray): Promise<stri
 export async function createSHA512() {
   if (!wasm) {
     wasm = await WASMInterface(wasmJson, 64);
-    wasm.init();
   }
+  wasm.init();
 
   return {
     init: () => wasm.init(512),

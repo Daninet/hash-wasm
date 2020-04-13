@@ -16,8 +16,8 @@ export async function md5 (data: string | Buffer | ITypedArray): Promise<string>
 export async function createMD5() {
   if (!wasm) {
     wasm = await WASMInterface(wasmJson, 16);
-    wasm.init();
   }
+  wasm.init();
 
   return {
     init: () => wasm.init(),
