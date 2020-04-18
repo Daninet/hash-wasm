@@ -16,3 +16,17 @@ test('Sync cycle multiple algorithms', async () => {
     expect(await xxhash64('a')).toBe('d24ec4f1a98c6e5b');
   }
 });
+
+test('String() input', async () => {
+  expect(await md5(String('a'))).toBe('0cc175b9c0f1b6a831c399e269772661');
+});
+
+test('Invalid inputs throw', async () => {
+  await expect(md5(0 as any)).rejects.toThrow();
+  await expect(md5(1 as any)).rejects.toThrow();
+  await expect(md5(Number(1) as any)).rejects.toThrow();
+  await expect(md5({} as any)).rejects.toThrow();
+  await expect(md5([] as any)).rejects.toThrow();
+  await expect(md5(null as any)).rejects.toThrow();
+  await expect(md5(undefined as any)).rejects.toThrow();
+});

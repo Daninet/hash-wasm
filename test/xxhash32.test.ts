@@ -91,3 +91,11 @@ test('interlaced create', async () => {
   expect(hashA.digest()).toBe('550d7456');
   expect(hashB.digest()).toBe('32d153ff');
 });
+
+test('invalid parameters', async () => {
+  await expect(origXXHash32('', -1)).rejects.toThrow();
+  await expect(origXXHash32('', 'a' as any)).rejects.toThrow();
+  await expect(origXXHash32('', 0xFFFFFFFF + 1)).rejects.toThrow();
+  await expect(origXXHash32('', 0.1)).rejects.toThrow();
+  await expect(origXXHash32('', Number.NaN)).rejects.toThrow();
+});

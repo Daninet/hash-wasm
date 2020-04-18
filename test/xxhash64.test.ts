@@ -103,3 +103,17 @@ test('interlaced create', async () => {
   expect(hashA.digest()).toBe('d24ec4f1a98c6e5b');
   expect(hashB.digest()).toBe('44bc2cf5ad770999');
 });
+
+test('invalid parameters', async () => {
+  await expect(origXXHash64('', -1)).rejects.toThrow();
+  await expect(origXXHash64('', 'a' as any)).rejects.toThrow();
+  await expect(origXXHash64('', 0xFFFFFFFF + 1)).rejects.toThrow();
+  await expect(origXXHash64('', 0.1)).rejects.toThrow();
+  await expect(origXXHash64('', Number.NaN)).rejects.toThrow();
+
+  await expect(origXXHash64('', 0, -1)).rejects.toThrow();
+  await expect(origXXHash64('', 0, 'a' as any)).rejects.toThrow();
+  await expect(origXXHash64('', 0, 0xFFFFFFFF + 1)).rejects.toThrow();
+  await expect(origXXHash64('', 0, 0.1)).rejects.toThrow();
+  await expect(origXXHash64('', 0, Number.NaN)).rejects.toThrow();
+});
