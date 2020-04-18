@@ -11,8 +11,7 @@
     "build": "sh -c ./scripts/build.sh",
     "eslint": "eslint lib/**/*.ts benchmark/**/*.ts test/**/*.ts",
     "prepublishOnly": "sh -c ./scripts/build.sh",
-    "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage",
-    "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+    "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage"
   },
   "repository": {
     "type": "git",
@@ -64,7 +63,6 @@
     "@types/node": "^13.11.1",
     "@typescript-eslint/eslint-plugin": "^2.28.0",
     "@typescript-eslint/parser": "^2.28.0",
-    "coveralls": "^3.0.11",
     "crypto-api": "^0.8.5",
     "eslint": "^6.8.0",
     "eslint-config-airbnb": "^18.1.0",

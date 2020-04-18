@@ -1,5 +1,7 @@
 # hash-wasm
 
+[![codecov](https://codecov.io/gh/Daninet/hash-wasm/branch/master/graph/badge.svg)](https://codecov.io/gh/Daninet/hash-wasm)
+
 Hash-WASM is a fast and portable hash function library.
 
 It's using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
