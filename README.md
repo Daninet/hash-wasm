@@ -1,7 +1,5 @@
 # hash-wasm
 
-[![Coverage Status](https://coveralls.io/repos/github/Daninet/hash-wasm/badge.svg?branch=master)](https://coveralls.io/github/Daninet/hash-wasm?branch=master)
-
 Hash-WASM is a fast and portable hash function library.
 
 It's using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
