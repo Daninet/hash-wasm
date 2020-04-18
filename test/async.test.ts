@@ -1,10 +1,15 @@
-import { md4, md5, sha1, sha256, sha384, sha3, xxhash32, xxhash64 } from '../lib';
+/* eslint-disable no-console */
 /* global test, expect */
+import {
+  md4, md5, sha1, sha256, sha384, sha3, xxhash32, xxhash64,
+} from '../lib';
 
 function getMemoryUsage() {
   const usage = process.memoryUsage().heapUsed;
+  // eslint-disable-next-line no-bitwise
   const i = ~~(Math.log2(usage) / 10);
-  return (usage / Math.pow(1024, i)).toFixed(2) + ('KMGTPEZY'[i-1] || '') + 'B';
+  // eslint-disable-next-line no-restricted-properties,prefer-template
+  return (usage / Math.pow(1024, i)).toFixed(2) + ('KMGTPEZY'[i - 1] || '') + 'B';
 }
 
 test('Async cycle multiple algorithms', async () => {

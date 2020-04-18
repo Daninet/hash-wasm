@@ -3,7 +3,7 @@ import wasmJson from '../wasm/sha512.wasm.json';
 
 let wasm: IWASMInterface = null;
 
-export async function sha512 (data: string | Buffer | ITypedArray): Promise<string> {
+export async function sha512(data: string | Buffer | ITypedArray): Promise<string> {
   if (!wasm) {
     const tempWasm = await WASMInterface(wasmJson, 64);
     if (!wasm) wasm = tempWasm;
@@ -26,6 +26,6 @@ export async function createSHA512() {
     update: wasm.update,
     digest: () => wasm.digest(),
   };
-};
+}
 
 export default sha512;

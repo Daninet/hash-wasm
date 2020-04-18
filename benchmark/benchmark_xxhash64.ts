@@ -10,7 +10,7 @@ const buf = Buffer.alloc(SIZE);
 buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
 const result = '3cfc420cf71c1057';
 
-module.exports = () => benny.suite(
+export default () => benny.suite(
   'XXHASH64',
 
   benny.add('hash-wasm', async () => {
@@ -29,8 +29,8 @@ module.exports = () => benny.suite(
   }),
 
   benny.add('xxhashWasm', async () => {
-    const xxhash = await xxhashWasm();
-    const hash = xxhash.h64(buf.toString(), 0, SEED);
+    const hasher = await xxhashWasm();
+    const hash = hasher.h64(buf.toString(), 0, SEED);
     if (hash !== result) throw new Error('Hash error');
   }),
 

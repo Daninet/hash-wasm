@@ -4,7 +4,7 @@ import nodeForge from 'node-forge';
 import npmSHA1 from 'sha1';
 import cryptoJsSHA1 from 'crypto-js/sha1';
 import cryptoJsHex from 'crypto-js/enc-hex';
-import jsSHA from 'jssha';
+import JsSHA from 'jssha';
 import { sha1 as wasmSHA1 } from '../dist/index.umd';
 
 const SIZE = 4 * 1024 * 1024;
@@ -12,7 +12,7 @@ const buf = Buffer.alloc(SIZE);
 buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
 const result = nodeCrypto.createHash('SHA1').update(buf).digest('hex');
 
-module.exports = () => benny.suite(
+export default () => benny.suite(
   'SHA1',
 
   benny.add('hash-wasm', async () => {
@@ -44,7 +44,7 @@ module.exports = () => benny.suite(
   }),
 
   benny.add('jsSHA', async () => {
-    const hasher = new jsSHA('SHA-1', 'UINT8ARRAY' as any, { encoding: 'UTF8' });
+    const hasher = new JsSHA('SHA-1', 'UINT8ARRAY' as any, { encoding: 'UTF8' });
     hasher.update(buf);
     const hash = hasher.getHash('HEX');
     if (hash !== result) throw new Error('Hash error');

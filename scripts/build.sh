@@ -3,6 +3,8 @@
 mkdir -p dist
 mkdir -p wasm
 
+npm run eslint
+
 docker run \
   --rm \
   -v $(pwd):/app \

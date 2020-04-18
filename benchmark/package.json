@@ -1,5 +1,5 @@
 {
-  "name": "benchmark",
+  "name": "benchmark-hash-wasm",
   "version": "1.0.0",
   "description": "",
   "main": "benchmark.ts",
@@ -8,10 +8,8 @@
   },
   "author": "Dani Biró",
   "license": "MIT",
-  "devDependencies": {
-    "benny": "^3.6.14"
-  },
   "dependencies": {
+    "benny": "^3.6.14",
     "crc": "^3.8.0",
     "crypto-js": "^4.0.0",
     "js-md4": "^0.3.2",

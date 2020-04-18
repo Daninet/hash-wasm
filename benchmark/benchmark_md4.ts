@@ -8,7 +8,7 @@ const buf = Buffer.alloc(SIZE);
 buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
 const result = nodeCrypto.createHash('MD4').update(buf).digest('hex');
 
-module.exports = () => benny.suite(
+export default () => benny.suite(
   'MD4',
 
   benny.add('hash-wasm', async () => {

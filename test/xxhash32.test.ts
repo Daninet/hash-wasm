@@ -3,9 +3,9 @@ import { xxhash32 as origXXHash32 } from '../lib';
 import { ITypedArray } from '../lib/WASMInterface';
 /* global test, expect */
 
-const xxhash32 = async (data: string | Buffer | ITypedArray) => {
-  return origXXHash32(data, 0x6789ABCD);
-};
+const xxhash32 = async (
+  data: string | Buffer | ITypedArray,
+) => origXXHash32(data, 0x6789ABCD);
 
 test('simple strings', async () => {
   expect(await xxhash32('')).toBe('51c917a3');

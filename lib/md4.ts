@@ -3,7 +3,7 @@ import wasmJson from '../wasm/md4.wasm.json';
 
 let wasm: IWASMInterface = null;
 
-export async function md4 (data: string | Buffer | ITypedArray): Promise<string> {
+export async function md4(data: string | Buffer | ITypedArray): Promise<string> {
   if (!wasm) {
     const tempWasm = await WASMInterface(wasmJson, 16);
     if (!wasm) wasm = tempWasm;
@@ -26,6 +26,6 @@ export async function createMD4() {
     update: wasm.update,
     digest: () => wasm.digest(),
   };
-};
+}
 
 export default md4;

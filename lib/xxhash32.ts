@@ -3,13 +3,15 @@ import wasmJson from '../wasm/xxhash32.wasm.json';
 
 let wasm: IWASMInterface = null;
 
-function validateSeed (seed: number) {
+function validateSeed(seed: number) {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xFFFFFFFF) {
     throw new Error('Seed must be a valid 32-bit long unsigned integer.');
   }
 }
 
-export async function xxhash32 (data: string | Buffer | ITypedArray, seed: number = 0): Promise<string> {
+export async function xxhash32(
+  data: string | Buffer | ITypedArray, seed = 0,
+): Promise<string> {
   validateSeed(seed);
 
   if (!wasm) {
@@ -22,7 +24,7 @@ export async function xxhash32 (data: string | Buffer | ITypedArray, seed: numbe
   return wasm.digest();
 }
 
-export async function createXXHash32(seed: number = 0) {
+export async function createXXHash32(seed = 0) {
   validateSeed(seed);
 
   if (!wasm) {
@@ -36,6 +38,6 @@ export async function createXXHash32(seed: number = 0) {
     update: wasm.update,
     digest: () => wasm.digest(),
   };
-};
+}
 
 export default xxhash32;

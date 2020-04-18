@@ -1,7 +1,8 @@
+/* eslint-disable no-await-in-loop */
 import benny from 'benny';
 import nodeCrypto from 'crypto';
 import nodeForge from 'node-forge';
-import { md5 as wasmMD5, sha1 as wasmSHA1, sha256 as wasmSHA256 } from '../dist/index.esm';
+import { md5 as wasmMD5, sha1 as wasmSHA1, sha256 as wasmSHA256 } from '../dist/index.umd';
 
 const LOOP_N = 1000;
 const SIZE = 32;
@@ -11,7 +12,7 @@ const resultMD5 = nodeCrypto.createHash('MD5').update(buf).digest('hex');
 const resultSHA1 = nodeCrypto.createHash('SHA1').update(buf).digest('hex');
 const resultSHA256 = nodeCrypto.createHash('SHA256').update(buf).digest('hex');
 
-module.exports = () => benny.suite(
+export default () => benny.suite(
   'STRESS',
 
   benny.add('hash-wasm', async () => {

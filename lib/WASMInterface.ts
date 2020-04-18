@@ -6,11 +6,9 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
   T extends ((...args: any[]) => Promise<infer V>) ? V :
   T;
 
-export type IWASMInterface = ThenArg<ReturnType<typeof WASMInterface>>;
-
 const wasmCache = new Map<string, Promise<WebAssembly.Instance>>();
 
-async function WASMInterface (binary: any, hashLength: number) {
+async function WASMInterface(binary: any, hashLength: number) {
   let wasmInstance = null;
   let memoryView: Uint8Array = null;
 
@@ -21,30 +19,31 @@ async function WASMInterface (binary: any, hashLength: number) {
   const getBinary = (): Uint8Array => {
     const buf = Buffer.from(binary.data, 'base64');
     return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
-  }
+  };
 
   const writeMemory = (data: Uint32Array) => {
     memoryView.set(new Uint8Array(data.buffer));
-  }
+  };
 
   const loadWASM = async () => {
     if (!wasmCache.has(binary.name)) {
-      const promise = new Promise<WebAssembly.Instance>(async (resolve, reject) => {
-        try {
-          wasmInstance = (await WebAssembly.instantiate(getBinary())).instance;
+      const promise = new Promise<WebAssembly.Instance>((resolve, reject) => {
+        WebAssembly.instantiate(getBinary()).then((wasm) => {
+          wasmInstance = wasm.instance;
+          // eslint-disable-next-line no-underscore-dangle
           wasmInstance.exports._start();
           resolve(wasmInstance);
-        } catch (err) {
-          console.log('err', err);
+        }).catch((err) => {
           reject(err);
-        }
+        });
       });
+
       wasmCache.set(binary.name, promise);
       wasmInstance = await promise;
     } else {
       wasmInstance = await wasmCache.get(binary.name);
     }
-  }
+  };
 
   const setupInterface = async () => {
     if (!wasmInstance) {
@@ -58,7 +57,7 @@ async function WASMInterface (binary: any, hashLength: number) {
 
   const init = (bits: number = null) => {
     wasmInstance.exports.Hash_Init.apply(null, bits ? [bits] : []);
-  }
+  };
 
   const updateUInt8Array = (data: Uint8Array): void => {
     let read = 0;
@@ -68,15 +67,15 @@ async function WASMInterface (binary: any, hashLength: number) {
       memoryView.set(chunk);
       wasmInstance.exports.Hash_Update(chunk.length);
     }
-  }
+  };
 
   const update = (data: string | Buffer | ITypedArray) => {
     let uintBuffer = null;
-  
+
     if (data instanceof String) {
       data = data.toString();
     }
-  
+
     if (typeof data === 'string') {
       const buf = Buffer.from(data, 'utf8');
       uintBuffer = new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
@@ -87,15 +86,15 @@ async function WASMInterface (binary: any, hashLength: number) {
     } else {
       throw new Error('Invalid data type!');
     }
-  
+
     updateUInt8Array(uintBuffer);
-  }
+  };
 
   const digest = (padding: number = null): string => {
     wasmInstance.exports.Hash_Final.apply(null, padding ? [padding] : []);
     const result = memoryView.subarray(0, hashLength);
     return Buffer.from(result).toString('hex');
-  }
+  };
 
   await setupInterface();
 
@@ -106,5 +105,7 @@ async function WASMInterface (binary: any, hashLength: number) {
     digest,
   };
 }
+
+export type IWASMInterface = ThenArg<ReturnType<typeof WASMInterface>>;
 
 export default WASMInterface;

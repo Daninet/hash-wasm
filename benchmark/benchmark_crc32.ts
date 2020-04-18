@@ -2,7 +2,7 @@ import benny from 'benny';
 import { crc32 } from 'crc';
 import { crc32 as wasmCRC32 } from '../dist/index.umd';
 
-function toHex (number) {
+function toHex(number) {
   const buf = Buffer.alloc(4);
   buf.writeUInt32BE(number);
   return buf.toString('hex');
@@ -13,7 +13,7 @@ const buf = Buffer.alloc(SIZE);
 buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
 const result = toHex(crc32(buf));
 
-module.exports = () => benny.suite(
+export default () => benny.suite(
   'CRC32',
 
   benny.add('hash-wasm', async () => {

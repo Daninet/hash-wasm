@@ -1,5 +1,8 @@
-import { md4, md5, sha1, sha256, sha384, sha3, xxhash32, xxhash64 } from '../lib';
+/* eslint-disable no-await-in-loop */
 /* global test, expect */
+import {
+  md4, md5, sha1, sha256, sha384, sha3, xxhash32, xxhash64,
+} from '../lib';
 
 test('Sync cycle multiple algorithms', async () => {
   for (let i = 0; i < 1000; i++) {

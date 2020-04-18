@@ -2,9 +2,9 @@ import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
 import wasmJson from '../wasm/xxhash64.wasm.json';
 
 let wasm: IWASMInterface = null;
-let seedBuffer = new ArrayBuffer(8);
+const seedBuffer = new ArrayBuffer(8);
 
-function validateSeed (seed: number) {
+function validateSeed(seed: number) {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xFFFFFFFF) {
     throw new Error('Seed must be given as two valid 32-bit long unsigned integer (lo + high).');
   }
@@ -17,7 +17,9 @@ function writeSeed(low: number, high: number) {
   buffer.setUint32(4, high, true);
 }
 
-export async function xxhash64 (data: string | Buffer | ITypedArray, seedLow: number = 0, seedHigh: number = 0): Promise<string> {
+export async function xxhash64(
+  data: string | Buffer | ITypedArray, seedLow = 0, seedHigh = 0,
+): Promise<string> {
   validateSeed(seedLow);
   validateSeed(seedHigh);
 
@@ -33,7 +35,7 @@ export async function xxhash64 (data: string | Buffer | ITypedArray, seedLow: nu
   return wasm.digest();
 }
 
-export async function createXXHash64(seedLow: number = 0, seedHigh: number = 0) {
+export async function createXXHash64(seedLow = 0, seedHigh = 0) {
   validateSeed(seedLow);
   validateSeed(seedHigh);
 
@@ -53,6 +55,6 @@ export async function createXXHash64(seedLow: number = 0, seedHigh: number = 0) 
     update: wasm.update,
     digest: () => wasm.digest(),
   };
-};
+}
 
 export default xxhash64;

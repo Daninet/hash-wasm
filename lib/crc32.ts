@@ -3,7 +3,7 @@ import wasmJson from '../wasm/crc32.wasm.json';
 
 let wasm: IWASMInterface = null;
 
-export async function crc32 (data: string | Buffer | ITypedArray): Promise<string> {
+export async function crc32(data: string | Buffer | ITypedArray): Promise<string> {
   if (!wasm) {
     const tempWasm = await WASMInterface(wasmJson, 4);
     if (!wasm) wasm = tempWasm;
@@ -27,6 +27,6 @@ export async function createCRC32() {
     update: wasm.update,
     digest: () => wasm.digest(),
   };
-};
+}
 
 export default crc32;
