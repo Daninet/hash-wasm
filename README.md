@@ -25,7 +25,7 @@ Features
 - A lot faster than JS implementations (see [benchmarks](#benchmark) below)
 - Compiled from highly optimized algorithms written in C
 - Supports all modern browsers and Node.js
-- Optimized for large files
+- Supports large data streams
 - Supports UTF-8 strings and typed arrays
 - Supports chunked input streams
 - WASM modules are bundled as base64 strings (no problems with linking)
@@ -63,7 +63,7 @@ async function run(str) {
 run();
 ```
 
-### Chunked input
+### Advanced usage with chunked input
 
 ```javascript
 import { createCRC32 } from 'hash-wasm';
@@ -80,6 +80,11 @@ async function run(str) {
 
 run();
 ```
+
+In this way, multiple hashes can be calculated parallelly without interference between the hash states.
+
+*\* Chunked input syntax creates new WASM instances, with separate state.
+This might cause to run a bit slower compared to shorthand functions like md5(), which are reusing the same WASM instance and state to do multiple calculations.*
 
 
 Browser support
