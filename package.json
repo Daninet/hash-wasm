@@ -10,7 +10,7 @@
     "benchmark": "ts-node --project benchmark/tsconfig.json benchmark/benchmark.ts",
     "build": "sh -c ./scripts/build.sh",
     "prepublishOnly": "sh -c ./scripts/build.sh",
-    "test": "jest --coverage",
+    "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
   "repository": {
@@ -58,7 +58,7 @@
   "license": "MIT",
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.2",
-    "@rollup/plugin-typescript": "^4.0.0",
+    "@rollup/plugin-typescript": "^4.1.1",
     "@types/jest": "^25.2.1",
     "@types/node": "^13.11.1",
     "coveralls": "^3.0.11",
@@ -70,9 +70,9 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "jest": "^25.3.0",
-    "rollup": "^2.6.0",
-    "ts-jest": "^25.3.1",
-    "ts-loader": "^6.2.2",
+    "rollup": "^2.6.1",
+    "ts-jest": "^25.4.0",
+    "ts-loader": "^7.0.0",
     "ts-node": "^8.8.2",
     "tslib": "^1.11.1",
     "typescript": "^3.8.3"
