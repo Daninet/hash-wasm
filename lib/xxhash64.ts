@@ -1,7 +1,9 @@
 import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import Mutex from './mutex';
 import wasmJson from '../wasm/xxhash64.wasm.json';
 
-let wasm: IWASMInterface = null;
+const mutex = new Mutex();
+let wasmCache: IWASMInterface = null;
 const seedBuffer = new ArrayBuffer(8);
 
 function validateSeed(seed: number) {
@@ -23,27 +25,24 @@ export async function xxhash64(
   validateSeed(seedLow);
   validateSeed(seedHigh);
 
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, 8);
-    if (!wasm) wasm = tempWasm;
+  if (!wasmCache) {
+    const unlock = await mutex.lock();
+    wasmCache = await WASMInterface(wasmJson, 8);
+    unlock();
   }
 
   writeSeed(seedLow, seedHigh);
-  wasm.writeMemory(new Uint32Array(seedBuffer));
-  wasm.init();
-  wasm.update(data);
-  return wasm.digest();
+  wasmCache.writeMemory(new Uint32Array(seedBuffer));
+  wasmCache.init();
+  wasmCache.update(data);
+  return wasmCache.digest();
 }
 
 export async function createXXHash64(seedLow = 0, seedHigh = 0) {
   validateSeed(seedLow);
   validateSeed(seedHigh);
 
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, 8);
-    if (!wasm) wasm = tempWasm;
-  }
-
+  const wasm = await WASMInterface(wasmJson, 8);
   writeSeed(seedLow, seedHigh);
 
   wasm.writeMemory(new Uint32Array(seedBuffer));

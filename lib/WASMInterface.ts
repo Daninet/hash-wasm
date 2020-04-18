@@ -1,4 +1,7 @@
+import Mutex from './mutex';
+
 const MAX_HEAP = 16 * 1024;
+const wasmMutex = new Mutex();
 
 export type ITypedArray = Uint8Array | Uint16Array | Uint32Array | ArrayBuffer;
 
@@ -6,7 +9,7 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
   T extends ((...args: any[]) => Promise<infer V>) ? V :
   T;
 
-const wasmCache = new Map<string, Promise<WebAssembly.Instance>>();
+const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();
 
 async function WASMInterface(binary: any, hashLength: number) {
   let wasmInstance = null;
@@ -25,29 +28,29 @@ async function WASMInterface(binary: any, hashLength: number) {
     memoryView.set(new Uint8Array(data.buffer));
   };
 
-  const loadWASM = async () => {
-    if (!wasmCache.has(binary.name)) {
-      const promise = new Promise<WebAssembly.Instance>((resolve, reject) => {
-        WebAssembly.instantiate(getBinary()).then((wasm) => {
-          wasmInstance = wasm.instance;
-          // eslint-disable-next-line no-underscore-dangle
-          wasmInstance.exports._start();
-          resolve(wasmInstance);
+  const loadWASMPromise = wasmMutex.dispatch(async () => {
+    if (!wasmModuleCache.has(binary.name)) {
+      const promise = new Promise<WebAssembly.Module>((resolve, reject) => {
+        WebAssembly.compile(getBinary()).then((module) => {
+          resolve(module);
         }).catch((err) => {
           reject(err);
         });
       });
 
-      wasmCache.set(binary.name, promise);
-      wasmInstance = await promise;
-    } else {
-      wasmInstance = await wasmCache.get(binary.name);
+      wasmModuleCache.set(binary.name, promise);
     }
-  };
+
+    const module = await wasmModuleCache.get(binary.name);
+    wasmInstance = await WebAssembly.instantiate(module);
+
+    // eslint-disable-next-line no-underscore-dangle
+    wasmInstance.exports._start();
+  });
 
   const setupInterface = async () => {
     if (!wasmInstance) {
-      await loadWASM();
+      await loadWASMPromise;
     }
 
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();

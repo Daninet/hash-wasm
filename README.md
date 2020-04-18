@@ -31,6 +31,7 @@ Features
 - It's lightweight. Only ~75kb including all algorithms (or less with tree shaking)
 - Includes TypeScript type definitions
 - It also works in Web Workers
+- Supports concurrent hash calculations with multiple states
 - Easy to use Promise-based async API
 
 

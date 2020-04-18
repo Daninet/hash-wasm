@@ -1,8 +1,10 @@
 import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
 
 type IValidBits = 224 | 256 | 384 | 512;
-let wasm: IWASMInterface = null;
+const mutex = new Mutex();
+let wasmCache: IWASMInterface = null;
 
 function validateBits(bits: IValidBits) {
   if (![224, 256, 384, 512].includes(bits)) {
@@ -15,24 +17,21 @@ export async function sha3(
 ): Promise<string> {
   validateBits(bits);
 
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, bits / 8);
-    if (!wasm) wasm = tempWasm;
+  if (!wasmCache) {
+    const unlock = await mutex.lock();
+    wasmCache = await WASMInterface(wasmJson, bits / 8);
+    unlock();
   }
 
-  wasm.init(bits);
-  wasm.update(data);
-  return wasm.digest(0x06);
+  wasmCache.init(bits);
+  wasmCache.update(data);
+  return wasmCache.digest(0x06);
 }
 
 export async function createSHA3(bits: IValidBits = 512) {
   validateBits(bits);
 
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, bits / 8);
-    if (!wasm) wasm = tempWasm;
-  }
-
+  const wasm = await WASMInterface(wasmJson, bits / 8);
   wasm.init(bits);
 
   return {

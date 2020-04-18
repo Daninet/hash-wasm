@@ -1,6 +1,8 @@
-## 2.5.2 (April 18, 2020)
+## 2.6.0 (April 18, 2020)
 
+* Allow concurrent hash calculations with multiple states
 * Fix WebAssembly detection
+* Cache WebAssembly modules
 * Fix crash when starting many parallel hash calculations
 * Allocate less memory for WASM modules
 

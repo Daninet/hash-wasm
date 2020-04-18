@@ -60,3 +60,21 @@ test('chunked', async () => {
   hash.update(new Uint8Array([0]));
   expect(hash.digest()).toBe('3d3f4819');
 });
+
+test('interlaced shorthand', async () => {
+  const [hashA, hashB] = await Promise.all([
+    crc32('a'),
+    crc32('abc'),
+  ]);
+  expect(hashA).toBe('e8b7be43');
+  expect(hashB).toBe('352441c2');
+});
+
+test('interlaced create', async () => {
+  const hashA = await createCRC32();
+  hashA.update('a');
+  const hashB = await createCRC32();
+  hashB.update('abc');
+  expect(hashA.digest()).toBe('e8b7be43');
+  expect(hashB.digest()).toBe('352441c2');
+});

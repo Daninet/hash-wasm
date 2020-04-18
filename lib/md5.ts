@@ -1,24 +1,24 @@
 import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import Mutex from './mutex';
 import wasmJson from '../wasm/md5.wasm.json';
 
-let wasm: IWASMInterface = null;
+const mutex = new Mutex();
+let wasmCache: IWASMInterface = null;
 
 export async function md5(data: string | Buffer | ITypedArray): Promise<string> {
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, 16);
-    if (!wasm) wasm = tempWasm;
+  if (!wasmCache) {
+    const unlock = await mutex.lock();
+    wasmCache = await WASMInterface(wasmJson, 16);
+    unlock();
   }
 
-  wasm.init();
-  wasm.update(data);
-  return wasm.digest();
+  wasmCache.init();
+  wasmCache.update(data);
+  return wasmCache.digest();
 }
 
 export async function createMD5() {
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, 16);
-    if (!wasm) wasm = tempWasm;
-  }
+  const wasm = await WASMInterface(wasmJson, 16);
   wasm.init();
 
   return {

@@ -59,3 +59,21 @@ test('chunked', async () => {
   hash.update(new Uint8Array([0]));
   expect(hash.digest()).toBe('39fdad608c5b60008da2f12414441f5f664472792c8bc1567a9fbae617800604');
 });
+
+test('interlaced shorthand', async () => {
+  const [hashA, hashB] = await Promise.all([
+    sha3('a', 256),
+    sha3('abc', 256),
+  ]);
+  expect(hashA).toBe('80084bf2fba02475726feb2cab2d8215eab14bc6bdd8bfb2c8151257032ecd8b');
+  expect(hashB).toBe('3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532');
+});
+
+test('interlaced create', async () => {
+  const hashA = await createSHA3(256);
+  hashA.update('a');
+  const hashB = await createSHA3(256);
+  hashB.update('abc');
+  expect(hashA.digest()).toBe('80084bf2fba02475726feb2cab2d8215eab14bc6bdd8bfb2c8151257032ecd8b');
+  expect(hashB.digest()).toBe('3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532');
+});

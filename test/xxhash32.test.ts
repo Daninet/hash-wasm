@@ -11,6 +11,7 @@ test('simple strings with 0 seed', async () => {
   expect(await origXXHash32('')).toBe('02cc5d05');
   expect(await origXXHash32('a')).toBe('550d7456');
   expect(await origXXHash32('a\x00')).toBe('19832f52');
+  expect(await origXXHash32('abc')).toBe('32d153ff');
   expect(await origXXHash32('1234567890')).toBe('e8412d73');
 });
 
@@ -71,4 +72,22 @@ test('chunked', async () => {
   hash.update('a');
   hash.update(new Uint8Array([0]));
   expect(hash.digest()).toBe('19832f52');
+});
+
+test('interlaced shorthand', async () => {
+  const [hashA, hashB] = await Promise.all([
+    origXXHash32('a'),
+    origXXHash32('abc'),
+  ]);
+  expect(hashA).toBe('550d7456');
+  expect(hashB).toBe('32d153ff');
+});
+
+test('interlaced create', async () => {
+  const hashA = await createXXHash32();
+  hashA.update('a');
+  const hashB = await createXXHash32();
+  hashB.update('abc');
+  expect(hashA.digest()).toBe('550d7456');
+  expect(hashB.digest()).toBe('32d153ff');
 });

@@ -1,25 +1,24 @@
 import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import Mutex from './mutex';
 import wasmJson from '../wasm/sha256.wasm.json';
 
-let wasm: IWASMInterface = null;
+const mutex = new Mutex();
+let wasmCache: IWASMInterface = null;
 
 export async function sha224(data: string | Buffer | ITypedArray): Promise<string> {
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, 28);
-    if (!wasm) wasm = tempWasm;
+  if (!wasmCache) {
+    const unlock = await mutex.lock();
+    wasmCache = await WASMInterface(wasmJson, 28);
+    unlock();
   }
 
-  wasm.init(224);
-  wasm.update(data);
-  return wasm.digest();
+  wasmCache.init(224);
+  wasmCache.update(data);
+  return wasmCache.digest();
 }
 
 export async function createSHA224() {
-  if (!wasm) {
-    const tempWasm = await WASMInterface(wasmJson, 28);
-    if (!wasm) wasm = tempWasm;
-  }
-
+  const wasm = await WASMInterface(wasmJson, 28);
   wasm.init(224);
 
   return {
