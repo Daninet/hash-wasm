@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { xxhash64 as origXXHash64 } from '../lib';
+import { xxhash64 as origXXHash64, createXXHash64 } from '../lib';
 import { ITypedArray } from '../lib/WASMInterface';
 /* global test, expect */
 
@@ -10,6 +10,7 @@ const xxhash64 = async (
 test('simple strings with 0 seed', async () => {
   expect(await origXXHash64('')).toBe('ef46db3751d8e999');
   expect(await origXXHash64('a')).toBe('d24ec4f1a98c6e5b');
+  expect(await origXXHash64('a\x00')).toBe('e513e02c99167f96');
   expect(await origXXHash64('1234567890')).toBe('a9d4d4132eff23b6');
 });
 
@@ -73,4 +74,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await xxhash64(buf)).toBe('165cc69fedee7be9');
+});
+
+test('chunked', async () => {
+  const hash = await createXXHash64();
+  expect(hash.digest()).toBe('ef46db3751d8e999');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('e513e02c99167f96');
 });

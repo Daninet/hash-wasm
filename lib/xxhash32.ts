@@ -31,7 +31,8 @@ export async function createXXHash32(seed = 0) {
     const tempWasm = await WASMInterface(wasmJson, 4);
     if (!wasm) wasm = tempWasm;
   }
-  wasm.init();
+
+  wasm.init(seed);
 
   return {
     init: () => wasm.init(seed),

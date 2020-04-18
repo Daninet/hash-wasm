@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { md4 } from '../lib';
+import { md4, createMD4 } from '../lib';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -49,4 +49,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await md4(buf)).toBe('249f0de16d9c9498cb6810a51489d8e0');
+});
+
+test('chunked', async () => {
+  const hash = await createMD4();
+  expect(hash.digest()).toBe('31d6cfe0d16ae931b73c59d7e0c089c0');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('186cb09181e2c2ecaac768c47c729904');
 });

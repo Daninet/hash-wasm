@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { md5 } from '../lib';
+import { md5, createMD5 } from '../lib';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -49,4 +49,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await md5(buf)).toBe('f195aef51a25af5d29ca871eb3780c06');
+});
+
+test('chunked', async () => {
+  const hash = await createMD5();
+  expect(hash.digest()).toBe('d41d8cd98f00b204e9800998ecf8427e');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('4144e195f46de78a3623da7364d04f11');
 });

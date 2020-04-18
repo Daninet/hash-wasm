@@ -33,7 +33,7 @@ export async function createKeccak(bits: IValidBits = 512) {
     if (!wasm) wasm = tempWasm;
   }
 
-  wasm.init();
+  wasm.init(bits);
 
   return {
     init: () => wasm.init(bits),

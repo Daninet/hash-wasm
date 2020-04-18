@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { keccak } from '../lib';
+import { keccak, createKeccak } from '../lib';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -49,4 +49,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await keccak(buf, 256)).toBe('ee2baea5067d74104d62c153ea178dfbfeef70a800a74e333d81ed4c1bb828ff');
+});
+
+test('chunked', async () => {
+  const hash = await createKeccak(256);
+  expect(hash.digest()).toBe('c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('a3fe1181ce8d13858f6f383445749f49a3ae8b0cab89823918bab81153ca4300');
 });

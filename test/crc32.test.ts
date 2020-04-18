@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { crc32 } from '../lib';
+import { crc32, createCRC32 } from '../lib';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -50,4 +50,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await crc32(buf)).toBe('8717a175');
+});
+
+test('chunked', async () => {
+  const hash = await createCRC32();
+  expect(hash.digest()).toBe('00000000');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('3d3f4819');
 });

@@ -43,7 +43,9 @@ export async function createXXHash64(seedLow = 0, seedHigh = 0) {
     const tempWasm = await WASMInterface(wasmJson, 8);
     if (!wasm) wasm = tempWasm;
   }
+
   writeSeed(seedLow, seedHigh);
+
   wasm.writeMemory(new Uint32Array(seedBuffer));
   wasm.init();
 

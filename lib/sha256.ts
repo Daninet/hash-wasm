@@ -19,7 +19,8 @@ export async function createSHA256() {
     const tempWasm = await WASMInterface(wasmJson, 32);
     if (!wasm) wasm = tempWasm;
   }
-  wasm.init();
+
+  wasm.init(256);
 
   return {
     init: () => wasm.init(256),

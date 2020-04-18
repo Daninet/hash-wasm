@@ -2,7 +2,7 @@
 
 * Fix WebAssembly detection
 * Fix crash when starting many parallel hash calculations
-* Allocate less memory
+* Allocate less memory for WASM modules
 
 ## 2.5.1 (April 13, 2020)
 

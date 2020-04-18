@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { sha256 } from '../lib';
+import { sha256, createSHA256 } from '../lib';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -49,4 +49,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await sha256(buf)).toBe('58d45217f7307541ae6d450d03cd0eb11979bdcd9d535584f1299c99139c1479');
+});
+
+test('chunked', async () => {
+  const hash = await createSHA256();
+  expect(hash.digest()).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('ffe9aaeaa2a2d5048174df0b80599ef0197ec024c4b051bc9860cff58ef7f9f3');
 });

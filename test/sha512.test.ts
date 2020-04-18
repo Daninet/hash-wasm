@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { sha512 } from '../lib';
+import { sha512, createSHA512 } from '../lib';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -49,4 +49,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await sha512(buf)).toBe('519239e9f00723d3a4b9dee3f7ff0767455233a9302205978d9d7ced1d7761041fde591d5234ecf0140690daa4f44270808a735fe39fb227ef19e0fdd42f391a');
+});
+
+test('chunked', async () => {
+  const hash = await createSHA512();
+  expect(hash.digest()).toBe('cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('5c2ca3d50f46ece6066c53bd1a490cbe5f72d2738ae9417332e91e5c3f75205c639d71a9a41d67d965fa137dddf439e0ab9443a6ea44915e90d8b5b566d1c076');
 });

@@ -1,11 +1,18 @@
 import fs from 'fs';
-import { xxhash32 as origXXHash32 } from '../lib';
+import { xxhash32 as origXXHash32, createXXHash32 } from '../lib';
 import { ITypedArray } from '../lib/WASMInterface';
 /* global test, expect */
 
 const xxhash32 = async (
   data: string | Buffer | ITypedArray,
 ) => origXXHash32(data, 0x6789ABCD);
+
+test('simple strings with 0 seed', async () => {
+  expect(await origXXHash32('')).toBe('02cc5d05');
+  expect(await origXXHash32('a')).toBe('550d7456');
+  expect(await origXXHash32('a\x00')).toBe('19832f52');
+  expect(await origXXHash32('1234567890')).toBe('e8412d73');
+});
 
 test('simple strings', async () => {
   expect(await xxhash32('')).toBe('51c917a3');
@@ -55,4 +62,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await xxhash32(buf)).toBe('d8416dcc');
+});
+
+test('chunked', async () => {
+  const hash = await createXXHash32();
+  expect(hash.digest()).toBe('02cc5d05');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('19832f52');
 });

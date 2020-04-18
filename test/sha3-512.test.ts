@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { sha3 } from '../lib';
+import { sha3, createSHA3 } from '../lib';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -49,4 +49,13 @@ test('long buffers', async () => {
   const buf = Buffer.alloc(SIZE);
   buf.fill('\x00\x01\x02\x03\x04\x05\x06\x07\x08\xFF');
   expect(await sha3(buf)).toBe('4fefa4aacf871180c27f83ec93f2d058758a6ecba564747fd681a067f9438638fc1e70362121fa64d1734d77ad09eff7822c8bc108761598a9a12e816e24ad57');
+});
+
+test('chunked', async () => {
+  const hash = await createSHA3(512);
+  expect(hash.digest()).toBe('a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26');
+  hash.init();
+  hash.update('a');
+  hash.update(new Uint8Array([0]));
+  expect(hash.digest()).toBe('8d9b65030b4721341fcff7d39811d5acbd65c730500b4a0c58aaa5150b5ec490d3508edda2d3a8a4f32a5428e39c64dc9ebf2b44edfab27863221c8b633d3fc6');
 });

@@ -1,9 +1,9 @@
 module.exports = {
   roots: [
-    '<rootDir>/test'
+    '<rootDir>/test',
   ],
   transform: {
-    '^.+\\.ts$': 'ts-jest'
+    '^.+\\.ts$': 'ts-jest',
   },
   cacheDirectory: '<rootDir>/.jest-cache',
 };

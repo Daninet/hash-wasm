@@ -19,7 +19,8 @@ export async function createSHA512() {
     const tempWasm = await WASMInterface(wasmJson, 64);
     if (!wasm) wasm = tempWasm;
   }
-  wasm.init();
+
+  wasm.init(512);
 
   return {
     init: () => wasm.init(512),

@@ -12,7 +12,7 @@ export default {
     {
       file: 'dist/index.esm.js',
       format: 'es',
-    }
+    },
   ],
   plugins: [
     json(),
