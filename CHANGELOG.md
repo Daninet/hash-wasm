@@ -1,6 +1,12 @@
+## 2.5.2 (April 18, 2020)
+
+* Fix WebAssembly detection
+* Fix crash when starting many parallel hash calculations
+* Allocate less memory
+
 ## 2.5.1 (April 13, 2020)
 
-* Add react.js demo app
+* Add React.js demo app
 
 ## 2.5.0 (April 13, 2020)
 

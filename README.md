@@ -14,7 +14,7 @@ Supported hash functions
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
 - SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
 - Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
-- XXHash: XXHash32, XXHash64
+- xxHash: xxHash32, xxHash64
 
 
 Features
@@ -30,6 +30,7 @@ Features
 - Supports tree shaking (it only bundles the hash algorithms you need)
 - It's lightweight. Only ~75kb including all algorithms (or less with tree shaking)
 - Includes TypeScript type definitions
+- It also works in Web Workers
 - Easy to use Promise-based async API
 
 
@@ -88,8 +89,6 @@ Chrome | Safari | Firefox | Edge | IE
 
 Benchmark
 =====
-
-Benchmarks can be started with the `npm run benchmark` command.
 
 MD5                      | ops/s   | throughput
 -------------------------|---------|-------------
@@ -163,7 +162,7 @@ xxhash (node.js binding)  | 3 852     | 15 408 MB/s
 xxhash-wasm (npm library) | 59        | 236 MB/s
 xxhashjs (npm library)    | 3         | 12 MB/s
 
-*\* These measurements were made using `Node.js v12.16.2`.*
+*\* Benchmarks can be started with the `npm run benchmark` command. These measurements were made using `Node.js v12.16.2` by hashing a fixed input buffer (size = 4MB).*
 
 API
 =====

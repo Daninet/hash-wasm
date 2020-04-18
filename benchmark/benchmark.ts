@@ -6,6 +6,7 @@ const benchmarkSHA256 = require('./benchmark_sha256');
 const benchmarkSHA512 = require('./benchmark_sha512');
 const benchmarkSHA3 = require('./benchmark_sha3');
 const benchmarkXXHash64 = require('./benchmark_xxhash64');
+const benchmarkStress = require('./benchmark_stress');
 
 const main = async () => {
   await benchmarkMD4();
@@ -16,6 +17,7 @@ const main = async () => {
   await benchmarkSHA512();
   await benchmarkSHA3();
   await benchmarkXXHash64();
+  await benchmarkStress();
 }
 
 main()

@@ -8,18 +8,19 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
 
 export type IWASMInterface = ThenArg<ReturnType<typeof WASMInterface>>;
 
+const wasmCache = new Map<string, Promise<WebAssembly.Instance>>();
+
 async function WASMInterface (binary: any, hashLength: number) {
   let wasmInstance = null;
-  let arrayOffset: number = -1;
   let memoryView: Uint8Array = null;
 
-  if (!WebAssembly) {
+  if (typeof WebAssembly === 'undefined') {
     throw new Error('WebAssembly is not supported in this environment!');
   }
 
-  const getBinary = async (): Promise<Uint8Array> => {
+  const getBinary = (): Uint8Array => {
     const buf = Buffer.from(binary.data, 'base64');
-    return Promise.resolve(new Uint8Array(buf.buffer, buf.byteOffset, buf.length));
+    return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
   }
 
   const writeMemory = (data: Uint32Array) => {
@@ -27,13 +28,33 @@ async function WASMInterface (binary: any, hashLength: number) {
   }
 
   const loadWASM = async () => {
-    let binary = await getBinary();
-    wasmInstance = (await WebAssembly.instantiate(binary)).instance;
-    wasmInstance.exports._start();
-    arrayOffset = wasmInstance.exports.Hash_GetBuffer();
+    if (!wasmCache.has(binary.name)) {
+      const promise = new Promise<WebAssembly.Instance>(async (resolve, reject) => {
+        try {
+          wasmInstance = (await WebAssembly.instantiate(getBinary())).instance;
+          wasmInstance.exports._start();
+          resolve(wasmInstance);
+        } catch (err) {
+          console.log('err', err);
+          reject(err);
+        }
+      });
+      wasmCache.set(binary.name, promise);
+      wasmInstance = await promise;
+    } else {
+      wasmInstance = await wasmCache.get(binary.name);
+    }
+  }
+
+  const setupInterface = async () => {
+    if (!wasmInstance) {
+      await loadWASM();
+    }
+
+    const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
     const memoryBuffer = wasmInstance.exports.memory.buffer;
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, MAX_HEAP);
-  }
+  };
 
   const init = (bits: number = null) => {
     wasmInstance.exports.Hash_Init.apply(null, bits ? [bits] : []);
@@ -76,7 +97,7 @@ async function WASMInterface (binary: any, hashLength: number) {
     return Buffer.from(result).toString('hex');
   }
 
-  await loadWASM();
+  await setupInterface();
 
   return {
     writeMemory,
