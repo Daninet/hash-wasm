@@ -8,6 +8,7 @@
   "scripts": {
     "start": "ts-node lib/index.ts",
     "benchmark": "ts-node --project benchmark/tsconfig.json benchmark/benchmark.ts",
+    "benchmarkForms": "ts-node --project benchmark/tsconfig.json benchmark/benchmark_forms.ts",
     "build": "sh -c ./scripts/build.sh",
     "eslint": "eslint lib/**/*.ts benchmark/**/*.ts test/**/*.ts",
     "prepublishOnly": "sh -c ./scripts/build.sh",
