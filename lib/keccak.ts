@@ -1,6 +1,7 @@
 import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
+import lockedCreate from './lockedCreate';
 
 type IValidBits = 224 | 256 | 384 | 512;
 const mutex = new Mutex();
@@ -8,37 +9,51 @@ let wasmCache: IWASMInterface = null;
 
 function validateBits(bits: IValidBits) {
   if (![224, 256, 384, 512].includes(bits)) {
-    throw new Error('Invalid variant! Valid values: 224, 256, 384, 512');
+    return new Error('Invalid variant! Valid values: 224, 256, 384, 512');
   }
+
+  return null;
 }
 
-export async function keccak(
+export function keccak(
   data: string | Buffer | ITypedArray, bits: IValidBits = 512,
 ): Promise<string> {
-  validateBits(bits);
-
-  if (!wasmCache) {
-    const unlock = await mutex.lock();
-    wasmCache = await WASMInterface(wasmJson, bits / 8);
-    unlock();
+  if (validateBits(bits)) {
+    return Promise.reject(validateBits(bits));
   }
 
-  wasmCache.init(bits);
-  wasmCache.update(data);
-  return wasmCache.digest(0x01);
+  if (wasmCache === null) {
+    return lockedCreate(mutex, wasmJson, bits / 8)
+      .then((wasm) => {
+        wasmCache = wasm;
+        wasmCache.init(bits);
+        wasmCache.update(data);
+        return wasmCache.digest(0x01);
+      });
+  }
+
+  try {
+    wasmCache.init(bits);
+    wasmCache.update(data);
+    return Promise.resolve(wasmCache.digest(0x01));
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }
 
-export async function createKeccak(bits: IValidBits = 512) {
-  validateBits(bits);
+export function createKeccak(bits: IValidBits = 512) {
+  if (validateBits(bits)) {
+    return Promise.reject(validateBits(bits));
+  }
 
-  const wasm = await WASMInterface(wasmJson, bits / 8);
-  wasm.init(bits);
-
-  return {
-    init: () => wasm.init(bits),
-    update: wasm.update,
-    digest: () => wasm.digest(0x01),
-  };
+  return WASMInterface(wasmJson, bits / 8).then((wasm) => {
+    wasm.init(bits);
+    return {
+      init: () => wasm.init(bits),
+      update: wasm.update,
+      digest: () => wasm.digest(0x01),
+    };
+  });
 }
 
 export default keccak;
