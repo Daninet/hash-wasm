@@ -77,3 +77,13 @@ test('interlaced create', async () => {
   expect(hashA.digest()).toBe('1815f774f320491b48569efec794d249eeb59aae46d22bf77dafe25c5edc28d7ea44f93ee1234aa88f61c91912a4ccd9');
   expect(hashB.digest()).toBe('ec01498288516fc926459f58e2c6ad8df9b473cb0fc08c2596da7cf0e49be4b298d88cea927ac7f539f1edf228376d25');
 });
+
+test('Invalid inputs throw', async () => {
+  const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
+  const hash = await createSHA3(384);
+
+  invalidInputs.forEach(async (input: any) => {
+    await expect(sha3(input, 384)).rejects.toThrow();
+    expect(() => hash.update(input)).toThrow();
+  });
+});

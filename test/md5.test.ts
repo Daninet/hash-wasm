@@ -77,3 +77,13 @@ test('interlaced create', async () => {
   expect(hashA.digest()).toBe('0cc175b9c0f1b6a831c399e269772661');
   expect(hashB.digest()).toBe('900150983cd24fb0d6963f7d28e17f72');
 });
+
+test('Invalid inputs throw', async () => {
+  const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
+  const hash = await createMD5();
+
+  invalidInputs.forEach(async (input: any) => {
+    await expect(md5(input)).rejects.toThrow();
+    expect(() => hash.update(input)).toThrow();
+  });
+});

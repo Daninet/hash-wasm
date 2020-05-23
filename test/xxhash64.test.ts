@@ -116,4 +116,26 @@ test('invalid parameters', async () => {
   await expect(origXXHash64('', 0, 0xFFFFFFFF + 1)).rejects.toThrow();
   await expect(origXXHash64('', 0, 0.1)).rejects.toThrow();
   await expect(origXXHash64('', 0, Number.NaN)).rejects.toThrow();
+
+  await expect(createXXHash64(-1 as any)).rejects.toThrow();
+  await expect(createXXHash64('a' as any)).rejects.toThrow();
+  await expect(createXXHash64(0xFFFFFFFF + 1 as any)).rejects.toThrow();
+  await expect(createXXHash64(0.1 as any)).rejects.toThrow();
+  await expect(createXXHash64(Number.NaN as any)).rejects.toThrow();
+
+  await expect(createXXHash64(0, -1 as any)).rejects.toThrow();
+  await expect(createXXHash64(0, 'a' as any)).rejects.toThrow();
+  await expect(createXXHash64(0, 0xFFFFFFFF + 1 as any)).rejects.toThrow();
+  await expect(createXXHash64(0, 0.1 as any)).rejects.toThrow();
+  await expect(createXXHash64(0, Number.NaN as any)).rejects.toThrow();
+});
+
+test('Invalid inputs throw', async () => {
+  const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
+  const hash = await createXXHash64();
+
+  invalidInputs.forEach(async (input: any) => {
+    await expect(origXXHash64(input)).rejects.toThrow();
+    expect(() => hash.update(input)).toThrow();
+  });
 });

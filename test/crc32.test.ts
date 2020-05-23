@@ -78,3 +78,13 @@ test('interlaced create', async () => {
   expect(hashA.digest()).toBe('e8b7be43');
   expect(hashB.digest()).toBe('352441c2');
 });
+
+test('Invalid inputs throw', async () => {
+  const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
+  const hash = await createCRC32();
+
+  invalidInputs.forEach(async (input: any) => {
+    await expect(crc32(input)).rejects.toThrow();
+    expect(() => hash.update(input)).toThrow();
+  });
+});

@@ -77,3 +77,13 @@ test('interlaced create', async () => {
   expect(hashA.digest()).toBe('85e964c0843a7ee32e6b5889d50e130e6485cffc826a30167d1dc2b3a0cc79cba303501a1eeaba39915f13baab5abacf');
   expect(hashB.digest()).toBe('f7df1165f033337be098e7d288ad6a2f74409d7a60b49c36642218de161b1f99f8c681e4afaf31a34db29fb763e3c28e');
 });
+
+test('Invalid inputs throw', async () => {
+  const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
+  const hash = await createKeccak(384);
+
+  invalidInputs.forEach(async (input: any) => {
+    await expect(keccak(input, 384)).rejects.toThrow();
+    expect(() => hash.update(input)).toThrow();
+  });
+});
