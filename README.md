@@ -22,8 +22,8 @@ Supported hash functions
 Features
 =======
 
-- A lot faster than JS implementations (see [benchmarks](#benchmark) below)
-- Compiled from highly optimized algorithms written in C
+- A lot faster than JS implementations for large input buffers (see [benchmarks](#benchmark) below)
+- Compiled from heavily optimized algorithms written in C
 - Supports all modern browsers and Node.js
 - Supports large data streams
 - Supports UTF-8 strings and typed arrays
@@ -98,79 +98,77 @@ Chrome | Safari | Firefox | Edge | IE
 Benchmark
 =====
 
-MD5                      | ops/s   | throughput
--------------------------|---------|-------------
-node.js crypto module    | 213     | 852 MB/s
-**hash-wasm**            | **137** | **548 MB/s**
-node-forge (npm library) | 20      | 80 MB/s
-md5 (npm library)        | 2       | 8 MB/s
+You can make your own measurements here: [link](https://csb-9b6mf.daninet.now.sh/)
+
+The source code for the benchmark can be found [here](https://codesandbox.io/s/hash-wasm-benchmark-9b6mf)
+
+
+MD5                      | throughput (32 bytes) | throughput (1MB)
+-------------------------|-----------------------|-----------------
+**hash-wasm**            | **7.91 MB/s**         | **584.37 MB/s**
+md5 (npm library)        | 6.82 MB/s             | 10.85 MB/s
+node-forge (npm library) | 6.44 MB/s             | 10.65 MB/s
 
 #
 
-MD4                      | ops/s   | throughput
--------------------------|---------|-------------
-node.js crypto module    | 351     | 1404 MB/s
-**hash-wasm**            | **247** | **988 MB/s**
-js-md4 (npm library)     | 94      | 376 MB/s
+MD4                  | throughput (32 bytes) | throughput (1MB)
+---------------------|-----------------------|-----------------
+**hash-wasm**        | **8.79 MB/s**         | **1078.92 MB/s**
+js-md4 (npm library) | 37.53 MB/s            | 336.23 MB/s
 
 #
 
-CRC32             | ops/s   | throughput
-------------------|---------|--------------
-**hash-wasm**     | **471** | **1884 MB/s**
-crc (npm library) | 131     | 524 MB/s
+SHA1                     | throughput (32 bytes) | throughput (1MB)
+-------------------------|-----------------------|-----------------
+**hash-wasm**            | **6.99 MB/s**         | **632.72 MB/s**
+jsSHA (npm library)      | 4.54 MB/s             | 35.31 MB/s
+crypto-js (npm library)  | 5.40 MB/s             | 14.39 MB/s
+sha1 (npm library)       | 6.36 MB/s             | 12.08 MB/s
+node-forge (npm library) | 5.59 MB/s             | 10.62 MB/s
 
 #
 
-SHA1                     | ops/s   | throughput
--------------------------|---------|-----------
-node.js crypto module    | 266     | 1064 MB/s
-**hash-wasm**            | **128** | **512 MB/s**
-node-forge (npm library) | 23      | 92 MB/s
-jsSHA (npm library)      | 13      | 52 MB/s
-crypto-js (npm library)  | 6       | 24 MB/s
-sha1 (npm library)       | 2       | 8 MB/s
+SHA256                    | throughput (32 bytes) | throughput (1MB)
+--------------------------|-----------------------|-----------------
+**hash-wasm**             | **4.58 MB/s**         | **252.33 MB/s**
+sha256-wasm (npm library) | 4.35 MB/s             | 138.22 MB/s
+jsSHA (npm library)       | 4.04 MB/s             | 29.57 MB/s
+crypto-js (npm library)   | 5.04 MB/s             | 13.58 MB/s
+node-forge (npm library)  | 3.92 MB/s             | 10.07 MB/s
 
 #
 
-SHA256                    | ops/s  | throughput
---------------------------|--------|-------------
-node.js crypto module     | 120    | 480 MB/s
-**hash-wasm**             | **56** | **224 MB/s**
-sha256-wasm (npm library) | 27     | 108 MB/s
-node-forge (npm library)  | 17     | 68 MB/s
-jsSHA (npm library)       | 10     | 40 MB/s
-crypto-js (npm library)   | 6      | 24 MB/s
+SHA512                   | throughput (32 bytes) | throughput (1MB)
+-------------------------|-----------------------|-----------------
+**hash-wasm**            | **2.81 MB/s**         | **361.75 MB/s**
+jsSHA (npm library)      | 1.90 MB/s             | 11.49 MB/s
+node-forge (npm library) | 1.95 MB/s             | 9.49 MB/s
+crypto-js (npm library)  | 1.35 MB/s             | 5.87 MB/s
 
 #
 
-SHA512                   | ops/s   | throughput
--------------------------|---------|-----------
-node.js crypto module    | 171     | 684 MB/s
-**hash-wasm**            | **79**  | **316 MB/s**
-node-forge (npm library) | 11      | 44 MB/s
-jsSHA (npm library)      | 2       | 8 MB/s
-crypto-js (npm library)  | 1       | 4 MB/s
+SHA3-512            | throughput (32 bytes) | throughput (1MB)
+--------------------|-----------------------|-----------------
+**hash-wasm**       | **2.86 MB/s**         | **174.43 MB/s**
+sha3 (npm library)  | 0.91 MB/s             | 5.18 MB/s
+jsSHA (npm library) | 0.78 MB/s             | 1.86 MB/s
 
 #
 
-SHA3-512                 | ops/s   | throughput
--------------------------|---------|-----------
-node.js crypto module    | 61      | 244 MB/s
-**hash-wasm**            | **40**  | **160 MB/s**
-sha3 (npm library)       | 2       | 8 MB/s
-jsSHA (npm library)      | 0       | < 4 MB/s
+CRC32             | throughput (32 bytes) | throughput (1MB)
+------------------|-----------------------|------------------
+**hash-wasm**     | **15.72 MB/s**        | **2205.56 MB/s**
+crc (npm library) | 221.63 MB/s           | 543.03 MB/s
 
 #
 
-XXHash64                  | ops/s     | throughput
---------------------------|-----------|---------------
-xxhash (node.js binding)  | 3 852     | 15 408 MB/s
-**hash-wasm**             | **1 354** | **5 416 MB/s**
-xxhash-wasm (npm library) | 59        | 236 MB/s
-xxhashjs (npm library)    | 3         | 12 MB/s
+XXHash64                  | throughput (32 bytes) | throughput (1MB)
+--------------------------|-----------------------|------------------
+**hash-wasm**             | **11.05 MB/s**        | **11514.54 MB/s**
+xxhash-wasm (npm library) | 0.08 MB/s             | 48.09 MB/s
+xxhashjs (npm library)    | 0.35 MB/s             | 17.82 MB/s
 
-*\* Benchmarks can be started with the `npm run benchmark` command. These measurements were made using `Node.js v12.16.2` by hashing a fixed input buffer (size = 4MB).*
+* \* These measurements were made with `Chrome v83` on a Kaby Lake desktop CPU.
 
 API
 =====
