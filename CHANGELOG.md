@@ -1,3 +1,7 @@
+## 3.0.0 (May 24, 2020)
+
+* Improved performance in smaller input buffers
+
 ## 2.6.0 (April 18, 2020)
 
 * Allow concurrent hash calculations with multiple states
