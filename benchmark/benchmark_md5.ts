@@ -3,7 +3,7 @@ import nodeCrypto from 'crypto';
 import npmMD5 from 'md5';
 import nodeForge from 'node-forge';
 import { md5 as wasmMD5 } from '../dist/index.umd';
-import interpretResults from './interpret';
+import interpretResults, { benchmarkOptions } from './interpret';
 
 export default (size: number, divisor: number) => {
   const buf = Buffer.alloc(size);
@@ -18,7 +18,7 @@ export default (size: number, divisor: number) => {
         const hash = await wasmMD5(buf);
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('node-crypto', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -26,14 +26,14 @@ export default (size: number, divisor: number) => {
         hashObj.update(buf);
         if (hashObj.digest('hex') !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('npm-md5', async () => {
       for (let i = 0; i < divisor; i++) {
         const hash = npmMD5(buf);
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('node-forge', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -43,7 +43,7 @@ export default (size: number, divisor: number) => {
         const hash = md.digest().toHex();
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.cycle(),
     benny.complete((summary) => {

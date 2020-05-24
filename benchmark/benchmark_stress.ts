@@ -3,7 +3,7 @@ import benny from 'benny';
 import nodeCrypto from 'crypto';
 import nodeForge from 'node-forge';
 import { md5 as wasmMD5, sha1 as wasmSHA1, sha256 as wasmSHA256 } from '../dist/index.umd';
-import interpretResults from './interpret';
+import interpretResults, { benchmarkOptions } from './interpret';
 
 export default (size: number, divisor: number) => {
   const buf = Buffer.alloc(size);
@@ -24,7 +24,7 @@ export default (size: number, divisor: number) => {
         hash = await wasmSHA256(buf);
         if (hash !== resultSHA256) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('node-crypto', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -40,7 +40,7 @@ export default (size: number, divisor: number) => {
         hashObj.update(buf);
         if (hashObj.digest('hex') !== resultSHA256) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('node-forge', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -57,7 +57,7 @@ export default (size: number, divisor: number) => {
         md.update(forgeBuffer.data);
         if (md.digest().toHex() !== resultSHA256) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.cycle(),
     benny.complete((summary) => {

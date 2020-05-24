@@ -6,7 +6,7 @@ import cryptoJsHex from 'crypto-js/enc-hex';
 import JsSHA from 'jssha';
 import sha256Wasm from 'sha256-wasm';
 import { sha256 as wasmSHA256 } from '../dist/index.umd';
-import interpretResults from './interpret';
+import interpretResults, { benchmarkOptions } from './interpret';
 
 export default (size: number, divisor: number) => {
   const buf = Buffer.alloc(size);
@@ -21,7 +21,7 @@ export default (size: number, divisor: number) => {
         const hash = await wasmSHA256(buf);
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('node-crypto', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -29,7 +29,7 @@ export default (size: number, divisor: number) => {
         hashObj.update(buf);
         if (hashObj.digest('hex') !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('node-forge', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -39,14 +39,14 @@ export default (size: number, divisor: number) => {
         const hash = md.digest().toHex();
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('crypto-js', async () => {
       for (let i = 0; i < divisor; i++) {
         const hash = cryptoJsHex.stringify(cryptoJsSHA256(buf.toString('utf8')));
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('jsSHA', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -55,7 +55,7 @@ export default (size: number, divisor: number) => {
         const hash = hasher.getHash('HEX');
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('sha256-wasm', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -63,7 +63,7 @@ export default (size: number, divisor: number) => {
         hashObj.update(buf);
         if (hashObj.digest('hex') !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.cycle(),
     benny.complete((summary) => {

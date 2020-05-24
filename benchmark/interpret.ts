@@ -1,6 +1,7 @@
 import { Summary } from 'benny/lib/internal/common-types';
 
 export default function interpret(summary: Summary, size: number, divisor: number) {
+  // console.log('summary', summary.results[0].details);
   // eslint-disable-next-line no-console
   console.table(
     summary.results.map((result) => ({
@@ -14,3 +15,9 @@ export default function interpret(summary: Summary, size: number, divisor: numbe
     })),
   );
 }
+
+export const benchmarkOptions = {
+  initCount: 2,
+  minTime: 2,
+  minSamples: 20,
+};

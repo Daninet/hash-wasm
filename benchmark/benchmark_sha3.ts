@@ -3,7 +3,7 @@ import nodeCrypto from 'crypto';
 import { SHA3 as NpmSHA3 } from 'sha3';
 import JsSHA from 'jssha';
 import { sha3 as wasmSHA3 } from '../dist/index.umd';
-import interpretResults from './interpret';
+import interpretResults, { benchmarkOptions } from './interpret';
 
 export default (size: number, divisor: number) => {
   const buf = Buffer.alloc(size);
@@ -18,7 +18,7 @@ export default (size: number, divisor: number) => {
         const hash = await wasmSHA3(buf);
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('node-crypto', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -26,7 +26,7 @@ export default (size: number, divisor: number) => {
         hashObj.update(buf);
         if (hashObj.digest('hex') !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('npm-sha3', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -35,7 +35,7 @@ export default (size: number, divisor: number) => {
         const hash = hasher.digest('hex');
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('jsSHA', async () => {
       for (let i = 0; i < divisor; i++) {
@@ -44,7 +44,7 @@ export default (size: number, divisor: number) => {
         const hash = hasher.getHash('HEX');
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.cycle(),
     benny.complete((summary) => {

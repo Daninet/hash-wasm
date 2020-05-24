@@ -1,7 +1,7 @@
 import benny from 'benny';
 import { crc32 } from 'crc';
 import { crc32 as wasmCRC32 } from '../dist/index.umd';
-import interpretResults from './interpret';
+import interpretResults, { benchmarkOptions } from './interpret';
 
 function toHex(number) {
   const buf = Buffer.alloc(4);
@@ -22,13 +22,13 @@ export default (size: number, divisor: number) => {
         const hash = await wasmCRC32(buf);
         if (hash !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.add('npm-crc', async () => {
       for (let i = 0; i < divisor; i++) {
         if (toHex(crc32(buf)) !== result) throw new Error('Hash error');
       }
-    }),
+    }, benchmarkOptions),
 
     benny.cycle(),
     benny.complete((summary) => {
