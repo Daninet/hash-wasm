@@ -1,3 +1,8 @@
+## 3.0.1 (May 24, 2020)
+
+* Updated benchmark results in readme
+* Use new web-based tool for benchmarking
+
 ## 3.0.0 (May 24, 2020)
 
 * Improved performance in smaller input buffers

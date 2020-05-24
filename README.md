@@ -168,7 +168,7 @@ XXHash64                  | throughput (32 bytes) | throughput (1MB)
 xxhash-wasm (npm library) | 0.08 MB/s             | 48.09 MB/s
 xxhashjs (npm library)    | 0.35 MB/s             | 17.82 MB/s
 
-* \* These measurements were made with `Chrome v83` on a Kaby Lake desktop CPU.
+\* These measurements were made with `Chrome v83` on a Kaby Lake desktop CPU.
 
 API
 =====
