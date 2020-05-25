@@ -14,3 +14,11 @@ test('invalid parameters', async () => {
   await expect(createSHA3(0 as any)).rejects.toThrow();
   await expect(createSHA3(null as any)).rejects.toThrow();
 });
+
+test('default value for create constructor', async () => {
+  const hash = await sha3('a', 512);
+  const hasher = await createSHA3();
+  hasher.init();
+  hasher.update('a');
+  expect(hasher.digest()).toBe(hash);
+});

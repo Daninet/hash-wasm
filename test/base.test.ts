@@ -18,5 +18,8 @@ test('Sync cycle multiple algorithms', async () => {
 });
 
 test('String() input', async () => {
+  // eslint-disable-next-line no-new-wrappers
+  const string = new String('a');
+  expect(await md5(string as any)).toBe('0cc175b9c0f1b6a831c399e269772661');
   expect(await md5(String('a'))).toBe('0cc175b9c0f1b6a831c399e269772661');
 });

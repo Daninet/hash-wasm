@@ -14,3 +14,11 @@ test('invalid parameters', async () => {
   await expect(createKeccak(0 as any)).rejects.toThrow();
   await expect(createKeccak(null as any)).rejects.toThrow();
 });
+
+test('default value for create constructor', async () => {
+  const hash = await keccak('a', 512);
+  const hasher = await createKeccak();
+  hasher.init();
+  hasher.update('a');
+  expect(hasher.digest()).toBe(hash);
+});
