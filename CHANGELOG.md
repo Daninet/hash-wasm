@@ -1,3 +1,8 @@
+## 3.1.0 (May 25, 2020)
+
+* ~30% performance improvement when hashing small chunks of data (one WASM function call instead of three)
+* Updated benchmark results in readme
+
 ## 3.0.1 (May 24, 2020)
 
 * Updated benchmark results in readme
