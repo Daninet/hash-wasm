@@ -1,6 +1,6 @@
 {
   "name": "hash-wasm",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Fast hash functions compiled to WebAssembly",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
