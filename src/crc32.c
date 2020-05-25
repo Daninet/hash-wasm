@@ -338,3 +338,11 @@ void Hash_Final()
   array[2] = (previousCrc32 >> 8) & 0xFF;
   array[3] = previousCrc32 & 0xFF;
 }
+
+EMSCRIPTEN_KEEPALIVE
+void Hash_Calculate(uint32_t length)
+{
+  Hash_Init();
+  Hash_Update(length);
+  Hash_Final();
+}

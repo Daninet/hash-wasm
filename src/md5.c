@@ -300,3 +300,11 @@ void Hash_Final()
 
   memset(ctx, 0, sizeof(*ctx));
 }
+
+EMSCRIPTEN_KEEPALIVE
+void Hash_Calculate(uint32_t length)
+{
+  Hash_Init();
+  Hash_Update(length);
+  Hash_Final();
+}

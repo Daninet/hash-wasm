@@ -11,16 +11,13 @@ export function sha224(data: string | Buffer | ITypedArray): Promise<string> {
     return lockedCreate(mutex, wasmJson, 28)
       .then((wasm) => {
         wasmCache = wasm;
-        wasmCache.init(224);
-        wasmCache.update(data);
-        return wasmCache.digest();
+        return wasmCache.calculate(data, 224);
       });
   }
 
   try {
-    wasmCache.init(224);
-    wasmCache.update(data);
-    return Promise.resolve(wasmCache.digest());
+    const hash = wasmCache.calculate(data, 224);
+    return Promise.resolve(hash);
   } catch (err) {
     return Promise.reject(err);
   }

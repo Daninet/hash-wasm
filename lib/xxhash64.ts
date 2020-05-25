@@ -38,18 +38,15 @@ export function xxhash64(
         wasmCache = wasm;
         writeSeed(seedLow, seedHigh);
         wasmCache.writeMemory(new Uint32Array(seedBuffer));
-        wasmCache.init();
-        wasmCache.update(data);
-        return wasmCache.digest();
+        return wasmCache.calculate(data);
       });
   }
 
   try {
     writeSeed(seedLow, seedHigh);
     wasmCache.writeMemory(new Uint32Array(seedBuffer));
-    wasmCache.init();
-    wasmCache.update(data);
-    return Promise.resolve(wasmCache.digest());
+    const hash = wasmCache.calculate(data);
+    return Promise.resolve(hash);
   } catch (err) {
     return Promise.reject(err);
   }

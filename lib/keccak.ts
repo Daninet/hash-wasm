@@ -26,16 +26,13 @@ export function keccak(
     return lockedCreate(mutex, wasmJson, bits / 8)
       .then((wasm) => {
         wasmCache = wasm;
-        wasmCache.init(bits);
-        wasmCache.update(data);
-        return wasmCache.digest(0x01);
+        return wasmCache.calculate(data, bits, 0x01);
       });
   }
 
   try {
-    wasmCache.init(bits);
-    wasmCache.update(data);
-    return Promise.resolve(wasmCache.digest(0x01));
+    const hash = wasmCache.calculate(data, bits, 0x01);
+    return Promise.resolve(hash);
   } catch (err) {
     return Promise.reject(err);
   }

@@ -24,16 +24,13 @@ export function xxhash32(
     return lockedCreate(mutex, wasmJson, 4)
       .then((wasm) => {
         wasmCache = wasm;
-        wasmCache.init(seed);
-        wasmCache.update(data);
-        return wasmCache.digest();
+        return wasmCache.calculate(data, seed);
       });
   }
 
   try {
-    wasmCache.init(seed);
-    wasmCache.update(data);
-    return Promise.resolve(wasmCache.digest());
+    const hash = wasmCache.calculate(data, seed);
+    return Promise.resolve(hash);
   } catch (err) {
     return Promise.reject(err);
   }

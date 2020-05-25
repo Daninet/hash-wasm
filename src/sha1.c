@@ -169,3 +169,11 @@ void Hash_Final()
   memset(context, '\0', sizeof(*context));
   memset(&finalcount, '\0', sizeof(finalcount));
 }
+
+EMSCRIPTEN_KEEPALIVE
+void Hash_Calculate(uint32_t length)
+{
+  Hash_Init();
+  Hash_Update(length);
+  Hash_Final();
+}

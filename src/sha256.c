@@ -278,3 +278,11 @@ void Hash_Final()
 
   memcpy(array, ctx->hash, ctx->digest_length);
 }
+
+EMSCRIPTEN_KEEPALIVE
+void Hash_Calculate(uint32_t length, uint32_t initParam)
+{
+  Hash_Init(initParam);
+  Hash_Update(length);
+  Hash_Final();
+}

@@ -316,3 +316,11 @@ void Hash_Final(uint8_t padding)
 
   memcpy(array, ctx->hash, digest_length);
 }
+
+EMSCRIPTEN_KEEPALIVE
+void Hash_Calculate(uint32_t length, uint32_t initParam, uint8_t finalParam)
+{
+  Hash_Init(initParam);
+  Hash_Update(length);
+  Hash_Final(finalParam);
+}

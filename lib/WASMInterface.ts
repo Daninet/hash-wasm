@@ -59,7 +59,11 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 
   const init = (bits: number = null) => {
-    wasmInstance.exports.Hash_Init.apply(null, bits ? [bits] : []);
+    if (bits) {
+      wasmInstance.exports.Hash_Init(bits);
+    } else {
+      wasmInstance.exports.Hash_Init();
+    }
   };
 
   const updateUInt8Array = (data: Uint8Array): void => {
@@ -72,31 +76,83 @@ async function WASMInterface(binary: any, hashLength: number) {
     }
   };
 
-  const update = (data: string | Buffer | ITypedArray) => {
-    let uintBuffer = null;
-
+  const getUInt8Buffer = (data: string | Buffer | ITypedArray): Uint8Array => {
     if (data instanceof String) {
       data = data.toString();
     }
 
     if (typeof data === 'string') {
       const buf = Buffer.from(data, 'utf8');
-      uintBuffer = new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
-    } else if (data instanceof Buffer) {
-      uintBuffer = new Uint8Array(data.buffer, data.byteOffset, data.length);
-    } else if (ArrayBuffer.isView(data)) {
-      uintBuffer = new Uint8Array(data.buffer);
-    } else {
-      throw new Error('Invalid data type!');
+      return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
     }
 
-    updateUInt8Array(uintBuffer);
+    if (data instanceof Buffer) {
+      return new Uint8Array(data.buffer, data.byteOffset, data.length);
+    }
+
+    if (ArrayBuffer.isView(data)) {
+      return new Uint8Array(data.buffer);
+    }
+
+    throw new Error('Invalid data type!');
+  };
+
+  const update = (data: string | Buffer | ITypedArray) => {
+    const Uint8Buffer = getUInt8Buffer(data);
+    updateUInt8Array(Uint8Buffer);
+  };
+
+  const digestChars = new Uint8Array(hashLength * 2);
+  const alpha = 'a'.charCodeAt(0) - 10;
+  const digit = '0'.charCodeAt(0);
+
+  const getDigestHex = () => {
+    let p = 0;
+    /* eslint-disable no-bitwise,no-plusplus */
+    for (let i = 0; i < hashLength; i++) {
+      let nibble = memoryView[i] >>> 4;
+      digestChars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
+      nibble = memoryView[i] & 0xF;
+      digestChars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
+    }
+    /* eslint-enable no-bitwise,no-plusplus */
+
+    return String.fromCharCode.apply(null, digestChars);
   };
 
   const digest = (padding: number = null): string => {
-    wasmInstance.exports.Hash_Final.apply(null, padding ? [padding] : []);
-    const result = memoryView.subarray(0, hashLength);
-    return Buffer.from(result).toString('hex');
+    if (padding) {
+      wasmInstance.exports.Hash_Final(padding);
+    } else {
+      wasmInstance.exports.Hash_Final();
+    }
+    return getDigestHex();
+  };
+
+  const canSimplify = binary.name === 'xxhash64.wasm'
+    ? () => false
+    : (data: string | Buffer | ITypedArray) => {
+      if (data instanceof ArrayBuffer) {
+        return data.byteLength < MAX_HEAP;
+      }
+
+      return data.length < MAX_HEAP;
+    };
+
+  // shorthand for (init + update + digest) for better performance
+  const calculate = (
+    data: string | Buffer | ITypedArray, initParam = null, digestParam = null,
+  ): string => {
+    if (!canSimplify(data)) {
+      init(initParam);
+      update(data);
+      return digest(digestParam);
+    }
+
+    const Uint8Buffer = getUInt8Buffer(data);
+    memoryView.set(Uint8Buffer);
+    wasmInstance.exports.Hash_Calculate(Uint8Buffer.length, initParam, digestParam);
+    return getDigestHex();
   };
 
   await setupInterface();
@@ -106,6 +162,7 @@ async function WASMInterface(binary: any, hashLength: number) {
     init,
     update,
     digest,
+    calculate,
   };
 }
 

@@ -197,3 +197,9 @@ void Hash_Final()
   array[6] = (lo & 0x0000ff00) >> 8;
   array[7] = lo & 0x000000ff;
 }
+
+EMSCRIPTEN_KEEPALIVE
+void Hash_Calculate()
+{
+  return; // TODO
+}

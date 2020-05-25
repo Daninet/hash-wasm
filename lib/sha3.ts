@@ -25,16 +25,13 @@ export function sha3(
     return lockedCreate(mutex, wasmJson, bits / 8)
       .then((wasm) => {
         wasmCache = wasm;
-        wasmCache.init(bits);
-        wasmCache.update(data);
-        return wasmCache.digest(0x06);
+        return wasmCache.calculate(data, bits, 0x06);
       });
   }
 
   try {
-    wasmCache.init(bits);
-    wasmCache.update(data);
-    return Promise.resolve(wasmCache.digest(0x06));
+    const hash = wasmCache.calculate(data, bits, 0x06);
+    return Promise.resolve(hash);
   } catch (err) {
     return Promise.reject(err);
   }

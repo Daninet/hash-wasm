@@ -168,3 +168,11 @@ void Hash_Final()
   array[2] = (result & 0x0000ff00) >> 8;
   array[3] = result & 0x000000ff;
 }
+
+EMSCRIPTEN_KEEPALIVE
+void Hash_Calculate(uint32_t length, uint32_t initParam)
+{
+  Hash_Init(initParam);
+  Hash_Update(length);
+  Hash_Final();
+}
