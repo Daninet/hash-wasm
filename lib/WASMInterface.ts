@@ -3,7 +3,7 @@ import Mutex from './mutex';
 const MAX_HEAP = 16 * 1024;
 const wasmMutex = new Mutex();
 
-export type ITypedArray = Uint8Array | Uint16Array | Uint32Array | ArrayBuffer;
+export type ITypedArray = Uint8Array | Uint16Array | Uint32Array;
 
 type ThenArg<T> = T extends Promise<infer U> ? U :
   T extends ((...args: any[]) => Promise<infer V>) ? V :
@@ -132,7 +132,7 @@ async function WASMInterface(binary: any, hashLength: number) {
   const canSimplify = binary.name === 'xxhash64.wasm'
     ? () => false
     : (data: string | Buffer | ITypedArray) => {
-      if (data instanceof ArrayBuffer) {
+      if (ArrayBuffer.isView(data)) {
         return data.byteLength < MAX_HEAP;
       }
 
