@@ -1,3 +1,8 @@
+## 3.1.2 (May 27, 2020)
+
+* Fixed example code in readme
+* Better description and keywords
+
 ## 3.1.1 (May 25, 2020)
 
 * ~3x faster when hashing small chunks of data (one WASM function call instead of three)
