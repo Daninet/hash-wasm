@@ -56,26 +56,26 @@ Examples
 ```javascript
 import { md5 } from 'hash-wasm';
 
-async function run(str) {
-  console.log('MD5: ', await md5(str));
+async function run() {
+  console.log('MD5:', await md5('demo'));
 }
-
+ 
 run();
 ```
 
 ### Advanced usage with chunked input
 
 ```javascript
-import { createCRC32 } from 'hash-wasm';
+import { createSHA1 } from 'hash-wasm';
 
-async function run(str) {
-  const crc32 = await createCRC32();
-  crc32.init();
-  crc32.update(new Uint8Array([0, 1, 2, 3]));
-  crc32.update(new Uint32Array([4920, 8124]));
-  crc32.update('abcd');
-  const hash = crc32.digest();
-  console.log('CRC32: ', hash);
+async function run() {
+  const sha1 = await createSHA1();
+  sha1.init();
+  sha1.update(new Uint8Array([0, 1, 2, 3]));
+  sha1.update(new Uint32Array([4920, 8124]));
+  sha1.update('demo');
+  const hash = sha1.digest();
+  console.log('SHA1:', hash);
 }
 
 run();
@@ -90,9 +90,9 @@ This might cause to run a bit slower compared to shorthand functions like md5(),
 Browser support
 =====
 
-Chrome | Safari | Firefox | Edge | IE
--------|--------|---------|------|--------------
-57+    | 11+    | 53+     | 16+  | Not supported
+Chrome | Safari | Firefox | Edge | IE            | Node.js
+-------|--------|---------|------|---------------|--------
+57+    | 11+    | 53+     | 16+  | Not supported | 8+
 
 
 Benchmark
@@ -230,7 +230,7 @@ createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 
 interface IHasher {
   init: () => void;
-  update: (data: string | ArrayBuffer | Uint8Array | Uint16Array | Uint32Array | Buffer) => void;
+  update: (data: string | Uint8Array | Uint16Array | Uint32Array | Buffer) => void;
   digest: () => string; // returns hash in hex format
 }
 ```
