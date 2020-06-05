@@ -1,3 +1,7 @@
+## 3.2.1 (June 5, 2020)
+
+* Fix buffer.copy() error in browsers
+
 ## 3.2.0 (June 5, 2020)
 
 * Added HMAC
