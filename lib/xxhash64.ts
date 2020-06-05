@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/xxhash64.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -52,7 +52,7 @@ export function xxhash64(
   }
 }
 
-export function createXXHash64(seedLow = 0, seedHigh = 0) {
+export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
   if (validateSeed(seedLow)) {
     return Promise.reject(validateSeed(seedLow));
   }
@@ -72,6 +72,7 @@ export function createXXHash64(seedLow = 0, seedHigh = 0) {
       },
       update: wasm.update,
       digest: () => wasm.digest(),
+      blockSize: 32,
     };
   });
 }

@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/md5.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -23,13 +23,14 @@ export function md5(data: string | Buffer | ITypedArray): Promise<string> {
   }
 }
 
-export function createMD5() {
+export function createMD5(): Promise<IHasher> {
   return WASMInterface(wasmJson, 16).then((wasm) => {
     wasm.init();
     return {
       init: () => wasm.init(),
       update: wasm.update,
       digest: () => wasm.digest(),
+      blockSize: 64,
     };
   });
 }

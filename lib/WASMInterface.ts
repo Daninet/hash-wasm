@@ -9,6 +9,13 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
   T extends ((...args: any[]) => Promise<infer V>) ? V :
   T;
 
+export type IHasher = {
+  init: () => void;
+  update: (data: string | ITypedArray | Buffer) => void;
+  digest: () => string;
+  blockSize: number;
+}
+
 const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();
 
 async function WASMInterface(binary: any, hashLength: number) {

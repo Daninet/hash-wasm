@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha256.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -23,13 +23,14 @@ export function sha224(data: string | Buffer | ITypedArray): Promise<string> {
   }
 }
 
-export function createSHA224() {
+export function createSHA224(): Promise<IHasher> {
   return WASMInterface(wasmJson, 28).then((wasm) => {
     wasm.init(224);
     return {
       init: () => wasm.init(224),
       update: wasm.update,
       digest: () => wasm.digest(),
+      blockSize: 64,
     };
   });
 }

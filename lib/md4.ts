@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/md4.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -23,13 +23,14 @@ export function md4(data: string | Buffer | ITypedArray): Promise<string> {
   }
 }
 
-export function createMD4() {
+export function createMD4(): Promise<IHasher> {
   return WASMInterface(wasmJson, 16).then((wasm) => {
     wasm.init();
     return {
       init: () => wasm.init(),
       update: wasm.update,
       digest: () => wasm.digest(),
+      blockSize: 64,
     };
   });
 }

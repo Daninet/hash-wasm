@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/crc32.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -23,13 +23,14 @@ export function crc32(data: string | Buffer | ITypedArray): Promise<string> {
   }
 }
 
-export function createCRC32() {
+export function createCRC32(): Promise<IHasher> {
   return WASMInterface(wasmJson, 4).then((wasm) => {
     wasm.init();
     return {
       init: () => wasm.init(),
       update: wasm.update,
       digest: () => wasm.digest(),
+      blockSize: 4,
     };
   });
 }

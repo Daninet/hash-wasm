@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha512.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -23,13 +23,14 @@ export function sha512(data: string | Buffer | ITypedArray): Promise<string> {
   }
 }
 
-export function createSHA512() {
+export function createSHA512(): Promise<IHasher> {
   return WASMInterface(wasmJson, 64).then((wasm) => {
     wasm.init(512);
     return {
       init: () => wasm.init(512),
       update: wasm.update,
       digest: () => wasm.digest(),
+      blockSize: 128,
     };
   });
 }

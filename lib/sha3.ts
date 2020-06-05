@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -37,17 +37,20 @@ export function sha3(
   }
 }
 
-export function createSHA3(bits: IValidBits = 512) {
+export function createSHA3(bits: IValidBits = 512): Promise<IHasher> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));
   }
 
-  return WASMInterface(wasmJson, bits / 8).then((wasm) => {
+  const outputSize = bits / 8;
+
+  return WASMInterface(wasmJson, outputSize).then((wasm) => {
     wasm.init(bits);
     return {
       init: () => wasm.init(bits),
       update: wasm.update,
       digest: () => wasm.digest(0x06),
+      blockSize: 200 - 2 * outputSize,
     };
   });
 }

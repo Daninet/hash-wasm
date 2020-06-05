@@ -1,4 +1,4 @@
-import WASMInterface, { ITypedArray, IWASMInterface } from './WASMInterface';
+import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/xxhash32.wasm.json';
 import lockedCreate from './lockedCreate';
@@ -36,7 +36,7 @@ export function xxhash32(
   }
 }
 
-export function createXXHash32(seed = 0) {
+export function createXXHash32(seed = 0): Promise<IHasher> {
   if (validateSeed(seed)) {
     return Promise.reject(validateSeed(seed));
   }
@@ -47,6 +47,7 @@ export function createXXHash32(seed = 0) {
       init: () => wasm.init(seed),
       update: wasm.update,
       digest: () => wasm.digest(),
+      blockSize: 16,
     };
   });
 }
