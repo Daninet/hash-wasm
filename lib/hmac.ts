@@ -3,7 +3,7 @@ import { ITypedArray, IHasher } from './WASMInterface';
 
 type IInput = string | Buffer | ITypedArray;
 
-function calculateKeyBuffer(hasher: IHasher, key: IInput): Buffer {
+function calculateKeyBuffer(hasher: IHasher, key: IInput): Uint8Array {
   const { blockSize } = hasher;
 
   const buf = Buffer.from(key);
@@ -12,10 +12,10 @@ function calculateKeyBuffer(hasher: IHasher, key: IInput): Buffer {
     hasher.update(buf);
     const hashBuf = Buffer.from(hasher.digest(), 'hex');
     hasher.init();
-    return hashBuf;
+    return new Uint8Array(hashBuf.buffer, hashBuf.byteOffset, hashBuf.length);
   }
 
-  return buf;
+  return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
 }
 
 function calculateHmac(hasher: IHasher, key: IInput): IHasher {
@@ -26,7 +26,7 @@ function calculateHmac(hasher: IHasher, key: IInput): IHasher {
 
   const keyBuffer = new Uint8Array(blockSize);
   const opad = new Uint8Array(blockSize);
-  keyBuf.copy(keyBuffer);
+  keyBuffer.set(keyBuf);
 
   for (let i = 0; i < blockSize; i++) {
     const v = keyBuffer[i];
