@@ -15,8 +15,9 @@ module.exports = {
     'import/extensions': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     'no-param-reassign': 'off',
-    'no-plusplus': ["error", { "allowForLoopAfterthoughts": true }],
+    'no-plusplus': ['error', { 'allowForLoopAfterthoughts': true }],
     '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/explicit-function-return-type': 'off',
     'no-await-in-loop': 'off',
   },
   ignorePatterns: [
