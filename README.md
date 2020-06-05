@@ -18,6 +18,7 @@ Supported hash functions
 - Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
 - xxHash: xxHash32, xxHash64
 
+HMAC is also supported with all hash algorithms
 
 Features
 =======
@@ -222,7 +223,6 @@ API
 =====
 
 ```javascript
-
 // all functions return hash in hex format
 md4(data: string | typedArray | Buffer): Promise<string>
 md5(data: string | typedArray | Buffer): Promise<string>

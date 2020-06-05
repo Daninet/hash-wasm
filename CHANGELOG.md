@@ -1,3 +1,9 @@
+## 3.2.0 (June 5, 2020)
+
+* Added HMAC
+* Better examples in readme
+* Updated dependencies
+
 ## 3.1.2 (May 27, 2020)
 
 * Fixed example code in readme
