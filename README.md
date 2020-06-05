@@ -4,7 +4,7 @@
 
 Hash-WASM is a fast and portable hash function library.
 
-It's using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
+It is using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
 
 
 Supported hash functions
@@ -28,6 +28,7 @@ Features
 - Supports large data streams
 - Supports UTF-8 strings and typed arrays
 - Supports chunked input streams
+- Supports HMAC for all algorithms
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
 - It's lightweight. Only ~75kb including all algorithms (or less with tree shaking)
@@ -44,7 +45,6 @@ Install
 npm i hash-wasm
 ```
 
-
 Examples
 =======
 
@@ -52,19 +52,34 @@ Examples
 
 [Hash calculator](https://3w4be.csb.app/) - [React.js source code](https://codesandbox.io/s/hash-wasm-3w4be?file=/src/App.tsx)
 
-### Basic usage
+### Usage with the shorthand form
+
+It is the easiest and the fastest way to calculate hashes. Use it when the input buffer is already in the memory.
 
 ```javascript
-import { md5 } from 'hash-wasm';
+import { md5, sha1, sha512, sha3 } from 'hash-wasm';
 
 async function run() {
   console.log('MD5:', await md5('demo'));
+
+  const int8Buffer = new Uint8Array([0, 1, 2, 3]);
+  console.log('SHA1:', await sha1(int8Buffer));
+  console.log('SHA512:', await sha512(int8Buffer));
+
+  const int32Buffer = new Uint32Array([1056, 641]);
+  console.log('SHA3-256:', await sha3(int32Buffer, 256));
 }
  
 run();
 ```
 
+*\* See [API reference](#api)*
+
 ### Advanced usage with chunked input
+
+createXXXX() functions create new WASM instances with separate states, which can be used to calculate multiple hashes paralelly. They are slower compared to shorthand functions like md5(), which reuse the same WASM instance and state to do multiple calculations. For this reason, the shorthand form is always preferred when the data is already in the memory.
+
+For the best performance, avoid calling createXXXX() functions in loops. When calculating multiple hashes sequentially, the init() function can be used to reset the internal state between runs. It is faster than creating new instances with createXXXX().
 
 ```javascript
 import { createSHA1 } from 'hash-wasm';
@@ -72,9 +87,12 @@ import { createSHA1 } from 'hash-wasm';
 async function run() {
   const sha1 = await createSHA1();
   sha1.init();
-  sha1.update(new Uint8Array([0, 1, 2, 3]));
-  sha1.update(new Uint32Array([4920, 8124]));
-  sha1.update('demo');
+
+  while (hasMoreData()) {
+    const chunk = readChunk();
+    sha1.update(chunk);
+  }
+
   const hash = sha1.digest();
   console.log('SHA1:', hash);
 }
@@ -82,11 +100,35 @@ async function run() {
 run();
 ```
 
-In this way, multiple hashes can be calculated parallelly without interference between the hash states.
+*\* See [API reference](#api)*
 
-*\* Chunked input syntax creates new WASM instances, with separate state.
-This might cause to run a bit slower compared to shorthand functions like md5(), which are reusing the same WASM instance and state to do multiple calculations.*
+### Calculating HMAC
 
+All supported hash functions can be used to calculate HMAC. For the best performance, avoid calling createXXXX() in loops (see `Advanced usage with chunked input` section above)
+
+```javascript
+import { createHMAC, createSHA3 } from 'hash-wasm';
+
+async function run() {
+  const hashFunc = createSHA3(224); // SHA3-224
+  const hmac = await createHMAC(hashFunc, 'key');
+
+  const fruits = ['apple', 'raspberry', 'watermelon'];
+  console.log('Input:', fruits);
+
+  const codes = fruits.map(data => {
+    hmac.init();
+    hmac.update(data);
+    return hmac.digest();
+  });
+
+  console.log('HMAC:', codes);
+}
+
+run();
+```
+
+*\* See [API reference](#api)*
 
 Browser support
 =====
@@ -180,16 +222,6 @@ API
 =====
 
 ```javascript
-// simple usage
-import {
-  md4, md5,
-  crc32,
-  sha1,
-  sha224, sha256, sha384, sha512,
-  sha3,
-  keccak,
-  xxhash32, xxhash64,
-} from 'hash-wasm';
 
 // all functions return hash in hex format
 md4(data: string | typedArray | Buffer): Promise<string>
@@ -205,17 +237,6 @@ keccak(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise
 xxhash32(data: string | typedArray | Buffer, seed: number): Promise<string>
 xxhash64(data: string | typedArray | Buffer, seedLow: number, seedHigh: number): Promise<string>
 
-// usage with chunked data
-import {
-  createMD4, createMD5,
-  createCRC32,
-  createSHA1,
-  createSHA224, createSHA256, createSHA384, createSHA512,
-  createSHA3,
-  createKeccak,
-  createXXHash32, createXXHash64,
-} from 'hash-wasm';
-
 createMD4(): Promise<IHasher>
 createMD5(): Promise<IHasher>
 createCRC32(): Promise<IHasher>
@@ -229,9 +250,12 @@ createKeccak(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bi
 createXXHash32(seed: number): Promise<IHasher>
 createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 
+createHMAC(hashFunc: Promise<IHasher>, key: string | typedArray | Buffer): Promise<IHasher>
+
 interface IHasher {
   init: () => void;
   update: (data: string | Uint8Array | Uint16Array | Uint32Array | Buffer) => void;
   digest: () => string; // returns hash in hex format
+  blockSize: number; // in bytes
 }
 ```
