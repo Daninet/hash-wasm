@@ -1,3 +1,7 @@
+## 3.3.0 (June 22, 2020)
+
+* Add RIPEMD-160 algorithm
+
 ## 3.2.1 (June 5, 2020)
 
 * Fix buffer.copy() error in browsers
