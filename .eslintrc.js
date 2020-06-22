@@ -17,7 +17,7 @@ module.exports = {
     'no-param-reassign': 'off',
     'no-plusplus': ['error', { 'allowForLoopAfterthoughts': true }],
     '@typescript-eslint/no-empty-function': 'off',
-    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
     'no-await-in-loop': 'off',
   },
   ignorePatterns: [
