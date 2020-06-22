@@ -16,6 +16,7 @@ Supported hash functions
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
 - SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
 - Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
+- RIPEMD-160
 - xxHash: xxHash32, xxHash64
 
 HMAC is also supported with all hash algorithms
@@ -234,6 +235,7 @@ sha384(data: string | typedArray | Buffer): Promise<string>
 sha512(data: string | typedArray | Buffer): Promise<string>
 sha3(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 keccak(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+ripemd160(data: string | typedArray | Buffer): Promise<string>
 xxhash32(data: string | typedArray | Buffer, seed: number): Promise<string>
 xxhash64(data: string | typedArray | Buffer, seedLow: number, seedHigh: number): Promise<string>
 
@@ -247,6 +249,7 @@ createSHA384(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
 createSHA3(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createKeccak(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createRIPEMD160(): Promise<IHasher>
 createXXHash32(seed: number): Promise<IHasher>
 createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 

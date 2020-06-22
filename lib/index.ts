@@ -10,4 +10,5 @@ export * from './sha384';
 export * from './sha512';
 export * from './xxhash32';
 export * from './xxhash64';
+export * from './ripemd160';
 export * from './hmac';

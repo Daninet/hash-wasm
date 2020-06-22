@@ -1,7 +1,7 @@
 {
   "name": "hash-wasm",
   "version": "3.2.1",
-  "description": "Fast hash functions compiled to WebAssembly (MD4, MD5, xxHash, SHA-1, SHA-2, SHA-3, Keccak, CRC32, HMAC)",
+  "description": "Fast hash functions compiled to WebAssembly (MD4, MD5, xxHash, SHA-1, SHA-2, SHA-3, Keccak, CRC32, RIPEMD-160, HMAC)",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
   "types": "dist/lib/index.d.ts",
@@ -28,6 +28,7 @@
     "sha-3",
     "xxhash",
     "keccak",
+    "ripemd",
     "hmac",
     "fast",
     "hashing",
@@ -50,7 +51,8 @@
     "sha3-384",
     "sha3-512",
     "xxhash32",
-    "xxhash64"
+    "xxhash64",
+    "ripemd160"
   ],
   "bugs": {
     "url": "https://github.com/Daninet/hash-wasm/issues"
