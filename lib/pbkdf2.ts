@@ -11,7 +11,11 @@ function calculatePBKDF2(
   const DK = new Uint8Array(keylen);
   const block1 = new Uint8Array(salt.length + 4);
   const block1View = new DataView(block1.buffer);
-  Buffer.from(salt).copy(block1, 0, 0, salt.length);
+  const saltBuffer = Buffer.from(salt);
+  const saltUIntBuffer = new Uint8Array(
+    saltBuffer.buffer, saltBuffer.byteOffset, saltBuffer.length,
+  );
+  block1.set(saltUIntBuffer);
 
   let destPos = 0;
   const hLen = digest.digestSize;
