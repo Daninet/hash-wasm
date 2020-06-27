@@ -46,6 +46,13 @@ async function HMACTest(key, data) {
   expect(await getHashWasmHMAC(sha3512Hasher, key, data)).toBe(getNodeHMAC('sha3-512', key, data));
 }
 
+test('invalid parameters', async () => {
+  expect(() => createHMAC('' as any, 'x')).toThrow();
+  expect(() => createHMAC((() => '') as any, 'x')).toThrow();
+  const hasher = await createSHA1();
+  expect(() => createHMAC(hasher as any, 'x')).toThrow();
+});
+
 test('simple test', async () => {
   await HMACTest('key', 'The quick brown fox jumps over the lazy dog');
 });
