@@ -1,3 +1,7 @@
+## 3.4.1 (June 27, 2020)
+
+* Add PBKDF2 example and benchmark results
+
 ## 3.4.0 (June 27, 2020)
 
 * Add PBKDF2 algorithm

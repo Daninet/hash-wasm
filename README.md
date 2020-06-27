@@ -70,7 +70,7 @@ async function run() {
   const int32Buffer = new Uint32Array([1056, 641]);
   console.log('SHA3-256:', await sha3(int32Buffer, 256));
 }
- 
+
 run();
 ```
 
@@ -124,6 +124,26 @@ async function run() {
   });
 
   console.log('HMAC:', codes);
+}
+
+run();
+```
+
+*\* See [API reference](#api)*
+
+### Calculating PBKDF2
+
+All supported hash functions can be used to calculate PBKDF2. For the best performance, avoid calling createXXXX() in loops (see `Advanced usage with chunked input` section above)
+
+```javascript
+import { pbkdf2, createSHA1 } from 'hash-wasm';
+
+async function run() {
+  const iterations = 1000;
+  const keyLen = 32;
+  const key = await pbkdf2('password', 'salt', iterations, keyLen, createSHA1());
+
+  console.log('Derived key:', key);
 }
 
 run();
@@ -202,6 +222,14 @@ XXHash64                  | throughput (32 bytes) | throughput (1MB)
 **hash-wasm**             | **24.70 MB/s**        | **11882.99 MB/s**
 xxhash-wasm (npm library) | 0.08 MB/s             | 47.30 MB/s
 xxhashjs (npm library)    | 0.36 MB/s             | 17.74 MB/s
+
+#
+
+PBKDF2-SHA512 - 1000 iterations  | operations per second (16 bytes)
+---------------------------------|----------------------
+**hash-wasm**                    | **204 ops**         
+pbkdf2 (npm library)             | 51 ops              
+crypto-js (npm library)          | 6 ops               
 
 \* These measurements were made with `Chrome v83` on a Kaby Lake desktop CPU.
 
