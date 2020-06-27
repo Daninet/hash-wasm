@@ -161,13 +161,6 @@ node-forge (npm library) | 6.78 MB/s             | 10.59 MB/s
 
 #
 
-MD4                  | throughput (32 bytes) | throughput (1MB)
----------------------|-----------------------|-----------------
-**hash-wasm**        | **28.84 MB/s**        | **1094.78 MB/s**
-js-md4 (npm library) | 38.47 MB/s            | 336.85 MB/s
-
-#
-
 SHA1                     | throughput (32 bytes) | throughput (1MB)
 -------------------------|-----------------------|-----------------
 **hash-wasm**            | **22.38 MB/s**        | **625.53 MB/s**
@@ -202,13 +195,6 @@ SHA3-512            | throughput (32 bytes) | throughput (1MB)
 **hash-wasm**       | **14.96 MB/s**        | **175.76 MB/s**
 sha3 (npm library)  | 0.87 MB/s             | 5.17 MB/s
 jsSHA (npm library) | 0.78 MB/s             | 1.84 MB/s
-
-#
-
-CRC32             | throughput (32 bytes) | throughput (1MB)
-------------------|-----------------------|------------------
-**hash-wasm**     | **36.31 MB/s**        | **2194.22 MB/s**
-crc (npm library) | 225.33 MB/s           | 538.83 MB/s
 
 #
 
