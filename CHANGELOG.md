@@ -1,3 +1,7 @@
+## 3.4.0 (June 27, 2020)
+
+* Add PBKDF2 algorithm
+
 ## 3.3.0 (June 22, 2020)
 
 * Add RIPEMD-160 algorithm

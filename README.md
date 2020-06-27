@@ -33,7 +33,6 @@ Features
 - Supports HMAC for all algorithms
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
-- It's lightweight. Uncompressed size is ~95kb including all algorithms (or less with tree shaking)
 - Includes TypeScript type definitions
 - It also works in Web Workers
 - Zero dependencies
