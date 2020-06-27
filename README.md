@@ -19,7 +19,7 @@ Supported hash functions
 - RIPEMD-160
 - xxHash: xxHash32, xxHash64
 
-HMAC is also supported with all hash algorithms
+HMAC and PBKDF2 is also supported with all hash algorithms
 
 Features
 =======
@@ -240,6 +240,14 @@ createXXHash32(seed: number): Promise<IHasher>
 createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 
 createHMAC(hashFunc: Promise<IHasher>, key: string | typedArray | Buffer): Promise<IHasher>
+
+pbkdf2(
+  password: string | typedArray | Buffer,
+  salt: string | typedArray | Buffer,
+  iterations: number,
+  keyLen: number,
+  digest: Promise<IHasher>
+): Promise<string>
 
 interface IHasher {
   init: () => void;

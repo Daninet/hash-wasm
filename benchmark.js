@@ -1,24 +1,43 @@
-const { md5 } = require('./dist/index.umd');
+const crypto = require('crypto');
+// const CryptoJS = require('crypto-js');
+const { pbkdf2, createSHA1 } = require('./dist/index.umd');
 
-async function calc(data, length) {
-  for (let i = 0; i < length; i++) {
-    await md5(data);
+async function calcWASM(password, salt, iterations, keylen, cycles) {
+  for (let i = 0; i < cycles; i++) {
+    await pbkdf2(password, salt, iterations, keylen, createSHA1());
   }
 }
 
+async function calcNode(password, salt, iterations, keylen, cycles) {
+  for (let i = 0; i < cycles; i++) {
+    crypto.pbkdf2Sync(password, salt, iterations, keylen, 'sha1').toString('hex');
+  }
+}
+
+// async function calcJS(password, salt, iterations, keylen, cycles) {
+//   for (let i = 0; i < cycles; i++) {
+//     CryptoJS.PBKDF2(password, salt, { iterations, keySize: keylen });
+//   }
+// }
+
 async function run() {
   for (let i = 0; i < 4; i++) {
-    console.time('md5 short');
-    await calc('abcd', 300000);
-    console.timeEnd('md5 short');
+    console.time('wasm pbkdf2 short');
+    await calcWASM('pass', 'salt', 4000, 150, 10);
+    console.timeEnd('wasm pbkdf2 short');
   }
 
-  const buf = Buffer.alloc(1024 * 1024, 'abcd');
   for (let i = 0; i < 4; i++) {
-    console.time('md5 long');
-    await calc(buf, 300);
-    console.timeEnd('md5 long');
+    console.time('node pbkdf2 short');
+    await calcNode('pass', 'salt', 4000, 150, 10);
+    console.timeEnd('node pbkdf2 short');
   }
+
+  // for (let i = 0; i < 4; i++) {
+  //   console.time('js pbkdf2 short');
+  //   await calcJS('pass', 'salt', 4000, 150, 10);
+  //   console.timeEnd('js pbkdf2 short');
+  // }
 }
 
 run();

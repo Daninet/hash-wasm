@@ -12,3 +12,4 @@ export * from './xxhash32';
 export * from './xxhash64';
 export * from './ripemd160';
 export * from './hmac';
+export * from './pbkdf2';

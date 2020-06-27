@@ -1,5 +1,6 @@
 /* eslint-disable no-bitwise */
 import { ITypedArray, IHasher } from './WASMInterface';
+import { writeHexToUInt8 } from './util';
 
 type IInput = string | Buffer | ITypedArray;
 
@@ -10,9 +11,10 @@ function calculateKeyBuffer(hasher: IHasher, key: IInput): Uint8Array {
 
   if (buf.length > blockSize) {
     hasher.update(buf);
-    const hashBuf = Buffer.from(hasher.digest(), 'hex');
+    const uintArr = new Uint8Array(hasher.digestSize);
+    writeHexToUInt8(uintArr, hasher.digest());
     hasher.init();
-    return new Uint8Array(hashBuf.buffer, hashBuf.byteOffset, hashBuf.length);
+    return uintArr;
   }
 
   return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
@@ -21,12 +23,13 @@ function calculateKeyBuffer(hasher: IHasher, key: IInput): Uint8Array {
 function calculateHmac(hasher: IHasher, key: IInput): IHasher {
   hasher.init();
 
-  const { blockSize } = hasher;
+  const { blockSize, digestSize } = hasher;
   const keyBuf = calculateKeyBuffer(hasher, key);
-
   const keyBuffer = new Uint8Array(blockSize);
-  const opad = new Uint8Array(blockSize);
   keyBuffer.set(keyBuf);
+
+  const h = new Uint8Array(digestSize);
+  const opad = new Uint8Array(blockSize);
 
   for (let i = 0; i < blockSize; i++) {
     const v = keyBuffer[i];
@@ -47,10 +50,10 @@ function calculateHmac(hasher: IHasher, key: IInput): IHasher {
     },
 
     digest: () => {
-      const h = hasher.digest();
+      writeHexToUInt8(h, hasher.digest());
       hasher.init();
       hasher.update(opad);
-      hasher.update(Buffer.from(h, 'hex'));
+      hasher.update(h);
       return hasher.digest();
     },
 
@@ -64,12 +67,7 @@ export function createHMAC(hash: Promise<IHasher>, key: IInput): Promise<IHasher
     throw new Error('Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").');
   }
 
-  return hash.then((hasher) => {
-    if (!hasher.blockSize) {
-      throw new Error('Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").');
-    }
-    return calculateHmac(hasher, key);
-  });
+  return hash.then((hasher) => calculateHmac(hasher, key));
 }
 
 export default createHMAC;
