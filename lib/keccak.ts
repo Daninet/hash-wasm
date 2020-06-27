@@ -52,6 +52,7 @@ export function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(0x01),
       blockSize: 200 - 2 * outputSize,
+      digestSize: outputSize,
     };
   });
 }

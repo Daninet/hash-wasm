@@ -55,6 +55,7 @@ function calculateHmac(hasher: IHasher, key: IInput): IHasher {
     },
 
     blockSize: hasher.blockSize,
+    digestSize: hasher.digestSize,
   };
 }
 

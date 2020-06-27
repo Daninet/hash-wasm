@@ -31,6 +31,7 @@ export function createCRC32(): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(),
       blockSize: 4,
+      digestSize: 4,
     };
   });
 }

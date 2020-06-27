@@ -31,6 +31,7 @@ export function createSHA224(): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(),
       blockSize: 64,
+      digestSize: 28,
     };
   });
 }

@@ -51,6 +51,7 @@ export function createSHA3(bits: IValidBits = 512): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(0x06),
       blockSize: 200 - 2 * outputSize,
+      digestSize: outputSize,
     };
   });
 }

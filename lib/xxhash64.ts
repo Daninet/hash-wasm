@@ -73,6 +73,7 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(),
       blockSize: 32,
+      digestSize: 8,
     };
   });
 }

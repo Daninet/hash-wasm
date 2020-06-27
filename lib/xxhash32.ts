@@ -48,6 +48,7 @@ export function createXXHash32(seed = 0): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(),
       blockSize: 16,
+      digestSize: 4,
     };
   });
 }

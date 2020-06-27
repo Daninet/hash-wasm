@@ -31,6 +31,7 @@ export function createRIPEMD160(): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(),
       blockSize: 64,
+      digestSize: 20,
     };
   });
 }

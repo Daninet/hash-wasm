@@ -31,6 +31,7 @@ export function createMD5(): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(),
       blockSize: 64,
+      digestSize: 16,
     };
   });
 }

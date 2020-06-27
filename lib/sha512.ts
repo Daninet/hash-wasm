@@ -31,6 +31,7 @@ export function createSHA512(): Promise<IHasher> {
       update: wasm.update,
       digest: () => wasm.digest(),
       blockSize: 128,
+      digestSize: 64,
     };
   });
 }

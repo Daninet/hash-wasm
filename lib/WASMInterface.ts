@@ -14,6 +14,7 @@ export type IHasher = {
   update: (data: string | ITypedArray | Buffer) => void;
   digest: () => string;
   blockSize: number;
+  digestSize: number;
 }
 
 const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();

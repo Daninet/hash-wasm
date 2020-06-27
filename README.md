@@ -246,5 +246,6 @@ interface IHasher {
   update: (data: string | Uint8Array | Uint16Array | Uint32Array | Buffer) => void;
   digest: () => string; // returns hash in hex format
   blockSize: number; // in bytes
+  digestSize: number; // in bytes
 }
 ```
