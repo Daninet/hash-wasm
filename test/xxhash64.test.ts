@@ -1,10 +1,10 @@
 import fs from 'fs';
 import { xxhash64 as origXXHash64, createXXHash64 } from '../lib';
-import { ITypedArray } from '../lib/util';
+import { IDataType } from '../lib/util';
 /* global test, expect */
 
 const xxhash64 = async (
-  data: string | Buffer | ITypedArray,
+  data: IDataType,
 ) => origXXHash64(data, 0x76543210, 0xFEDCBA98);
 
 test('simple strings with 0 seed', async () => {

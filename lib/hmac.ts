@@ -1,10 +1,8 @@
 /* eslint-disable no-bitwise */
 import { IHasher } from './WASMInterface';
-import { writeHexToUInt8, ITypedArray } from './util';
+import { writeHexToUInt8, IDataType } from './util';
 
-type IInput = string | Buffer | ITypedArray;
-
-function calculateKeyBuffer(hasher: IHasher, key: IInput): Uint8Array {
+function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
   const { blockSize } = hasher;
 
   const buf = Buffer.from(key);
@@ -20,7 +18,7 @@ function calculateKeyBuffer(hasher: IHasher, key: IInput): Uint8Array {
   return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
 }
 
-function calculateHmac(hasher: IHasher, key: IInput): IHasher {
+function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
   hasher.init();
 
   const { blockSize, digestSize } = hasher;
@@ -45,7 +43,7 @@ function calculateHmac(hasher: IHasher, key: IInput): IHasher {
       hasher.update(keyBuffer);
     },
 
-    update: (data: IInput) => {
+    update: (data: IDataType) => {
       hasher.update(data);
     },
 
@@ -62,7 +60,7 @@ function calculateHmac(hasher: IHasher, key: IInput): IHasher {
   };
 }
 
-export function createHMAC(hash: Promise<IHasher>, key: IInput): Promise<IHasher> {
+export function createHMAC(hash: Promise<IHasher>, key: IDataType): Promise<IHasher> {
   if (!hash || !hash.then) {
     throw new Error('Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").');
   }

@@ -1,12 +1,10 @@
 /* eslint-disable no-bitwise */
 import { IHasher } from './WASMInterface';
 import createHMAC from './hmac';
-import { writeHexToUInt8, ITypedArray } from './util';
-
-type IInput = string | Buffer | ITypedArray;
+import { writeHexToUInt8, IDataType } from './util';
 
 function calculatePBKDF2(
-  digest: IHasher, salt: IInput, iterations: number, keylen: number,
+  digest: IHasher, salt: IDataType, iterations: number, keylen: number,
 ): string {
   const DK = new Uint8Array(keylen);
   const block1 = new Uint8Array(salt.length + 4);
@@ -49,7 +47,8 @@ function calculatePBKDF2(
 }
 
 export async function pbkdf2(
-  password: IInput, salt: IInput, iterations: number, keylen: number, digest: Promise<IHasher>,
+  password: IDataType, salt: IDataType, iterations: number,
+  keylen: number, digest: Promise<IHasher>,
 ): Promise<string> {
   if (!digest || !digest.then) {
     throw new Error('Invalid hash function is provided! Usage: pbkdf2("password", "salt", 1000, 32, createSHA1()).');

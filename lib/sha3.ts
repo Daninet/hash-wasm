@@ -2,7 +2,7 @@ import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
 import lockedCreate from './lockedCreate';
-import { ITypedArray } from './util';
+import { IDataType } from './util';
 
 type IValidBits = 224 | 256 | 384 | 512;
 const mutex = new Mutex();
@@ -16,7 +16,7 @@ function validateBits(bits: IValidBits) {
 }
 
 export function sha3(
-  data: string | Buffer | ITypedArray, bits: IValidBits = 512,
+  data: IDataType, bits: IValidBits = 512,
 ): Promise<string> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));

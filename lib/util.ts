@@ -2,6 +2,7 @@
 /* eslint-disable no-bitwise */
 
 export type ITypedArray = Uint8Array | Uint16Array | Uint32Array;
+export type IDataType = string | Buffer | ITypedArray;
 
 function hexCharCodesToInt(a: number, b: number): number {
   return (
@@ -19,7 +20,7 @@ export function writeHexToUInt8(buf: Uint8Array, str: string) {
   }
 }
 
-export function getUInt8Buffer(data: string | Buffer | ITypedArray): Uint8Array {
+export function getUInt8Buffer(data: IDataType): Uint8Array {
   if (data instanceof String) {
     data = data.toString();
   }

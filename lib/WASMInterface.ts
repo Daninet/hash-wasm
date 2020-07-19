@@ -1,5 +1,5 @@
 import Mutex from './mutex';
-import { getUInt8Buffer, ITypedArray } from './util';
+import { getUInt8Buffer, IDataType } from './util';
 
 const MAX_HEAP = 16 * 1024;
 const wasmMutex = new Mutex();
@@ -10,7 +10,7 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
 
 export type IHasher = {
   init: () => void;
-  update: (data: string | ITypedArray | Buffer) => void;
+  update: (data: IDataType) => void;
   digest: () => string;
   blockSize: number;
   digestSize: number;
@@ -83,7 +83,7 @@ async function WASMInterface(binary: any, hashLength: number) {
     }
   };
 
-  const update = (data: string | Buffer | ITypedArray) => {
+  const update = (data: IDataType) => {
     const Uint8Buffer = getUInt8Buffer(data);
     updateUInt8Array(Uint8Buffer);
   };
@@ -115,7 +115,7 @@ async function WASMInterface(binary: any, hashLength: number) {
     return getDigestHex();
   };
 
-  const isDataShort = (data: string | Buffer | ITypedArray) => {
+  const isDataShort = (data: IDataType) => {
     if (ArrayBuffer.isView(data)) {
       return data.byteLength < MAX_HEAP;
     }
@@ -124,7 +124,7 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 
   let canSimplify:
-    (data: string | Buffer | ITypedArray, initParam?: number) => boolean = isDataShort;
+    (data: IDataType, initParam?: number) => boolean = isDataShort;
 
   switch (binary.name) {
     case 'blake2b.wasm':
@@ -142,7 +142,7 @@ async function WASMInterface(binary: any, hashLength: number) {
 
   // shorthand for (init + update + digest) for better performance
   const calculate = (
-    data: string | Buffer | ITypedArray, initParam = null, digestParam = null,
+    data: IDataType, initParam = null, digestParam = null,
   ): string => {
     if (!canSimplify(data, initParam)) {
       init(initParam);

@@ -2,12 +2,12 @@ import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha1.wasm.json';
 import lockedCreate from './lockedCreate';
-import { ITypedArray } from './util';
+import { IDataType } from './util';
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
-export function sha1(data: string | Buffer | ITypedArray): Promise<string> {
+export function sha1(data: IDataType): Promise<string> {
   if (wasmCache === null) {
     return lockedCreate(mutex, wasmJson, 20)
       .then((wasm) => {

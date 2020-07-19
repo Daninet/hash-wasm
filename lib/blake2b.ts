@@ -2,7 +2,7 @@ import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/blake2b.wasm.json';
 import lockedCreate from './lockedCreate';
-import { getUInt8Buffer, ITypedArray } from './util';
+import { getUInt8Buffer, IDataType } from './util';
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
@@ -20,7 +20,7 @@ function getInitParam(outputBits, keyBits) {
 }
 
 export function blake2b(
-  data: string | Buffer | ITypedArray, bits = 512, key: string | Buffer | ITypedArray = null,
+  data: IDataType, bits = 512, key: IDataType = null,
 ): Promise<string> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));
@@ -61,7 +61,7 @@ export function blake2b(
 }
 
 export function createBLAKE2b(
-  bits = 512, key: string | Buffer | ITypedArray = null,
+  bits = 512, key: IDataType = null,
 ): Promise<IHasher> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));

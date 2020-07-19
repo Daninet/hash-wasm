@@ -2,7 +2,7 @@ import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/xxhash32.wasm.json';
 import lockedCreate from './lockedCreate';
-import { ITypedArray } from './util';
+import { IDataType } from './util';
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
@@ -15,7 +15,7 @@ function validateSeed(seed: number) {
 }
 
 export function xxhash32(
-  data: string | Buffer | ITypedArray, seed = 0,
+  data: IDataType, seed = 0,
 ): Promise<string> {
   if (validateSeed(seed)) {
     return Promise.reject(validateSeed(seed));
