@@ -12,6 +12,7 @@ Supported hash functions
 
 - MD4, MD5
 - CRC32
+- BLAKE2b
 - SHA-1
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
 - SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
@@ -236,41 +237,45 @@ crypto-js (npm library)          | 6 ops
 API
 =====
 
-```javascript
+```ts
+type IDataType = string | Buffer | Uint8Array | Uint16Array | Uint32Array;
+
 // all functions return hash in hex format
-md4(data: string | typedArray | Buffer): Promise<string>
-md5(data: string | typedArray | Buffer): Promise<string>
-crc32(data: string | typedArray | Buffer): Promise<string>
-sha1(data: string | typedArray | Buffer): Promise<string>
-sha224(data: string | typedArray | Buffer): Promise<string>
-sha256(data: string | typedArray | Buffer): Promise<string>
-sha384(data: string | typedArray | Buffer): Promise<string>
-sha512(data: string | typedArray | Buffer): Promise<string>
-sha3(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
-keccak(data: string | typedArray | Buffer, bits: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
-ripemd160(data: string | typedArray | Buffer): Promise<string>
-xxhash32(data: string | typedArray | Buffer, seed: number): Promise<string>
-xxhash64(data: string | typedArray | Buffer, seedLow: number, seedHigh: number): Promise<string>
+md4(data: IDataType): Promise<string>
+md5(data: IDataType): Promise<string>
+blake2b(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 512 bits
+crc32(data: IDataType): Promise<string>
+sha1(data: IDataType): Promise<string>
+sha224(data: IDataType): Promise<string>
+sha256(data: IDataType): Promise<string>
+sha384(data: IDataType): Promise<string>
+sha512(data: IDataType): Promise<string>
+sha3(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+ripemd160(data: IDataType): Promise<string>
+xxhash32(data: IDataType, seed?: number): Promise<string>
+xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
 
 createMD4(): Promise<IHasher>
 createMD5(): Promise<IHasher>
+createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 512 bits
 createCRC32(): Promise<IHasher>
 createSHA1(): Promise<IHasher>
 createSHA224(): Promise<IHasher>
 createSHA256(): Promise<IHasher>
 createSHA384(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
-createSHA3(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
-createKeccak(bits: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createSHA3(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createRIPEMD160(): Promise<IHasher>
 createXXHash32(seed: number): Promise<IHasher>
 createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 
-createHMAC(hashFunc: Promise<IHasher>, key: string | typedArray | Buffer): Promise<IHasher>
+createHMAC(hashFunc: Promise<IHasher>, key: IDataType): Promise<IHasher>
 
 pbkdf2(
-  password: string | typedArray | Buffer,
-  salt: string | typedArray | Buffer,
+  password: IDataType,
+  salt: IDataType,
   iterations: number,
   keyLen: number,
   digest: Promise<IHasher>
@@ -278,7 +283,7 @@ pbkdf2(
 
 interface IHasher {
   init: () => void;
-  update: (data: string | Uint8Array | Uint16Array | Uint32Array | Buffer) => void;
+  update: (data: IDataType) => void;
   digest: () => string; // returns hash in hex format
   blockSize: number; // in bytes
   digestSize: number; // in bytes

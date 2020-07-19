@@ -19,7 +19,7 @@ export function writeHexToUInt8(buf: Uint8Array, str: string) {
   }
 }
 
-export function getUInt8Buffer (data: string | Buffer | ITypedArray): Uint8Array {
+export function getUInt8Buffer(data: string | Buffer | ITypedArray): Uint8Array {
   if (data instanceof String) {
     data = data.toString();
   }
@@ -38,4 +38,4 @@ export function getUInt8Buffer (data: string | Buffer | ITypedArray): Uint8Array
   }
 
   throw new Error('Invalid data type!');
-};
+}

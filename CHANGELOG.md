@@ -1,3 +1,8 @@
+## 3.5.0 (July 19, 2020)
+
+* Added BLAKE2b algorithm
+* Fixed a bug, where sha3() and keccak() gave incorrect results when the hash length was changed
+
 ## 3.4.1 (June 27, 2020)
 
 * Add PBKDF2 example and benchmark results

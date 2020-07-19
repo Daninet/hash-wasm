@@ -123,11 +123,20 @@ async function WASMInterface(binary: any, hashLength: number) {
     return data.length < MAX_HEAP;
   };
 
-  let canSimplify: Function = isDataShort;
+  let canSimplify:
+    (data: string | Buffer | ITypedArray, initParam?: number) => boolean = isDataShort;
 
   switch (binary.name) {
+    case 'blake2b.wasm':
+      // if there is a key at blake2b then cannot simplify
+      canSimplify = (data, initParam) => initParam <= 512 && isDataShort(data);
+      break;
+
     case 'xxhash64.wasm': // cannot simplify
       canSimplify = () => false;
+      break;
+
+    default:
       break;
   }
 
