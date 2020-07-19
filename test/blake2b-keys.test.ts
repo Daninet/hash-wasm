@@ -17,7 +17,7 @@ test('unicode keys', async () => {
 });
 
 test('Node.js buffers', async () => {
-  expect(await blake2b('a', 256, Buffer.from([]))).toBe('0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8');
+  expect(await blake2b('a', 256, Buffer.from([]))).toBe('8928aae63c84d87ea098564d1e03ad813f107add474e56aedd286349c0c03ea4');
   expect(await blake2b('a', 256, Buffer.from(['a'.charCodeAt(0)]))).toBe('f5ae00102c0fc6fd2ca53a0c9b6a7f7ccddec83de24473609ac0c30af6a4b5f2');
   const key = Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7]);
   expect(await blake2b('a', 256, key)).toBe('0f94022d7654f36fb4182dcba4fb893045ebdbbc0ffa55f1ed2c201d3ee1106e');
