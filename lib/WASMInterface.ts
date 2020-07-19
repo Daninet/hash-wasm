@@ -155,6 +155,7 @@ async function WASMInterface(binary: any, hashLength: number) {
     update,
     digest,
     calculate,
+    hashLength,
   };
 }
 

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { xxhash32 as origXXHash32, createXXHash32 } from '../lib';
-import { ITypedArray } from '../lib/WASMInterface';
+import { ITypedArray } from '../lib/util';
 /* global test, expect */
 
 const xxhash32 = async (

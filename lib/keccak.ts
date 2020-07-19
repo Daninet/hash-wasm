@@ -23,8 +23,10 @@ export function keccak(
     return Promise.reject(validateBits(bits));
   }
 
-  if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, bits / 8)
+  const hashLength = bits / 8;
+
+  if (wasmCache === null || wasmCache.hashLength !== hashLength) {
+    return lockedCreate(mutex, wasmJson, hashLength)
       .then((wasm) => {
         wasmCache = wasm;
         return wasmCache.calculate(data, bits, 0x01);
