@@ -7,6 +7,10 @@ test('simple keys', async () => {
   expect(await blake2b('', 256, 'this is the password123')).toBe('27e55781cb30cd6b8f81c7eade5939d1d8752a79aa3dd63d16a186023a5b9252');
   expect(await blake2b('a', 256, 'this is the password')).toBe('1e4287cf1a916ec4d54a4847774bb50371b20d867083881f8a7ce3f3b8b2c74a');
   expect(await blake2b('abc', 256, 'this is the password')).toBe('5652f81b0858c71cae415dd2749b6a52a614e3207328cbfa806f40a7a36cf561');
+
+  const hash = await createBLAKE2b(256, 'this is the password');
+  hash.update('a');
+  expect(hash.digest()).toBe('1e4287cf1a916ec4d54a4847774bb50371b20d867083881f8a7ce3f3b8b2c74a');
 });
 
 test('unicode keys', async () => {
@@ -30,6 +34,19 @@ test('typed arrays', async () => {
   expect(await blake2b('a', 256, uint8)).toBe('3584ad664f76aaa768424a8a125d3052a9ea5bc90c18c06ffba60e980f2d9f3a');
   expect(await blake2b('a', 256, new Uint16Array(uint8.buffer))).toBe('3584ad664f76aaa768424a8a125d3052a9ea5bc90c18c06ffba60e980f2d9f3a');
   expect(await blake2b('a', 256, new Uint32Array(uint8.buffer))).toBe('3584ad664f76aaa768424a8a125d3052a9ea5bc90c18c06ffba60e980f2d9f3a');
+});
+
+test('long syntax', async () => {
+  const hash = await createBLAKE2b(256, 'this is the password');
+  hash.update('a');
+  expect(hash.digest()).toBe('1e4287cf1a916ec4d54a4847774bb50371b20d867083881f8a7ce3f3b8b2c74a');
+  hash.init();
+  expect(hash.digest()).toBe('386435aaf3ba280ea9b3ebd7b42d9c5bbf63f23dbae9ab91553332a588fe337c');
+  hash.init();
+  hash.update('a');
+  hash.update('b');
+  hash.update('c');
+  expect(hash.digest()).toBe('5652f81b0858c71cae415dd2749b6a52a614e3207328cbfa806f40a7a36cf561');
 });
 
 test('Invalid keys throw', async () => {

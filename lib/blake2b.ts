@@ -81,14 +81,14 @@ export function createBLAKE2b(
 
   return WASMInterface(wasmJson, outputSize).then((wasm) => {
     if (initParam > 512) {
-      wasmCache.writeMemory(keyBuffer);
+      wasm.writeMemory(keyBuffer);
     }
     wasm.init(initParam);
 
     return {
       init: initParam > 512
         ? () => {
-          wasmCache.writeMemory(keyBuffer);
+          wasm.writeMemory(keyBuffer);
           wasm.init(initParam);
         }
         : () => wasm.init(initParam),
