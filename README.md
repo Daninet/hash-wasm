@@ -10,14 +10,14 @@ It is using WebAssembly to calculate the hash faster than other JavaScript-based
 Supported hash functions
 =======
 
-- MD4, MD5
-- CRC32
 - BLAKE2b
+- CRC32
+- MD4, MD5
+- RIPEMD-160
 - SHA-1
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
 - SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
 - Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
-- RIPEMD-160
 - xxHash: xxHash32, xxHash64
 
 HMAC and PBKDF2 is also supported with all hash algorithms
@@ -241,33 +241,33 @@ API
 type IDataType = string | Buffer | Uint8Array | Uint16Array | Uint32Array;
 
 // all functions return hash in hex format
-md4(data: IDataType): Promise<string>
-md5(data: IDataType): Promise<string>
 blake2b(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 512 bits
 crc32(data: IDataType): Promise<string>
+keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+md4(data: IDataType): Promise<string>
+md5(data: IDataType): Promise<string>
+ripemd160(data: IDataType): Promise<string>
 sha1(data: IDataType): Promise<string>
 sha224(data: IDataType): Promise<string>
 sha256(data: IDataType): Promise<string>
+sha3(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 sha384(data: IDataType): Promise<string>
 sha512(data: IDataType): Promise<string>
-sha3(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
-keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
-ripemd160(data: IDataType): Promise<string>
 xxhash32(data: IDataType, seed?: number): Promise<string>
 xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
 
-createMD4(): Promise<IHasher>
-createMD5(): Promise<IHasher>
 createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 512 bits
 createCRC32(): Promise<IHasher>
+createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createMD4(): Promise<IHasher>
+createMD5(): Promise<IHasher>
+createRIPEMD160(): Promise<IHasher>
 createSHA1(): Promise<IHasher>
 createSHA224(): Promise<IHasher>
 createSHA256(): Promise<IHasher>
+createSHA3(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createSHA384(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
-createSHA3(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
-createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
-createRIPEMD160(): Promise<IHasher>
 createXXHash32(seed: number): Promise<IHasher>
 createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 
