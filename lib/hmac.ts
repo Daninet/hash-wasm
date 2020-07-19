@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
-import { ITypedArray, IHasher } from './WASMInterface';
-import { writeHexToUInt8 } from './util';
+import { IHasher } from './WASMInterface';
+import { writeHexToUInt8, ITypedArray } from './util';
 
 type IInput = string | Buffer | ITypedArray;
 

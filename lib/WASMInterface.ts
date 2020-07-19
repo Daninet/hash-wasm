@@ -1,9 +1,8 @@
 import Mutex from './mutex';
+import { getUInt8Buffer, ITypedArray } from './util';
 
 const MAX_HEAP = 16 * 1024;
 const wasmMutex = new Mutex();
-
-export type ITypedArray = Uint8Array | Uint16Array | Uint32Array;
 
 type ThenArg<T> = T extends Promise<infer U> ? U :
   T extends ((...args: any[]) => Promise<infer V>) ? V :
@@ -32,8 +31,8 @@ async function WASMInterface(binary: any, hashLength: number) {
     return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
   };
 
-  const writeMemory = (data: Uint32Array) => {
-    memoryView.set(new Uint8Array(data.buffer));
+  const writeMemory = (data: Uint8Array) => {
+    memoryView.set(data);
   };
 
   const loadWASMPromise = wasmMutex.dispatch(async () => {
@@ -84,27 +83,6 @@ async function WASMInterface(binary: any, hashLength: number) {
     }
   };
 
-  const getUInt8Buffer = (data: string | Buffer | ITypedArray): Uint8Array => {
-    if (data instanceof String) {
-      data = data.toString();
-    }
-
-    if (typeof data === 'string') {
-      const buf = Buffer.from(data, 'utf8');
-      return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
-    }
-
-    if (data instanceof Buffer) {
-      return new Uint8Array(data.buffer, data.byteOffset, data.length);
-    }
-
-    if (ArrayBuffer.isView(data)) {
-      return new Uint8Array(data.buffer);
-    }
-
-    throw new Error('Invalid data type!');
-  };
-
   const update = (data: string | Buffer | ITypedArray) => {
     const Uint8Buffer = getUInt8Buffer(data);
     updateUInt8Array(Uint8Buffer);
@@ -137,29 +115,35 @@ async function WASMInterface(binary: any, hashLength: number) {
     return getDigestHex();
   };
 
-  const canSimplify = binary.name === 'xxhash64.wasm'
-    ? () => false
-    : (data: string | Buffer | ITypedArray) => {
-      if (ArrayBuffer.isView(data)) {
-        return data.byteLength < MAX_HEAP;
-      }
+  const isDataShort = (data: string | Buffer | ITypedArray) => {
+    if (ArrayBuffer.isView(data)) {
+      return data.byteLength < MAX_HEAP;
+    }
 
-      return data.length < MAX_HEAP;
-    };
+    return data.length < MAX_HEAP;
+  };
+
+  let canSimplify: Function = isDataShort;
+
+  switch (binary.name) {
+    case 'xxhash64.wasm': // cannot simplify
+      canSimplify = () => false;
+      break;
+  }
 
   // shorthand for (init + update + digest) for better performance
   const calculate = (
     data: string | Buffer | ITypedArray, initParam = null, digestParam = null,
   ): string => {
-    if (!canSimplify(data)) {
+    if (!canSimplify(data, initParam)) {
       init(initParam);
       update(data);
       return digest(digestParam);
     }
 
-    const Uint8Buffer = getUInt8Buffer(data);
-    memoryView.set(Uint8Buffer);
-    wasmInstance.exports.Hash_Calculate(Uint8Buffer.length, initParam, digestParam);
+    const buffer = getUInt8Buffer(data);
+    memoryView.set(buffer);
+    wasmInstance.exports.Hash_Calculate(buffer.length, initParam, digestParam);
     return getDigestHex();
   };
 

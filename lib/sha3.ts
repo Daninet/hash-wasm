@@ -1,7 +1,8 @@
-import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
+import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
 import lockedCreate from './lockedCreate';
+import { ITypedArray } from './util';
 
 type IValidBits = 224 | 256 | 384 | 512;
 const mutex = new Mutex();

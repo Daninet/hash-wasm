@@ -1,7 +1,8 @@
-import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
+import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/xxhash64.wasm.json';
 import lockedCreate from './lockedCreate';
+import { ITypedArray } from './util';
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
@@ -37,14 +38,14 @@ export function xxhash64(
       .then((wasm) => {
         wasmCache = wasm;
         writeSeed(seedLow, seedHigh);
-        wasmCache.writeMemory(new Uint32Array(seedBuffer));
+        wasmCache.writeMemory(new Uint8Array(seedBuffer));
         return wasmCache.calculate(data);
       });
   }
 
   try {
     writeSeed(seedLow, seedHigh);
-    wasmCache.writeMemory(new Uint32Array(seedBuffer));
+    wasmCache.writeMemory(new Uint8Array(seedBuffer));
     const hash = wasmCache.calculate(data);
     return Promise.resolve(hash);
   } catch (err) {
@@ -63,11 +64,11 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
 
   return WASMInterface(wasmJson, 8).then((wasm) => {
     writeSeed(seedLow, seedHigh);
-    wasm.writeMemory(new Uint32Array(seedBuffer));
+    wasm.writeMemory(new Uint8Array(seedBuffer));
     wasm.init();
     return {
       init: () => {
-        wasm.writeMemory(new Uint32Array(seedBuffer));
+        wasm.writeMemory(new Uint8Array(seedBuffer));
         wasm.init();
       },
       update: wasm.update,

@@ -1,7 +1,8 @@
-import WASMInterface, { ITypedArray, IWASMInterface, IHasher } from './WASMInterface';
+import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
 import wasmJson from '../wasm/sha256.wasm.json';
 import lockedCreate from './lockedCreate';
+import { ITypedArray } from './util';
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
