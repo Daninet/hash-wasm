@@ -1,8 +1,9 @@
 /* eslint-disable no-await-in-loop */
 /* global test, expect */
 import {
-  md4, md5, sha1, sha256, sha384, sha3, xxhash32, xxhash64,
+  md4, md5, sha1, sha256, sha384, sha3, xxhash32, xxhash64, createMD4,
 } from '../lib';
+import { MAX_HEAP } from '../lib/WASMInterface';
 
 test('Sync cycle multiple algorithms', async () => {
   for (let i = 0; i < 1000; i++) {
@@ -17,9 +18,19 @@ test('Sync cycle multiple algorithms', async () => {
   }
 });
 
-test('String() input', async () => {
-  // eslint-disable-next-line no-new-wrappers
-  const string = new String('a');
-  expect(await md5(string as any)).toBe('0cc175b9c0f1b6a831c399e269772661');
-  expect(await md5(String('a'))).toBe('0cc175b9c0f1b6a831c399e269772661');
+test('unicode string length handling', async () => {
+  const utf8 = ['a', 'ѱ', '彁', '𠜎'];
+  const md4Instance = await createMD4();
+
+  for (let j = 0; j < 4; j++) {
+    let str = '';
+    for (let i = 0; i < MAX_HEAP + 10; i++) {
+      str += utf8[j];
+      const ok = await md4(Buffer.from(str));
+      expect(await md4(str)).toBe(ok);
+      md4Instance.init();
+      md4Instance.update(str);
+      expect(md4Instance.digest()).toBe(ok);
+    }
+  }
 });

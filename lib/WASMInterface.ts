@@ -1,7 +1,7 @@
 import Mutex from './mutex';
-import { getUInt8Buffer, IDataType } from './util';
+import { decodeBase64, getUInt8Buffer, IDataType } from './util';
 
-const MAX_HEAP = 16 * 1024;
+export const MAX_HEAP = 16 * 1024;
 const wasmMutex = new Mutex();
 
 type ThenArg<T> = T extends Promise<infer U> ? U :
@@ -26,24 +26,14 @@ async function WASMInterface(binary: any, hashLength: number) {
     throw new Error('WebAssembly is not supported in this environment!');
   }
 
-  const getBinary = (): Uint8Array => {
-    const buf = Buffer.from(binary.data, 'base64');
-    return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
-  };
-
   const writeMemory = (data: Uint8Array) => {
     memoryView.set(data);
   };
 
   const loadWASMPromise = wasmMutex.dispatch(async () => {
     if (!wasmModuleCache.has(binary.name)) {
-      const promise = new Promise<WebAssembly.Module>((resolve, reject) => {
-        WebAssembly.compile(getBinary()).then((module) => {
-          resolve(module);
-        }).catch((err) => {
-          reject(err);
-        });
-      });
+      const asm = decodeBase64(binary.data);
+      const promise = WebAssembly.compile(asm);
 
       wasmModuleCache.set(binary.name, promise);
     }
@@ -66,11 +56,7 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 
   const init = (bits: number = null) => {
-    if (bits) {
-      wasmInstance.exports.Hash_Init(bits);
-    } else {
-      wasmInstance.exports.Hash_Init();
-    }
+    wasmInstance.exports.Hash_Init(bits);
   };
 
   const updateUInt8Array = (data: Uint8Array): void => {
@@ -107,20 +93,17 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 
   const digest = (padding: number = null): string => {
-    if (padding) {
-      wasmInstance.exports.Hash_Final(padding);
-    } else {
-      wasmInstance.exports.Hash_Final();
-    }
+    wasmInstance.exports.Hash_Final(padding);
     return getDigestHex();
   };
 
   const isDataShort = (data: IDataType) => {
-    if (ArrayBuffer.isView(data)) {
-      return data.byteLength < MAX_HEAP;
+    if (typeof data === 'string') {
+      // worst case is 4 bytes / char
+      return data.length < MAX_HEAP / 4;
     }
 
-    return data.length < MAX_HEAP;
+    return data.byteLength < MAX_HEAP;
   };
 
   let canSimplify:
