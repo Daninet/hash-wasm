@@ -6,7 +6,7 @@ export default {
   output: [
     {
       file: 'dist/index.umd.js',
-      name: 'hashWasm',
+      name: 'hashwasm',
       format: 'umd',
     },
     {

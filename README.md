@@ -32,19 +32,27 @@ Features
 - Supports UTF-8 strings and typed arrays
 - Supports chunked input streams
 - Supports HMAC for all algorithms
+- Works without Webpack or other bundlers
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
 - Includes TypeScript type definitions
-- It also works in Web Workers
+- Works in Web Workers
 - Zero dependencies
 - Supports concurrent hash calculations with multiple states
 - Easy to use Promise-based async API
 
 
-Install
+Installation
 =======
 ```
 npm i hash-wasm
+```
+
+or it can be inserted directly into HTML (via [jsDelivr](https://www.jsdelivr.com/package/npm/hash-wasm))
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/hash-wasm"></script>
+<!-- defines the global `hashwasm` variable -->
 ```
 
 Examples
