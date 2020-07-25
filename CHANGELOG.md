@@ -1,7 +1,7 @@
 ## 3.6.0 (July 25, 2020)
 
 * **Breaking change**: Drop support for String() objects (normal string literals are still supported of course)
-* Node.js buffers polyfills are not needed anymore
+* Node.js buffer polyfills are not needed anymore
 
 ## 3.5.0 (July 19, 2020)
 
