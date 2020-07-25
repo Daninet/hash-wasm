@@ -1,6 +1,6 @@
 {
   "name": "hash-wasm",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "Fast hash functions compiled to WebAssembly (MD4, MD5, xxHash, SHA-1, SHA-2, SHA-3, Keccak, BLAKE2, CRC32, RIPEMD-160, HMAC, PBKDF2)",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
