@@ -63,9 +63,9 @@ void _P(
 
 void block() {
   uint64_t *z = (uint64_t*)array;
-  uint64_t *t = (uint64_t*)(array + 1024);
-  uint64_t *a = (uint64_t*)(array + 1024 * 2);
-  uint64_t *b = (uint64_t*)(array + 1024 * 3);
+  uint64_t *a = (uint64_t*)(array + 1024);
+  uint64_t *b = (uint64_t*)(array + 1024 * 2);
+  uint64_t *t = (uint64_t*)(array + 1024 * 3);
 
   for (int i = 0; i<128; i++) {
     t[i] = a[i] ^ b[i];

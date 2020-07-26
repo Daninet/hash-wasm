@@ -1,4 +1,4 @@
-import { getUInt8Buffer, IDataType } from './util';
+import { getUInt8Buffer, IDataType, writeHexToUInt8 } from './util';
 import { createBLAKE2b } from './blake2b';
 import WASMInterface from './WASMInterface';
 import wasmJson from '../wasm/argon2.wasm.json';
@@ -9,6 +9,7 @@ import wasmJson from '../wasm/argon2.wasm.json';
 
 type UnboxPromise<T extends Promise<any>> = T extends Promise<infer U> ? U: never;
 let wasm: UnboxPromise<ReturnType<typeof WASMInterface>> = null;
+let blake512: UnboxPromise<ReturnType<typeof createBLAKE2b>> = null;
 
 interface IArgon2Options {
   password: IDataType;
@@ -29,45 +30,35 @@ function int32LE(x: number): Uint8Array {
 async function hashFunc(buf: Uint8Array, len: number): Promise<Uint8Array> {
   if (len <= 64) {
     const blake = await createBLAKE2b(len * 8);
-    blake.init();
     blake.update(int32LE(len));
     blake.update(buf);
-    return getUInt8Buffer(Buffer.from(blake.digest(), 'hex'));
+    const res = new Uint8Array(len);
+    writeHexToUInt8(res, blake.digest());
+    return res;
   }
 
-  const blake = await createBLAKE2b(512);
   const r = Math.ceil(len / 32) - 2;
+  const ret = new Uint8Array(len);
 
-  blake.init();
-  blake.update(int32LE(len));
-  blake.update(buf);
-  const v = [
-    Buffer.from(blake.digest(), 'hex'),
-  ];
-  // console.log('v', v);
+  blake512.init();
+  blake512.update(int32LE(len));
+  blake512.update(buf);
+  const vp = new Uint8Array(64);
+  writeHexToUInt8(vp, blake512.digest());
+  ret.set(vp.subarray(0, 32), 0);
 
   for (let i = 1; i < r; i++) {
-    blake.init();
-    blake.update(v[i - 1]);
-    const hash = blake.digest();
-    v[i] = Buffer.from(hash, 'hex');
+    blake512.init();
+    blake512.update(vp);
+    writeHexToUInt8(vp, blake512.digest());
+    ret.set(vp.subarray(0, 32), i * 32);
   }
 
   const partialBytesNeeded = len - 32 * r;
   const blakeSmall = await createBLAKE2b(partialBytesNeeded * 8);
-  blakeSmall.init();
-  blakeSmall.update(v[r - 1]);
-  v[r] = Buffer.from(blakeSmall.digest(), 'hex');
-
-  const ret = new Uint8Array(len);
-  for (let i = 0; i < r; i++) {
-    for (let j = 0; j < 32; j++) {
-      ret[i * 32 + j] = v[i][j];
-    }
-  }
-  for (let j = 0; j < partialBytesNeeded; j++) {
-    ret[r * 32 + j] = v[r][j];
-  }
+  blakeSmall.update(vp);
+  writeHexToUInt8(vp, blakeSmall.digest());
+  ret.set(vp, r * 32);
 
   return new Uint8Array(ret);
 }
@@ -101,26 +92,20 @@ function indexFunc(rand: bigint, q, g, p, k, slice, lane, i) {
   phi = phi * BigInt(max) >> BigInt(32);
   const ri = Number((BigInt(start) + BigInt(max) - BigInt(1) - phi) % BigInt(q));
 
-  const i0 = lane * q + slice * g + i;
-  const j0 = rlane * q + ri;
-  const rslice = 0;
-  // console.log(`i = ${i0}(${lane}, ${slice}, ${i}) rand=${rand} max=${max} start=${start} phi=${phi} j=${j0}(${rlane}, ${rslice}, ${ri})`);
-
   return {
     rlane,
-    rslice,
     ri,
   };
 }
 
-function blockFunc(z: Uint8Array, t: Uint8Array, a: Uint8Array, b: Uint8Array) {
-  const data = new Uint8Array([...z, ...t, ...a, ...b]);
-  const out = Buffer.from(wasm.calculate(data), 'hex');
+const emptyArr = new Uint8Array(0);
+function blockFunc(z: Uint8Array, a: Uint8Array, b: Uint8Array) {
+  wasm.writeMemory(z, 0);
+  wasm.writeMemory(a, 1024);
+  wasm.writeMemory(b, 2048);
+  const out = Buffer.from(wasm.calculate(emptyArr), 'hex');
   const outInt = getUInt8Buffer(out);
-  z.set(outInt.subarray(0, 1024));
-  t.set(outInt.subarray(1024, 2 * 1024));
-  // a.set(outInt.subarray(2 * 1024, 3 * 1024));
-  // b.set(outInt.subarray(3 * 1024, 4 * 1024));
+  z.set(outInt);
 }
 
 // function printGo(x: Uint8Array) {
@@ -141,7 +126,7 @@ function getHashType(type: IArgon2Options['hashType']): number {
 }
 
 async function argon2Internal(options: IArgon2Options): Promise<string> {
-  wasm = await WASMInterface(wasmJson, 2 * 1024);
+  wasm = await WASMInterface(wasmJson, 1024);
   const { parallelism, iterations, hashLength } = options;
   const password = getUInt8Buffer(options.password);
   const salt = getUInt8Buffer(options.salt);
@@ -153,21 +138,21 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
     memorySize = 8 * parallelism;
   }
 
-  const blake = await createBLAKE2b(512);
-  blake.update(int32LE(parallelism));
-  blake.update(int32LE(hashLength));
-  blake.update(int32LE(memorySize));
-  blake.update(int32LE(iterations));
-  blake.update(int32LE(version));
-  blake.update(int32LE(hashType));
-  blake.update(int32LE(password.length));
-  blake.update(password);
-  blake.update(int32LE(salt.length));
-  blake.update(salt);
-  blake.update(int32LE(0)); // key length + key
-  blake.update(int32LE(0)); // associatedData length + associatedData
+  blake512 = await createBLAKE2b(512);
+  blake512.update(int32LE(parallelism));
+  blake512.update(int32LE(hashLength));
+  blake512.update(int32LE(memorySize));
+  blake512.update(int32LE(iterations));
+  blake512.update(int32LE(version));
+  blake512.update(int32LE(hashType));
+  blake512.update(int32LE(password.length));
+  blake512.update(password);
+  blake512.update(int32LE(salt.length));
+  blake512.update(salt);
+  blake512.update(int32LE(0)); // key length + key
+  blake512.update(int32LE(0)); // associatedData length + associatedData
 
-  const H0 = Buffer.from(blake.digest(), 'hex');
+  const H0 = getUInt8Buffer(Buffer.from(blake512.digest(), 'hex'));
   // console.log('H0', H0.toString('hex'));
 
   // const blockCount = Math.floor(memorySize / (4 * parallelism));
@@ -188,8 +173,6 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
     B[lane * q + 1] = await hashFunc(param1, 1024);
   }
 
-  const btmp = new Uint8Array(1024);
-
   for (let k = 0; k < iterations; k++) {
     // console.log('after pass: ', k);
     for (let slice = 0; slice < 4; slice++) {
@@ -206,21 +189,13 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
           }
           const view = new DataView(B[prev].buffer);
           const rand = view.getBigUint64(0, true);
-          const { rslice, rlane, ri } = indexFunc(rand, q, g, parallelism, k, slice, lane, i);
-          const j0 = rlane * q + rslice * g + ri;
+          const { rlane, ri } = indexFunc(rand, q, g, parallelism, k, slice, lane, i);
+          const j0 = rlane * q + ri;
 
-          // console.log('before bprev: ', printGo(B[prev]));
-          // console.log('before B[j0]: ', printGo(B[j0]));
-          blockFunc(B[j], btmp, B[prev], B[j0]);
-          // console.log('after btmp: ', printGo(btmp));
-          // console.log('after: ', printGo(B[j]));
-          // if (k === 1 && j === 0) return null;
+          blockFunc(B[j], B[prev], B[j0]);
         }
       }
     }
-    // for (let i = 0; i < B.length; i++) {
-    //   console.log(`Block ${i}`, Buffer.from(B[i].buffer).readBigUInt64LE(0).toString(16));
-    // }
   }
 
   for (let lane = 0; lane < parallelism - 1; lane++) {
@@ -237,11 +212,8 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
     }
   }
 
-  // console.log('Final hash', printGo(C));
-
   const res = await hashFunc(C, hashLength);
   const responseStr = Buffer.from(res.buffer, res.byteOffset, res.byteLength).toString('hex');
-  // console.log('response', responseStr);
   return Promise.resolve(responseStr);
 }
 

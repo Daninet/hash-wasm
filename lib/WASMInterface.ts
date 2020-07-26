@@ -26,8 +26,8 @@ async function WASMInterface(binary: any, hashLength: number) {
     throw new Error('WebAssembly is not supported in this environment!');
   }
 
-  const writeMemory = (data: Uint8Array) => {
-    memoryView.set(data);
+  const writeMemory = (data: Uint8Array, offset = 0) => {
+    memoryView.set(data, offset);
   };
 
   const loadWASMPromise = wasmMutex.dispatch(async () => {
