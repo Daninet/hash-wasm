@@ -110,6 +110,10 @@ async function WASMInterface(binary: any, hashLength: number) {
     (data: IDataType, initParam?: number) => boolean = isDataShort;
 
   switch (binary.name) {
+    case 'argon2.wasm':
+      canSimplify = () => true;
+      break;
+
     case 'blake2b.wasm':
       // if there is a key at blake2b then cannot simplify
       canSimplify = (data, initParam) => initParam <= 512 && isDataShort(data);
