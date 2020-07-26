@@ -46,7 +46,7 @@ export const getUInt8Buffer = nodeBuffer !== null
     }
 
     if (ArrayBuffer.isView(data)) {
-      return new Uint8Array(data.buffer);
+      return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     }
 
     throw new Error('Invalid data type!');
@@ -57,7 +57,7 @@ export const getUInt8Buffer = nodeBuffer !== null
     }
 
     if (ArrayBuffer.isView(data)) {
-      return new Uint8Array(data.buffer);
+      return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     }
 
     throw new Error('Invalid data type!');

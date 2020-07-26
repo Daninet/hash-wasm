@@ -18,6 +18,21 @@ test('Sync cycle multiple algorithms', async () => {
   }
 });
 
+test('converting slices from typedarrays', async () => {
+  const buffer = new ArrayBuffer(256);
+  const intBuf = new Uint8Array(buffer);
+  for (let i = 0; i < intBuf.length; i++) {
+    intBuf[i] = i;
+  }
+
+  const int32Slice = new Uint32Array(buffer, 16, 4);
+  const int16Slice = new Uint16Array(buffer, 16, 4 * 2);
+  const int8Slice = new Uint8Array(buffer, 16, 4 * 4);
+
+  expect(await md4(int32Slice)).toBe(await md4(int16Slice));
+  expect(await md4(int32Slice)).toBe(await md4(int8Slice));
+});
+
 test('unicode string length handling', async () => {
   const utf8 = ['a', 'ѱ', '彁', '𠜎'];
   const md4Instance = await createMD4();
