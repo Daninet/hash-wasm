@@ -33,7 +33,7 @@ emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/sha3.c -o /app/wasm/sha3.wasm
 
 emcc -O3 -s WASM=1 \
-  -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/xxhash32.c -o /app/wasm/xxhash32.wasm
+  -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/xxhash32.c -o /app/wasm/xxhash32.wasm
 
 emcc -O3 -s WASM=1 \
-  -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/xxhash64.c -o /app/wasm/xxhash64.wasm
+  -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/xxhash64.c -o /app/wasm/xxhash64.wasm
