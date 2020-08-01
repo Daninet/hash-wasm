@@ -242,11 +242,15 @@ void Hash_Update(uint32_t size)
     available = 64 - used;
 
     if (size < available) {
-      memcpy(&ctx->buffer[used], data, size);
+      for (uint32_t i = 0; i < size; i++) {
+        ctx->buffer[used + i] = data[i];
+      }
       return;
     }
 
-    memcpy(&ctx->buffer[used], data, available);
+    for (uint32_t i = 0; i < available; i++) {
+      ctx->buffer[used + i] = data[i];
+    }
     data = (const uint8_t *)data + available;
     size -= available;
     body(ctx->buffer, 64);
@@ -257,7 +261,9 @@ void Hash_Update(uint32_t size)
     size &= 0x3f;
   }
 
-  memcpy(ctx->buffer, data, size);
+  for (uint32_t i = 0; i < size; i++) {
+    ctx->buffer[i] = data[i];
+  }
 }
 
 #define OUT(dst, src) \
@@ -297,8 +303,6 @@ void Hash_Final()
   OUT(&result[4], ctx->b)
   OUT(&result[8], ctx->c)
   OUT(&result[12], ctx->d)
-
-  memset(ctx, 0, sizeof(*ctx));
 }
 
 EMSCRIPTEN_KEEPALIVE

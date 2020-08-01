@@ -274,7 +274,7 @@ void ripemd160_update(const uint8_t *input, uint32_t ilen) {
   ctx->total[0] += (uint32_t) ilen;
   ctx->total[0] &= 0xFFFFFFFF;
 
-  i f(ctx->total[0] < (uint32_t) ilen) {
+  if (ctx->total[0] < (uint32_t) ilen) {
     ctx->total[1]++;
   }
 
