@@ -19,8 +19,9 @@ module.exports = {
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     'no-await-in-loop': 'off',
+    'default-case': 'off',
   },
   ignorePatterns: [
     'benchmark/node_modules/',
-  ]
+  ],
 };

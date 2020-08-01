@@ -60,9 +60,9 @@ async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promis
 
   blakeSmall.update(vp);
   writeHexToUInt8(vp, blakeSmall.digest());
-  ret.set(vp, r * 32);
+  ret.set(vp.subarray(0, partialBytesNeeded), r * 32);
 
-  return new Uint8Array(ret);
+  return ret;
 }
 
 function getHashType(type: IArgon2Options['hashType']): number {
@@ -73,9 +73,8 @@ function getHashType(type: IArgon2Options['hashType']): number {
       return 1;
     case 'id':
       return 2;
-    default:
-      throw new Error('Invalid type!');
   }
+  return 0;
 }
 
 async function argon2Internal(options: IArgon2Options): Promise<string> {

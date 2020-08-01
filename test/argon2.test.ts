@@ -186,6 +186,14 @@ test('others', async () => {
     '9f4778f1620e755c20cf49e634211d',
     '83e98a638c268d32adaec43a09a85c',
   ]);
+
+  expect(
+    await hashMultiple('qwe', 'somesalt123', 1, 1, 32, 71, 'i'),
+  ).toMatchObject([
+    'e89516925f17ba503ddf434ee9d95f74222afb51d215189f1ade81ef4b659a0bb1472f51b0d80afde4b255a29b8003aa63872eb56befdf0ea6a9686f781ea7fed679a31b8a9b64',
+    'da947a6a055943ba464ebfceab7d7ae09641e6b36b91eed1e982d95791ae4d14b0c922d25f709c79a569dd71f18c14a64c209eef79cfff729286bb572d9a90f1967ea7f7e01d5d',
+    'a48192b3a4aae0fb0d79483037e05d00e27dc53776cf3d1988f490a83d0963d0e066526a1b3236b9977f3f9a336b005add9ae036cf4f03e903efcdd3e136531055fc9541ee5133',
+  ]);
 });
 
 test('binary input', async () => {
