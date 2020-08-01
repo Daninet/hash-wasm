@@ -57,7 +57,17 @@ test('chunked', async () => {
   hash.init();
   hash.update('a');
   hash.update(new Uint8Array([0]));
-  expect(hash.digest()).toBe('50470286ea9f645134c527432303a7187a2a1451956148a1228d94b33edbf35ba9146301e43ddb84491469ccf1ca72cec501032df5e16958232a24ba90a93fb0');
+  hash.update('bc');
+  hash.update(new Uint8Array([255, 254]));
+  expect(hash.digest()).toBe('c3e2d7159f8aba84f18e1a331ee7bf60e51997ebb44e800aa5fdb937784b5ab87765a348fc6cee37f53a2b111459247b2664d2ea7da1b133f9f713c9d5784275');
+
+  hash.init();
+  for (let i = 0; i < 1000; i++) {
+    // eslint-disable-next-line no-bitwise
+    hash.update(new Uint8Array([i & 0xFF]));
+  }
+  hash.update(Buffer.alloc(1000).fill(0xDF));
+  expect(hash.digest()).toBe('02b4dc3d5ce5b3164dcca9127c6f6ec4fb2889fb058b876fc33dbf63f47404fa82147d724975a7d4ed749cbcb337f0cf14e93443a9f8aa6c91dad616eeec594c');
 });
 
 test('interlaced shorthand', async () => {
