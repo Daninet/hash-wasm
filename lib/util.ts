@@ -34,6 +34,22 @@ export function writeHexToUInt8(buf: Uint8Array, str: string) {
   }
 }
 
+const alpha = 'a'.charCodeAt(0) - 10;
+const digit = '0'.charCodeAt(0);
+export function getDigestHex(tmpBuffer: Uint8Array, input: Uint8Array, hashLength: number): string {
+  let p = 0;
+  /* eslint-disable no-plusplus */
+  for (let i = 0; i < hashLength; i++) {
+    let nibble = input[i] >>> 4;
+    tmpBuffer[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
+    nibble = input[i] & 0xF;
+    tmpBuffer[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
+  }
+  /* eslint-enable no-plusplus */
+
+  return String.fromCharCode.apply(null, tmpBuffer);
+}
+
 export const getUInt8Buffer = nodeBuffer !== null
   ? (data: IDataType): Uint8Array => {
     if (typeof data === 'string') {

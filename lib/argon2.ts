@@ -1,4 +1,6 @@
-import { getUInt8Buffer, IDataType, writeHexToUInt8 } from './util';
+import {
+  getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
+} from './util';
 import { createBLAKE2b } from './blake2b';
 import WASMInterface, { IHasher } from './WASMInterface';
 import wasmJson from '../wasm/argon2.wasm.json';
@@ -88,6 +90,7 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
     WASMInterface(wasmJson, 1024),
     createBLAKE2b(512),
   ]);
+
   // last block is for storing the init vector
   argon2Interface.setMemorySize(memorySize * 1024 + 1024);
 
@@ -116,7 +119,6 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
   const param = new Uint8Array(72);
   const H0 = blake512.digest();
   writeHexToUInt8(param, H0);
-  // console.log('H0', H0);
 
   for (let lane = 0; lane < parallelism; lane++) {
     param.set(int32LE(0), 64);
@@ -124,24 +126,21 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
 
     let position = lane * lanes;
     let chunk = await hashFunc(blake512, param, 1024);
-    // console.log('chunk', position, Buffer.from(chunk).toString('hex'));
     argon2Interface.writeMemory(chunk, position * 1024);
 
     position += 1;
     param.set(int32LE(1), 64);
     chunk = await hashFunc(blake512, param, 1024);
     argon2Interface.writeMemory(chunk, position * 1024);
-    // console.log('chunk', position, Buffer.from(chunk).toString('hex'));
   }
 
   const C = new Uint8Array(1024);
   writeHexToUInt8(C, argon2Interface.calculate(new Uint8Array([]), memorySize));
-  // console.log('C', Buffer.from(C).toString('hex'));
 
   const res = await hashFunc(blake512, C, hashLength);
 
-  const responseStr = Buffer.from(res.buffer, res.byteOffset, res.byteLength).toString('hex');
-  return Promise.resolve(responseStr);
+  const digestChars = new Uint8Array(hashLength * 2);
+  return getDigestHex(digestChars, res, hashLength);
 }
 
 const validateOptions = (options: IArgon2Options) => {

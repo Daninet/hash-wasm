@@ -1,5 +1,7 @@
 import Mutex from './mutex';
-import { decodeBase64, getUInt8Buffer, IDataType } from './util';
+import {
+  decodeBase64, getDigestHex, getUInt8Buffer, IDataType,
+} from './util';
 
 export const MAX_HEAP = 16 * 1024;
 const wasmMutex = new Mutex();
@@ -82,26 +84,10 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 
   const digestChars = new Uint8Array(hashLength * 2);
-  const alpha = 'a'.charCodeAt(0) - 10;
-  const digit = '0'.charCodeAt(0);
-
-  const getDigestHex = () => {
-    let p = 0;
-    /* eslint-disable no-bitwise,no-plusplus */
-    for (let i = 0; i < hashLength; i++) {
-      let nibble = memoryView[i] >>> 4;
-      digestChars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
-      nibble = memoryView[i] & 0xF;
-      digestChars[p++] = nibble > 9 ? nibble + alpha : nibble + digit;
-    }
-    /* eslint-enable no-bitwise,no-plusplus */
-
-    return String.fromCharCode.apply(null, digestChars);
-  };
 
   const digest = (padding: number = null): string => {
     wasmInstance.exports.Hash_Final(padding);
-    return getDigestHex();
+    return getDigestHex(digestChars, memoryView, hashLength);
   };
 
   const isDataShort = (data: IDataType) => {
@@ -147,7 +133,7 @@ async function WASMInterface(binary: any, hashLength: number) {
     const buffer = getUInt8Buffer(data);
     memoryView.set(buffer);
     wasmInstance.exports.Hash_Calculate(buffer.length, initParam, digestParam);
-    return getDigestHex();
+    return getDigestHex(digestChars, memoryView, hashLength);
   };
 
   await setupInterface();
