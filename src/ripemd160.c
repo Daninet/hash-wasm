@@ -264,7 +264,7 @@ void ripemd160_update(const uint8_t *input, uint32_t ilen) {
   uint32_t fill;
   uint32_t left;
 
-  if(ilen == 0) {
+  if (ilen == 0) {
     return;
   }
 
@@ -274,26 +274,30 @@ void ripemd160_update(const uint8_t *input, uint32_t ilen) {
   ctx->total[0] += (uint32_t) ilen;
   ctx->total[0] &= 0xFFFFFFFF;
 
-  if(ctx->total[0] < (uint32_t) ilen) {
+  i f(ctx->total[0] < (uint32_t) ilen) {
     ctx->total[1]++;
   }
 
-  if(left && ilen >= fill) {
-    memcpy((void *) (ctx->buffer + left), input, fill);
+  if (left && ilen >= fill) {
+    for (uint8_t i = 0; i < fill; i++) {
+      ctx->buffer[left + i] = input[i];
+    }
     ripemd160_process(ctx->buffer);
     input += fill;
     ilen  -= fill;
     left = 0;
   }
 
-  while(ilen >= RIPEMD160_BLOCK_LENGTH) {
+  while (ilen >= RIPEMD160_BLOCK_LENGTH) {
     ripemd160_process(input);
     input += RIPEMD160_BLOCK_LENGTH;
     ilen  -= RIPEMD160_BLOCK_LENGTH;
   }
 
-  if(ilen > 0) {
-    memcpy((void *) (ctx->buffer + left), input, ilen);
+  if (ilen > 0) {
+    for (uint8_t i = 0; i < ilen; i++) {
+      ctx->buffer[left + i] = input[i];
+    }
   }
 }
 
