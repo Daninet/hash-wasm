@@ -4,15 +4,18 @@
 
 Hash-WASM is a fast and portable hash function library.
 
-It is using WebAssembly to calculate the hash faster than other JavaScript-based implementations.
+It is using hand-tuned WebAssembly binaries to calculate the hash faster than other libraries.
 
 
-Supported hash functions
+Supported algorithms
 =======
 
+- Argon2: Argon2d, Argon2i, Argon2id (v1.3)
 - BLAKE2b
 - CRC32
+- HMAC (with all hash algorithms)
 - MD4, MD5
+- PBKDF2 (with all hash algorithms)
 - RIPEMD-160
 - SHA-1
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
@@ -20,18 +23,15 @@ Supported hash functions
 - Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
 - xxHash: xxHash32, xxHash64
 
-HMAC and PBKDF2 is also supported with all hash algorithms
-
 Features
 =======
 
-- A lot faster than JS implementations (see [benchmarks](#benchmark) below)
+- A lot faster than other JS / WASM implementations (see [benchmarks](#benchmark) below)
 - Compiled from heavily optimized algorithms written in C
 - Supports all modern browsers and Node.js
 - Supports large data streams
 - Supports UTF-8 strings and typed arrays
 - Supports chunked input streams
-- Supports HMAC for all algorithms
 - Works without Webpack or other bundlers
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
@@ -39,6 +39,7 @@ Features
 - Works in Web Workers
 - Zero dependencies
 - Supports concurrent hash calculations with multiple states
+- Transparent [build process](https://github.com/Daninet/hash-wasm/actions)
 - Easy to use Promise-based async API
 
 
@@ -85,7 +86,7 @@ run();
 
 *\* See [API reference](#api)*
 
-### Advanced usage with chunked input
+### Advanced usage with streaming input
 
 createXXXX() functions create new WASM instances with separate states, which can be used to calculate multiple hashes paralelly. They are slower compared to shorthand functions like md5(), which reuse the same WASM instance and state to do multiple calculations. For this reason, the shorthand form is always preferred when the data is already in the memory.
 
@@ -264,6 +265,14 @@ sha512(data: IDataType): Promise<string>
 xxhash32(data: IDataType, seed?: number): Promise<string>
 xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
 
+interface IHasher {
+  init: () => void;
+  update: (data: IDataType) => void;
+  digest: () => string; // returns hash in hex format
+  blockSize: number; // in bytes
+  digestSize: number; // in bytes
+}
+
 createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 512 bits
 createCRC32(): Promise<IHasher>
 createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
@@ -282,18 +291,21 @@ createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 createHMAC(hashFunc: Promise<IHasher>, key: IDataType): Promise<IHasher>
 
 pbkdf2(
-  password: IDataType,
-  salt: IDataType,
-  iterations: number,
-  keyLen: number,
-  digest: Promise<IHasher>
+  password: IDataType, // password (or message) to be hashed
+  salt: IDataType, // salt
+  iterations: number, // number of iterations to perform
+  hashLength: number, // output size in bytes
+  hashFunc: Promise<IHasher> // the return value of a function like createSHA1()
 ): Promise<string>
 
-interface IHasher {
-  init: () => void;
-  update: (data: IDataType) => void;
-  digest: () => string; // returns hash in hex format
-  blockSize: number; // in bytes
-  digestSize: number; // in bytes
-}
+argon2({
+  password: IDataType, // password (or message) to be hashed
+  salt: IDataType, // salt
+  iterations: number, // number of iterations to perform
+  parallelism: number, // degree of parallelism
+  memorySize: number, // amount of memory to be used in kibibytes (1024 bytes)
+  hashLength: number, // output size in bytes
+  hashType: 'i' | 'd' | 'id', // argon2 variant selection
+}): Promise<string>
+
 ```

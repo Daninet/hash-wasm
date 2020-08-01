@@ -1,4 +1,4 @@
-## 3.7.0 (July , 2020)
+## 3.7.0 (August 1, 2020)
 
 * Added Argon2
 * Support hash lengths shorter than 16 bytes in Blake2b
