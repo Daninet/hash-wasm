@@ -1,7 +1,9 @@
 import { argon2 } from '../lib';
 /* global test, expect */
 
-const hash = async (password, salt, parallelism, iterations, memorySize, hashLength, hashType) => argon2({
+const hash = async (
+  password, salt, parallelism, iterations, memorySize, hashLength, hashType,
+) => argon2({
   password,
   salt,
   parallelism,
