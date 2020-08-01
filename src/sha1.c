@@ -51,10 +51,15 @@ void SHA1Transform(uint32_t state[5], const uint8_t buffer[64])
   typedef union {
     uint8_t c[64];
     uint32_t l[16];
+    uint64_t ll[8];
   } CHAR64LONG16;
 
   CHAR64LONG16 block[1]; /* use array to appear as a pointer */
-  memcpy(block, buffer, 64);
+
+  #pragma clang loop unroll(full)
+  for (uint8_t i = 0; i < 8; i++) {
+    block->ll[i] = *(uint64_t*)&buffer[i * 8];
+  }
 
   /* Copy context->state[] to working vars */
   a = state[0];
@@ -91,8 +96,6 @@ void SHA1Transform(uint32_t state[5], const uint8_t buffer[64])
   state[2] += c;
   state[3] += d;
   state[4] += e;
-
-  // memset(block, '\0', sizeof(block));
 }
 
 /* SHA1Init - Initialize new context */
@@ -120,16 +123,22 @@ void SHA1Update(const uint8_t* data, uint32_t len)
   j = (j >> 3) & 63;
 
   if ((j + len) > 63) {
-    memcpy(&context->buffer[j], data, (i = 64-j));
+    uint8_t end = i = 64 - j;
+    for (uint8_t z = 0; z < end; z++) {
+      context->buffer[j + z] = data[z];
+    }
     SHA1Transform(context->state, context->buffer);
     for ( ; i + 63 < len; i += 64) {
       SHA1Transform(context->state, &data[i]);
     }
     j = 0;
+  } else {
+    i = 0;
   }
-  else i = 0;
 
-  memcpy(&context->buffer[j], &data[i], len - i);
+  for (uint8_t z = 0; z < len - i; z++) {
+    context->buffer[j + z] = data[i + z];
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -164,10 +173,6 @@ void Hash_Final()
     result[i] = (uint8_t)
       ((context->state[i>>2] >> ((3-(i & 3)) * 8) ) & 255);
   }
-
-  /* Wipe variables */
-  memset(context, '\0', sizeof(*context));
-  memset(&finalcount, '\0', sizeof(finalcount));
 }
 
 EMSCRIPTEN_KEEPALIVE

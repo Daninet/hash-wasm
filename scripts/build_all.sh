@@ -21,7 +21,7 @@ emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/crc32.c -o /app/wasm/crc32.wasm
 
 emcc -O3 -s WASM=1 \
-  -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/sha1.c -o /app/wasm/sha1.wasm
+  -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/sha1.c -o /app/wasm/sha1.wasm
 
 emcc -O3 -s WASM=1 \
   -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/sha256.c -o /app/wasm/sha256.wasm
