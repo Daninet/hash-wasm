@@ -26,7 +26,6 @@
 #define sha224_hash_size  28
 #define ROTR32(dword, n) ((dword) >> (n) ^ ((dword) << (32 - (n))))
 #define bswap_32(x) __builtin_bswap32(x)
-#define IS_ALIGNED_32(p) (0 == (3 & ((const char*)(p) - (const char*)0)))
 
 struct sha256_ctx
 {
@@ -106,7 +105,11 @@ void sha256_init()
   ctx->digest_length = sha256_hash_size;
 
   /* initialize algorithm state */
-  memcpy(ctx->hash, SHA256_H0, sizeof(ctx->hash));
+
+  #pragma clang loop unroll(full)
+  for (uint8_t i = 0; i < 8; i += 2) {
+    *(uint64_t*)&ctx->hash[i] = *(uint64_t*)&SHA256_H0[i];
+  }
 }
 
 /**
@@ -126,7 +129,10 @@ void sha224_init()
   ctx->length = 0;
   ctx->digest_length = sha224_hash_size;
 
-  memcpy(ctx->hash, SHA224_H0, sizeof(ctx->hash));
+  #pragma clang loop unroll(full)
+  for (uint8_t i = 0; i < 8; i += 2) {
+    *(uint64_t*)&ctx->hash[i] = *(uint64_t*)&SHA224_H0[i];
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -173,6 +179,7 @@ static void sha256_process_block(uint32_t hash[8], uint32_t block[16])
   ROUND_1_16(C, D, E, F, G, H, A, B, 14);
   ROUND_1_16(B, C, D, E, F, G, H, A, 15);
 
+  #pragma clang loop unroll(full)
   for (i = 16, k = &rhash_k256[16]; i < 64; i += 16, k += 16) {
     ROUND_17_64(A, B, C, D, E, F, G, H,  0);
     ROUND_17_64(H, A, B, C, D, E, F, G,  1);
@@ -212,7 +219,11 @@ void Hash_Update(uint32_t size)
   /* fill partial block */
   if (index) {
     uint32_t left = sha256_block_size - index;
-    memcpy((char*)ctx->message + index, msg, (size < left ? size : left));
+    uint32_t end = size < left ? size : left;
+    uint8_t* message8 = (uint8_t*)ctx->message;
+    for (uint8_t i = 0; i < end; i++) {
+      *(message8 + index + i) = msg[i];
+    }
     if (size < left) return;
 
     /* process partial block */
@@ -220,23 +231,20 @@ void Hash_Update(uint32_t size)
     msg  += left;
     size -= left;
   }
+
   while (size >= sha256_block_size) {
-    uint32_t* aligned_message_block;
-    if (IS_ALIGNED_32(msg)) {
-      /* the most common case is processing of an already aligned message
-      without copying it */
-      aligned_message_block = (uint32_t*)msg;
-    } else {
-      memcpy(ctx->message, msg, sha256_block_size);
-      aligned_message_block = (uint32_t*)ctx->message;
-    }
+    uint32_t* aligned_message_block = (uint32_t*)msg;
 
     sha256_process_block(ctx->hash, aligned_message_block);
     msg  += sha256_block_size;
     size -= sha256_block_size;
   }
+
   if (size) {
-    memcpy(ctx->message, msg, size); /* save leftovers */
+    /* save leftovers */
+    for (uint8_t i = 0; i < size; i++) {
+      *(((uint8_t*)ctx->message) + i) = msg[i];
+    }
   }
 }
 
@@ -265,18 +273,23 @@ void Hash_Final()
     sha256_process_block(ctx->hash, ctx->message);
     index = 0;
   }
+
   while (index < 14) {
     ctx->message[index++] = 0;
   }
+
   ctx->message[14] = bswap_32( (uint32_t)(ctx->length >> 29) );
   ctx->message[15] = bswap_32( (uint32_t)(ctx->length << 3) );
   sha256_process_block(ctx->hash, ctx->message);
 
+  #pragma clang loop unroll(full)
   for(int32_t i = 7; i >= 0; i--) {
     ctx->hash[i] = bswap_32(ctx->hash[i]);
   }
 
-  memcpy(array, ctx->hash, ctx->digest_length);
+  for (uint8_t i = 0; i < ctx->digest_length; i++) {
+    array[i] = *(((uint8_t*)ctx->hash) + i);
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE

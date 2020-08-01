@@ -27,7 +27,6 @@
 #define I64(x) x##ULL
 #define ROTR64(qword, n) ((qword) >> (n) ^ ((qword) << (64 - (n))))
 #define bswap_64(x) __builtin_bswap64(x)
-#define IS_ALIGNED_64(p) (0 == (7 & ((const char*)(p) - (const char*)0)))
 
 struct sha512_ctx
 {
@@ -123,7 +122,10 @@ void sha512_init()
   ctx->digest_length = sha512_hash_size;
 
   /* initialize algorithm state */
-  memcpy(ctx->hash, SHA512_H0, sizeof(ctx->hash));
+  #pragma clang loop unroll(full)
+  for (uint8_t i = 0; i < 8; i++) {
+    ctx->hash[i] = SHA512_H0[i];
+  }
 }
 
 /**
@@ -144,7 +146,10 @@ void sha384_init()
   ctx->length = 0;
   ctx->digest_length = sha384_hash_size;
 
-  memcpy(ctx->hash, SHA384_H0, sizeof(ctx->hash));
+  #pragma clang loop unroll(full)
+  for (uint8_t i = 0; i < 8; i++) {
+    ctx->hash[i] = SHA384_H0[i];
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -191,6 +196,7 @@ static void sha512_process_block(uint64_t hash[8], uint64_t block[16])
   ROUND_1_16(C, D, E, F, G, H, A, B, 14);
   ROUND_1_16(B, C, D, E, F, G, H, A, 15);
 
+  #pragma clang loop unroll(full)
   for (i = 16, k = &rhash_k512[16]; i < 80; i += 16, k += 16) {
     ROUND_17_80(A, B, C, D, E, F, G, H,  0);
     ROUND_17_80(H, A, B, C, D, E, F, G,  1);
@@ -230,7 +236,11 @@ void Hash_Update(uint32_t size)
   /* fill partial block */
   if (index) {
     uint32_t left = sha512_block_size - index;
-    memcpy((char*)ctx->message + index, msg, (size < left ? size : left));
+    uint32_t end = size < left ? size : left;
+    uint8_t* message8 = (uint8_t*)ctx->message;
+    for (uint8_t i = 0; i < end; i++) {
+      *(message8 + index + i) = msg[i];
+    }
     if (size < left) return;
 
     /* process partial block */
@@ -240,15 +250,7 @@ void Hash_Update(uint32_t size)
   }
 
   while (size >= sha512_block_size) {
-    uint64_t* aligned_message_block;
-    if (IS_ALIGNED_64(msg)) {
-      /* the most common case is processing of an already aligned message
-      without copying it */
-      aligned_message_block = (uint64_t*)msg;
-    } else {
-      memcpy(ctx->message, msg, sha512_block_size);
-      aligned_message_block = ctx->message;
-    }
+    uint64_t* aligned_message_block = (uint64_t*)msg;
 
     sha512_process_block(ctx->hash, aligned_message_block);
     msg  += sha512_block_size;
@@ -256,7 +258,10 @@ void Hash_Update(uint32_t size)
   }
 
   if (size) {
-    memcpy(ctx->message, msg, size); /* save leftovers */
+    /* save leftovers */
+    for (uint8_t i = 0; i < size; i++) {
+      *(((uint8_t*)ctx->message) + i) = msg[i];
+    }
   }
 }
 
@@ -289,11 +294,14 @@ void Hash_Final()
   ctx->message[15] = bswap_64(ctx->length << 3);
   sha512_process_block(ctx->hash, ctx->message);
 
+  #pragma clang loop unroll(full)
   for(int32_t i = 7; i >= 0; i--) {
     ctx->hash[i] = bswap_64(ctx->hash[i]);
   }
 
-  memcpy(array, ctx->hash, ctx->digest_length);
+  for (uint8_t i = 0; i < ctx->digest_length; i++) {
+    array[i] = *(((uint8_t*)ctx->hash) + i);
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE
