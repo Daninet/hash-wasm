@@ -1,16 +1,7 @@
 /*
-  BLAKE2 reference source code package - reference C implementations
-  Copyright 2012, Samuel Neves <sneves@dei.uc.pt>.  You may use this under the
-  terms of the CC0, the OpenSSL Licence, or the Apache Public License 2.0, at
-  your option.  The terms of these licenses can be found at:
-  - CC0 1.0 Universal : http://creativecommons.org/publicdomain/zero/1.0
-  - OpenSSL license   : https://www.openssl.org/source/license.html
-  - Apache 2.0        : http://www.apache.org/licenses/LICENSE-2.0
+  Based on Golang's Argon2 implementation from crypto package
 
-  More information about the BLAKE2 hash function can be found at
-  https://blake2.net.
-
-  Modified for hash-wasm by Dani Biró
+  Written for hash-wasm by Dani Biró
 */
 
 #include <stdint.h>
@@ -18,15 +9,45 @@
 #include <stdio.h>
 #include <emscripten.h>
 
-uint8_t array[16 * 1024];
+#define BYTES_PER_PAGE 65536
+
+uint8_t *B = NULL;
+uint64_t B_size = 0;
+
+EMSCRIPTEN_KEEPALIVE
+int8_t Hash_SetMemorySize(uint32_t total_bytes)
+{
+  uint32_t bytes_required = total_bytes - B_size;
+
+  if (bytes_required > 0) {
+    uint32_t blocks = bytes_required / BYTES_PER_PAGE;
+    if (blocks * BYTES_PER_PAGE < bytes_required) {
+      blocks += 1;
+    }
+
+    if (__builtin_wasm_memory_grow(0, blocks) == -1) {
+      return -1;
+    }
+
+    B_size += blocks * BYTES_PER_PAGE;
+  }
+
+  return 0;
+}
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t* Hash_GetBuffer()
 {
-  return array;
-}
+  if (B == NULL) {
+    // start of new memory
+    B = (uint8_t*)(__builtin_wasm_memory_size(0) * BYTES_PER_PAGE);
+    if (Hash_SetMemorySize(512 * 1024) == -1) { // always preallocate 16kb to not cause problems with the other hashes
+      return NULL;
+    }
+  }
 
-#define ROTATE(x, n) (((x) >> (n)) | ((x) << (64-(n))))
+  return B;
+}
 
 static __inline__ uint64_t rotr64( const uint64_t w, const unsigned c )
 {
@@ -45,7 +66,7 @@ static __inline__ uint64_t rotr64( const uint64_t w, const unsigned c )
     b = rotr64(b ^ c, 63);                               \
   } while(0)
 
-void _P(
+void P(
   uint64_t *a0, uint64_t *a1, uint64_t *a2, uint64_t *a3,
   uint64_t *a4, uint64_t *a5, uint64_t *a6, uint64_t *a7,
   uint64_t *a8, uint64_t *a9, uint64_t *a10, uint64_t *a11,
@@ -61,36 +82,165 @@ void _P(
   G(*a3,*a4,*a9,*a14);
 }
 
-void block() {
-  uint64_t *z = (uint64_t*)array;
-  uint64_t *a = (uint64_t*)(array + 1024);
-  uint64_t *b = (uint64_t*)(array + 1024 * 2);
-  uint64_t *t = (uint64_t*)(array + 1024 * 3);
+// uint64_t aa[128];
+// EMSCRIPTEN_KEEPALIVE
+// void trap(uint32_t randHi, uint32_t randLo, uint32_t a, uint32_t b, uint32_t c) {
+//   aa[0] = a;
+//   aa[1] = b;
+//   aa[2] = c;
+//   aa[3] = randHi;
+//   aa[4] = randLo;
+// }
 
+// EMSCRIPTEN_KEEPALIVE
+uint32_t indexAlpha(uint64_t rand, uint32_t lanes, uint32_t segments, uint32_t parallelism, uint32_t k, uint32_t slice, uint32_t lane, uint32_t index) {
+  uint32_t rlane = ((uint32_t)(rand >> 32)) % parallelism;
+
+  if (k == 0 && slice == 0) {
+    rlane = lane;
+  }
+
+  uint32_t max = segments * 3;
+  uint32_t start = ((slice + 1) % 4) * segments;
+
+  if (lane == rlane) {
+    max += index;
+  }
+
+  if (k == 0) {
+    max = slice * segments;
+    start = 0;
+    if (slice == 0 || lane == rlane) {
+      max += index;
+    }
+  }
+
+  if (index == 0 || lane == rlane) {
+    max--;
+  }
+
+  uint64_t phi = rand & 0xFFFFFFFF;
+  phi = phi * phi >> 32;
+  phi = phi * max >> 32;
+  uint32_t ri = (start + max - 1 - phi) % (uint64_t)lanes;
+
+  return rlane * lanes + ri;
+}
+
+uint64_t t[128];
+
+// EMSCRIPTEN_KEEPALIVE
+void block(uint64_t *z, uint64_t *a, uint64_t *b, int32_t xor) {
+  #pragma clang loop unroll(full)
   for (int i = 0; i<128; i++) {
     t[i] = a[i] ^ b[i];
   }
 
+  #pragma clang loop unroll(full)
   for (int i = 0; i<128; i+=16) {
-    _P(&t[i], &t[i+1], &t[i+2], &t[i+3], &t[i+4], &t[i+5], &t[i+6], &t[i+7], &t[i+8], &t[i+9], &t[i+10], &t[i+11], &t[i+12], &t[i+13], &t[i+14], &t[i+15]);
+    P(&t[i], &t[i+1], &t[i+2], &t[i+3], &t[i+4], &t[i+5], &t[i+6], &t[i+7], &t[i+8], &t[i+9], &t[i+10], &t[i+11], &t[i+12], &t[i+13], &t[i+14], &t[i+15]);
   }
 
-  _P(&t[0], &t[1], &t[16], &t[17], &t[32], &t[33], &t[48], &t[49], &t[64], &t[65], &t[80], &t[81], &t[96], &t[97], &t[112], &t[113]);
-  _P(&t[2], &t[3], &t[18], &t[19], &t[34], &t[35], &t[50], &t[51], &t[66], &t[67], &t[82], &t[83], &t[98], &t[99], &t[114], &t[115]);
-  _P(&t[4], &t[5], &t[20], &t[21], &t[36], &t[37], &t[52], &t[53], &t[68], &t[69], &t[84], &t[85], &t[100], &t[101], &t[116], &t[117]);
-  _P(&t[6], &t[7], &t[22], &t[23], &t[38], &t[39], &t[54], &t[55], &t[70], &t[71], &t[86], &t[87], &t[102], &t[103], &t[118], &t[119]);
-  _P(&t[8], &t[9], &t[24], &t[25], &t[40], &t[41], &t[56], &t[57], &t[72], &t[73], &t[88], &t[89], &t[104], &t[105], &t[120], &t[121]);
-  _P(&t[10], &t[11], &t[26], &t[27], &t[42], &t[43], &t[58], &t[59], &t[74], &t[75], &t[90], &t[91], &t[106], &t[107], &t[122], &t[123]);
-  _P(&t[12], &t[13], &t[28], &t[29], &t[44], &t[45], &t[60], &t[61], &t[76], &t[77], &t[92], &t[93], &t[108], &t[109], &t[124], &t[125]);
-  _P(&t[14], &t[15], &t[30], &t[31], &t[46], &t[47], &t[62], &t[63], &t[78], &t[79], &t[94], &t[95], &t[110], &t[111], &t[126], &t[127]);
+  #pragma clang loop unroll(full)
+  for (int i = 0; i<16; i+=2) {
+    P(&t[i], &t[i+1], &t[i+16], &t[i+17], &t[i+32], &t[i+33], &t[i+48], &t[i+49], &t[i+64], &t[i+65], &t[i+80], &t[i+81], &t[i+96], &t[i+97], &t[i+112], &t[i+113]);
+  }
 
-  for (int i = 0; i<128; i++) {
-    z[i] ^= a[i] ^ b[i] ^ t[i];
+  if (xor) {
+    for (int i = 0; i<128; i++) {
+      z[i] ^= a[i] ^ b[i] ^ t[i];
+    }
+  } else {
+    for (int i = 0; i<128; i++) {
+      z[i] = a[i] ^ b[i] ^ t[i];
+    }
   }
 }
 
+uint64_t addresses[128];
+uint64_t zero[128];
+uint64_t in[128];
+
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate()
+void Hash_Calculate(uint32_t length, uint32_t memorySize)
 {
-  block();
+  uint32_t *initVector = (uint32_t*)(B + 1024 * memorySize);
+  uint32_t parallelism = initVector[0];
+  uint32_t hashLength = initVector[1];
+  uint32_t memorySize2 = initVector[2];
+  uint32_t iterations = initVector[3];
+  uint32_t version = initVector[4];
+  uint32_t hashType = initVector[5];
+  if (memorySize2 != memorySize) {
+    return;
+  }
+
+  uint32_t segments = memorySize / (parallelism * 4);
+  memorySize = segments * parallelism * 4;
+  uint32_t lanes = segments * 4;
+
+  in[3] = memorySize;
+  in[4] = iterations;
+  in[5] = hashType;
+
+  for (uint32_t k = 0; k < iterations; k++) {
+    in[0] = k;
+    for (uint8_t slice = 0; slice < 4; slice++) {
+      in[2] = slice;
+      for (uint32_t lane = 0; lane < parallelism; lane++) {
+        in[1] = lane;
+        in[6] = 0;
+        uint32_t index = 0;
+        if (k == 0 && slice == 0) {
+          index = 2;
+          if (hashType == 1 || hashType == 2) {
+            in[6]++;
+            block(addresses, in, zero, 0);
+            block(addresses, addresses, zero, 0);
+          }
+        }
+        uint32_t offset = lane * lanes + slice * segments + index;
+        while (index < segments) {
+          uint32_t prev = offset - 1;
+          if (index == 0 && slice == 0) {
+            prev += lanes;
+          }
+
+          uint64_t rand;
+          if (hashType == 1 || (hashType == 2 && k == 0 && slice < 2)) {
+            if (index % 128 == 0) {
+              in[6]++;
+              block(addresses, in, zero, 0);
+              block(addresses, addresses, zero, 0);
+            }
+            rand = addresses[index % 128];
+          } else {
+            rand = *(uint64_t*)(B + prev * 1024);
+          }
+          uint32_t newOffset = indexAlpha(rand, lanes, segments, parallelism, k, slice, lane, index);
+
+          // trap(rand >> 32, rand & 0xFFFFFFFF, offset, prev, newOffset);
+          block((uint64_t*)&B[offset * 1024], (uint64_t*)&B[prev * 1024], (uint64_t*)&B[newOffset * 1024], 1);
+          index++;
+          offset++;
+        }
+      }
+    }
+  }
+
+  uint32_t destIndex = (memorySize - 1) * 1024;
+  for (uint32_t lane = 0; lane < parallelism - 1; lane++) {
+    uint32_t sourceIndex = (lane * lanes + lanes - 1) * 1024;
+    for (uint32_t i = 0; i < 1024; i+=8) {
+      *(uint64_t*)&B[destIndex + i] ^= *(uint64_t*)&B[sourceIndex + i];
+    }
+  }
+
+  for (uint16_t i = 0; i < 128; i++) {
+    t[i] = *(uint64_t*)&B[destIndex + i * 8];
+  }
+
+  for (uint16_t i = 0; i < 128; i++) {
+    *(uint64_t*)&B[i * 8] = t[i];
+  }
 }

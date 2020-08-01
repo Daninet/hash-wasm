@@ -30,6 +30,13 @@ async function WASMInterface(binary: any, hashLength: number) {
     memoryView.set(data, offset);
   };
 
+  const setMemorySize = (totalSize: number) => {
+    wasmInstance.exports.Hash_SetMemorySize(totalSize);
+    const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
+    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    memoryView = new Uint8Array(memoryBuffer, arrayOffset, totalSize);
+  };
+
   const loadWASMPromise = wasmMutex.dispatch(async () => {
     if (!wasmModuleCache.has(binary.name)) {
       const asm = decodeBase64(binary.data);
@@ -39,7 +46,7 @@ async function WASMInterface(binary: any, hashLength: number) {
     }
 
     const module = await wasmModuleCache.get(binary.name);
-    wasmInstance = await WebAssembly.instantiate(module);
+    wasmInstance = await WebAssembly.instantiate(module, { env: { emscripten_memcpy_big: (dest, src, num) => memoryView.set(memoryView.subarray(src, src + num), dest)} });
 
     // eslint-disable-next-line no-underscore-dangle
     wasmInstance.exports._start();
@@ -147,6 +154,7 @@ async function WASMInterface(binary: any, hashLength: number) {
 
   return {
     writeMemory,
+    setMemorySize,
     init,
     update,
     digest,
