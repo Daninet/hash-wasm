@@ -247,3 +247,64 @@ test('longer calculations', async () => {
     'e4a286c82d343ab9d8f77af35c6aaf0b',
   ]);
 });
+
+test('Invalid parameters', async () => {
+  await expect(argon2('' as any)).rejects.toThrow();
+  await expect(argon2([] as any)).rejects.toThrow();
+  await expect((argon2 as any)()).rejects.toThrow();
+  const options: Parameters<typeof argon2>[0] = {
+    password: 'p',
+    salt: 'salt1234',
+    iterations: 1,
+    parallelism: 8,
+    memorySize: 1024,
+    hashLength: 32,
+    hashType: 'd',
+  };
+
+  await expect(argon2(options)).resolves.not.toThrow();
+
+  await expect(argon2({ ...options, password: undefined })).rejects.toThrow();
+  await expect(argon2({ ...options, password: null })).rejects.toThrow();
+  await expect(argon2({ ...options, password: 1 as any })).rejects.toThrow();
+  await expect(argon2({ ...options, password: [] as any })).rejects.toThrow();
+  await expect(argon2({ ...options, password: Buffer.from([]) })).rejects.toThrow();
+
+  await expect(argon2({ ...options, salt: undefined })).rejects.toThrow();
+  await expect(argon2({ ...options, salt: null })).rejects.toThrow();
+  await expect(argon2({ ...options, salt: '1234567' })).rejects.toThrow();
+  await expect(argon2({ ...options, salt: '' })).rejects.toThrow();
+  await expect(argon2({ ...options, salt: Buffer.from([1, 2, 3, 4, 5, 6, 7]) })).rejects.toThrow();
+
+  await expect(argon2({ ...options, iterations: undefined })).rejects.toThrow();
+  await expect(argon2({ ...options, iterations: null })).rejects.toThrow();
+  await expect(argon2({ ...options, iterations: 0 })).rejects.toThrow();
+  await expect(argon2({ ...options, iterations: '' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, iterations: '0' as any })).rejects.toThrow();
+
+  await expect(argon2({ ...options, parallelism: undefined })).rejects.toThrow();
+  await expect(argon2({ ...options, parallelism: null })).rejects.toThrow();
+  await expect(argon2({ ...options, parallelism: 0 })).rejects.toThrow();
+  await expect(argon2({ ...options, parallelism: '' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, parallelism: '0' as any })).rejects.toThrow();
+
+  await expect(argon2({ ...options, hashLength: undefined })).rejects.toThrow();
+  await expect(argon2({ ...options, hashLength: null })).rejects.toThrow();
+  await expect(argon2({ ...options, hashLength: 3 })).rejects.toThrow();
+  await expect(argon2({ ...options, hashLength: '' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, hashLength: '3' as any })).rejects.toThrow();
+
+  await expect(argon2({ ...options, memorySize: undefined })).rejects.toThrow();
+  await expect(argon2({ ...options, memorySize: null })).rejects.toThrow();
+  await expect(argon2({ ...options, memorySize: 7 })).rejects.toThrow();
+  await expect(argon2({ ...options, memorySize: '' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, memorySize: '7' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, parallelism: 2, memorySize: 15 })).rejects.toThrow();
+  await expect(argon2({ ...options, parallelism: 5, memorySize: 39 })).rejects.toThrow();
+
+  await expect(argon2({ ...options, hashType: undefined })).rejects.toThrow();
+  await expect(argon2({ ...options, hashType: null })).rejects.toThrow();
+  await expect(argon2({ ...options, hashType: '' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, hashType: 'x' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, hashType: 'idx' as any })).rejects.toThrow();
+});
