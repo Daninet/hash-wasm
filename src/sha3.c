@@ -27,7 +27,6 @@
 #define sha3_max_permutation_size 25
 #define sha3_max_rate_in_qwords 24
 
-#define IS_ALIGNED_64(p) (0 == (7 & ((const char*)(p) - (const char*)0)))
 #define I64(x) x##ULL
 #define ROTL64(qword, n) ((qword) << (n) ^ ((qword) >> (64 - (n))))
 
@@ -264,7 +263,11 @@ void Hash_Update(uint32_t size)
   /* fill partial block */
   if (index) {
     uint32_t left = block_size - index;
-    memcpy((uint8_t*)ctx->message + index, msg, (size < left ? size : left));
+    uint32_t end = size < left ? size : left;
+    uint8_t* msg_pointer = (uint8_t*)ctx->message + index;
+    for (uint32_t i = 0; i < end; i++) {
+      msg_pointer[i] = msg[i];
+    }
     if (size < left) return;
 
     /* process partial block */
@@ -274,15 +277,7 @@ void Hash_Update(uint32_t size)
   }
 
   while (size >= block_size) {
-    uint64_t* aligned_message_block;
-    if (IS_ALIGNED_64(msg)) {
-      /* the most common case is processing of an already aligned message
-      without copying it */
-      aligned_message_block = (uint64_t*)msg;
-    } else {
-      memcpy(ctx->message, msg, block_size);
-      aligned_message_block = ctx->message;
-    }
+    uint64_t* aligned_message_block = (uint64_t*)msg;
 
     sha3_process_block(ctx->hash, aligned_message_block, block_size);
     msg  += block_size;
@@ -290,7 +285,11 @@ void Hash_Update(uint32_t size)
   }
 
   if (size) {
-    memcpy(ctx->message, msg, size); /* save leftovers */
+    /* save leftovers */
+    uint8_t* msg_pointer = (uint8_t*)ctx->message;
+    for (uint8_t i = 0; i < size; i++) {
+      msg_pointer[i] = msg[i];
+    }
   }
 }
 
@@ -314,7 +313,11 @@ void Hash_Final(uint8_t padding)
     ctx->rest = SHA3_FINALIZED; /* mark context as finalized */
   }
 
-  memcpy(array, ctx->hash, digest_length);
+  uint32_t* array32 = (uint32_t*)array;
+  uint32_t* hash32 = (uint32_t*)ctx->hash;
+  for (uint32_t i = 0; i < digest_length / 4; i++) {
+    array32[i] = hash32[i];
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE
