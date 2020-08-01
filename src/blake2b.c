@@ -209,7 +209,10 @@ void blake2b_update(const void *pin, size_t inlen)
     size_t fill = BLAKE2B_BLOCKBYTES - left;
     if (inlen > fill) {
       S->buflen = 0;
-      memcpy(S->buf + left, in, fill); /* Fill buffer */
+      /* Fill buffer */
+      for (uint8_t i = 0; i < fill; i++) {
+        S->buf[left + i] = in[i];
+      }
       blake2b_increment_counter(BLAKE2B_BLOCKBYTES);
       blake2b_compress(S->buf); /* Compress */
       in += fill; inlen -= fill;
@@ -220,7 +223,9 @@ void blake2b_update(const void *pin, size_t inlen)
         inlen -= BLAKE2B_BLOCKBYTES;
       }
     }
-    memcpy(S->buf + S->buflen, in, inlen);
+    for (uint8_t i = 0; i < inlen; i++) {
+      S->buf[S->buflen + i] = in[i];
+    }
     S->buflen += inlen;
   }
 }
@@ -245,7 +250,9 @@ void Hash_Final()
     store64(buffer + sizeof(S->h[i]) * i, S->h[i]);
   }
 
-  memcpy(array, buffer, S->outlen);
+  for (uint8_t i = 0; i < S->outlen; i++) {
+    array[i] = buffer[i];
+  }
 }
 
 static void blake2b_init0()
@@ -294,7 +301,9 @@ void blake2b_init_key(size_t outlen, const uint8_t *key, size_t keylen)
   if (keylen > 0) {
     uint8_t block[BLAKE2B_BLOCKBYTES];
     memset(block, 0, BLAKE2B_BLOCKBYTES);
-    memcpy(block, key, keylen);
+    for (uint8_t i = 0; i < keylen; i++) {
+      block[i] = key[i];
+    }
     blake2b_update(block, BLAKE2B_BLOCKBYTES);
   }
 }
