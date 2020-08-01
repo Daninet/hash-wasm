@@ -8,11 +8,11 @@ import wasmJson from '../wasm/argon2.wasm.json';
 interface IArgon2Options {
   password: IDataType;
   salt: IDataType;
-  iterations?: number;
-  parallelism?: number;
-  memorySize?: number;
-  hashLength?: number;
-  hashType?: 'i' | 'd' | 'id';
+  iterations: number;
+  parallelism: number;
+  memorySize: number;
+  hashLength: number;
+  hashType: 'i' | 'd' | 'id';
 }
 
 const uint32View = new DataView(new ArrayBuffer(4));
