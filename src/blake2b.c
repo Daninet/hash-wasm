@@ -77,7 +77,7 @@ static __inline__ uint64_t load64( const void *src )
 
 static __inline__ void store64( void *dst, uint64_t w )
 {
-  memcpy((void *)dst, (const void *)&w, 8);
+  *(uint64_t*)dst = w;
 }
 
 static __inline__ uint64_t rotr64( const uint64_t w, const unsigned c )
@@ -110,25 +110,25 @@ static const uint8_t blake2b_sigma[12][16] =
 };
 
 
-static void blake2b_set_lastnode()
+static __inline__ void blake2b_set_lastnode()
 {
   S->f[1] = (uint64_t)-1;
 }
 
 /* Some helper functions, not necessarily useful */
-static int blake2b_is_lastblock()
+static __inline__ int blake2b_is_lastblock()
 {
   return S->f[0] != 0;
 }
 
-static void blake2b_set_lastblock()
+static __inline__ void blake2b_set_lastblock()
 {
   if(S->last_node) blake2b_set_lastnode();
 
   S->f[0] = (uint64_t)-1;
 }
 
-static void blake2b_increment_counter(const uint64_t inc)
+static __inline__ void blake2b_increment_counter(const uint64_t inc)
 {
   S->t[0] += inc;
   S->t[1] += (S->t[0] < inc);
@@ -162,13 +162,12 @@ static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES])
 {
   uint64_t m[16];
   uint64_t v[16];
-  size_t i;
 
-  for(i = 0; i < 16; ++i) {
+  for (size_t i = 0; i < 16; ++i) {
     m[i] = load64(block + i * sizeof(m[i]));
   }
 
-  for(i = 0; i < 8; ++i) {
+  for (size_t i = 0; i < 8; ++i) {
     v[i] = S->h[i];
   }
 
@@ -194,7 +193,7 @@ static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES])
   ROUND(10);
   ROUND(11);
 
-  for(i = 0; i < 8; ++i) {
+  for (size_t i = 0; i < 8; ++i) {
     S->h[i] = S->h[i] ^ v[i] ^ v[i + 8];
   }
 }
@@ -205,18 +204,16 @@ static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES])
 void blake2b_update(const void *pin, size_t inlen)
 {
   const unsigned char * in = (const unsigned char *)pin;
-  if(inlen > 0)
-  {
+  if (inlen > 0) {
     size_t left = S->buflen;
     size_t fill = BLAKE2B_BLOCKBYTES - left;
-    if(inlen > fill)
-    {
+    if (inlen > fill) {
       S->buflen = 0;
       memcpy(S->buf + left, in, fill); /* Fill buffer */
       blake2b_increment_counter(BLAKE2B_BLOCKBYTES);
       blake2b_compress(S->buf); /* Compress */
       in += fill; inlen -= fill;
-      while(inlen > BLAKE2B_BLOCKBYTES) {
+      while (inlen > BLAKE2B_BLOCKBYTES) {
         blake2b_increment_counter(BLAKE2B_BLOCKBYTES);
         blake2b_compress(in);
         in += BLAKE2B_BLOCKBYTES;
@@ -233,18 +230,20 @@ void Hash_Final()
 {
   size_t outlen = S->outlen;
   uint8_t buffer[BLAKE2B_OUTBYTES] = {0};
-  size_t i;
 
-  if(blake2b_is_lastblock())
+  if (blake2b_is_lastblock()) {
     return;
+  }
 
   blake2b_increment_counter(S->buflen);
   blake2b_set_lastblock();
   memset(S->buf + S->buflen, 0, BLAKE2B_BLOCKBYTES - S->buflen); /* Padding */
   blake2b_compress(S->buf);
 
-  for(i = 0; i < 8; ++i) /* Output full hash to temp buffer */
+  for (size_t i = 0; i < 8; ++i) {
+    /* Output full hash to temp buffer */
     store64(buffer + sizeof(S->h[i]) * i, S->h[i]);
+  }
 
   memcpy(array, buffer, S->outlen);
 }
@@ -254,7 +253,9 @@ static void blake2b_init0()
   size_t i;
   memset(S, 0, sizeof(blake2b_state));
 
-  for(i = 0; i < 8; ++i) S->h[i] = blake2b_IV[i];
+  for (i = 0; i < 8; ++i) {
+    S->h[i] = blake2b_IV[i];
+  }
 }
 
 /* init xors IV with input parameter block */
@@ -266,13 +267,14 @@ void blake2b_init_param()
   blake2b_init0();
 
   /* IV XOR ParamBlock */
-  for(i = 0; i < 8; ++i)
+  for (i = 0; i < 8; ++i) {
     S->h[i] ^= load64(p + sizeof(S->h[i]) * i);
+  }
 
   S->outlen = P->digest_length;
 }
 
-void blake2b_init_key(size_t outlen, const void *key, size_t keylen)
+void blake2b_init_key(size_t outlen, const uint8_t *key, size_t keylen)
 {
   P->digest_length = (uint8_t)outlen;
   P->key_length    = (uint8_t)keylen;

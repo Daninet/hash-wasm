@@ -46,7 +46,12 @@ async function WASMInterface(binary: any, hashLength: number) {
     }
 
     const module = await wasmModuleCache.get(binary.name);
-    wasmInstance = await WebAssembly.instantiate(module, { env: { emscripten_memcpy_big: (dest, src, num) => memoryView.set(memoryView.subarray(src, src + num), dest)} });
+    wasmInstance = await WebAssembly.instantiate(module, {
+      env: {
+        emscripten_memcpy_big:
+          (dest, src, num) => memoryView.set(memoryView.subarray(src, src + num), dest),
+      },
+    });
 
     // eslint-disable-next-line no-underscore-dangle
     wasmInstance.exports._start();
