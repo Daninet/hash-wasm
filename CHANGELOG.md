@@ -1,3 +1,8 @@
+## 3.7.0 (July , 2020)
+
+* Added Argon2
+* Support hash lengths shorter than 16 bytes in Blake2b
+
 ## 3.6.0 (July 25, 2020)
 
 * **Breaking change**: Drop support for String() objects (normal string literals are still supported of course)

@@ -49,3 +49,26 @@ test('it invalidates the cache when changing parameters', async () => {
   hash.update('a');
   expect(hash.digest()).toBe('333fcb4ee1aa7c115355ec66ceac917c8bfd815bf7587d325aec1864edd24e34d5abe2c6b1b5ee3face62fed78dbef802f2a85cb91d455a8f5249d330853cb3c');
 });
+
+test('small digest size', async () => {
+  expect(await blake2b('abc', 8)).toBe('6b');
+  expect(await blake2b('abc', 16)).toBe('ae1e');
+  expect(await blake2b('abc', 24)).toBe('8c45ed');
+  expect(await blake2b('', 32)).toBe('1271cf25');
+
+  let hash = await createBLAKE2b(8);
+  hash.update('abc');
+  expect(hash.digest()).toBe('6b');
+
+  hash = await createBLAKE2b(16);
+  hash.update('abc');
+  expect(hash.digest()).toBe('ae1e');
+
+  hash = await createBLAKE2b(24);
+  hash.update('abc');
+  expect(hash.digest()).toBe('8c45ed');
+
+  hash = await createBLAKE2b(32);
+  hash.update('');
+  expect(hash.digest()).toBe('1271cf25');
+});

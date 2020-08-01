@@ -8,8 +8,8 @@ const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
 function validateBits(bits: number) {
-  if (!Number.isInteger(bits) || bits < 128 || bits > 512 || bits % 8 !== 0) {
-    return new Error('Invalid variant! Valid values: 128, 136, ..., 512');
+  if (!Number.isInteger(bits) || bits < 8 || bits > 512 || bits % 8 !== 0) {
+    return new Error('Invalid variant! Valid values: 8, 16, ..., 512');
   }
   return null;
 }

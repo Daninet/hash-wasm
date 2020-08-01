@@ -74,3 +74,10 @@ test('Too long keys reject', async () => {
     await expect(() => createBLAKE2b(256, key as any)).rejects.toThrow();
   }
 });
+
+test('small digest size', async () => {
+  expect(await blake2b('abc', 8, '123')).toBe('f1');
+  expect(await blake2b('abc', 16, '1')).toBe('872f');
+  expect(await blake2b('abc', 24, '123')).toBe('ee2d74');
+  expect(await blake2b('', 32, '123')).toBe('2c4839fc');
+});
