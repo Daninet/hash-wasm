@@ -7,13 +7,13 @@ import {
 
 /* global test, expect */
 
-function getNodePBKDF2(password, salt, iterations, keylen) {
-  const buf = crypto.pbkdf2Sync(password, salt, iterations, keylen, 'sha512');
+function getNodePBKDF2(password, salt, iterations, keyLength) {
+  const buf = crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha512');
   return buf.toString('hex');
 }
 
-async function getWasmPBKDF2(password, salt, iterations, keylen) {
-  const hash = await pbkdf2(password, salt, iterations, keylen, createSHA512());
+async function getWasmPBKDF2(password, salt, iterations, keyLength) {
+  const hash = await pbkdf2(password, salt, iterations, keyLength, createSHA512());
   return hash;
 }
 

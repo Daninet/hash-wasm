@@ -4,9 +4,9 @@ import createHMAC from './hmac';
 import { writeHexToUInt8, IDataType } from './util';
 
 function calculatePBKDF2(
-  digest: IHasher, salt: IDataType, iterations: number, keylen: number,
+  digest: IHasher, salt: IDataType, iterations: number, keyLength: number,
 ): string {
-  const DK = new Uint8Array(keylen);
+  const DK = new Uint8Array(keyLength);
   const block1 = new Uint8Array(salt.length + 4);
   const block1View = new DataView(block1.buffer);
   const saltBuffer = Buffer.from(salt);
@@ -17,7 +17,7 @@ function calculatePBKDF2(
 
   let destPos = 0;
   const hLen = digest.digestSize;
-  const l = Math.ceil(keylen / hLen);
+  const l = Math.ceil(keyLength / hLen);
 
   const T = new Uint8Array(hLen);
   const U = new Uint8Array(hLen);
@@ -39,7 +39,7 @@ function calculatePBKDF2(
       }
     }
 
-    DK.set(T.subarray(0, keylen - destPos), destPos);
+    DK.set(T.subarray(0, keyLength - destPos), destPos);
     destPos += hLen;
   }
 
@@ -48,14 +48,14 @@ function calculatePBKDF2(
 
 export async function pbkdf2(
   password: IDataType, salt: IDataType, iterations: number,
-  keylen: number, digest: Promise<IHasher>,
+  keyLength: number, digest: Promise<IHasher>,
 ): Promise<string> {
   if (!digest || !digest.then) {
     throw new Error('Invalid hash function is provided! Usage: pbkdf2("password", "salt", 1000, 32, createSHA1()).');
   }
 
   const hmac = await createHMAC(digest, password);
-  return calculatePBKDF2(hmac, salt, iterations, keylen);
+  return calculatePBKDF2(hmac, salt, iterations, keyLength);
 }
 
 export default pbkdf2;
