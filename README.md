@@ -300,7 +300,8 @@ pbkdf2(
   iterations: number, // number of iterations to perform
   hashLength: number, // output size in bytes
   hashFunc: Promise<IHasher> // the return value of a function like createSHA1()
-): Promise<string>
+  outputType: 'hex' | 'binary', // by default returns hex string
+): Promise<string | Uint8Array>
 
 argon2({
   password: IDataType, // password (or message) to be hashed
@@ -311,6 +312,6 @@ argon2({
   hashLength: number, // output size in bytes
   hashType: 'i' | 'd' | 'id', // argon2 variant selection
   outputType: 'hex' | 'binary' | 'encoded', // by default returns hex string
-}): Promise<string>
+}): Promise<string | Uint8Array>
 
 ```
