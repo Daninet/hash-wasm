@@ -7,13 +7,13 @@ import {
 
 /* global test, expect */
 
-function getNodePBKDF2(password, salt, iterations, keyLength) {
+function getNodePBKDF2(password, salt, iterations, keyLength, outputType?: string) {
   const buf = crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha512');
-  return buf.toString('hex');
+  return outputType === 'binary' ? new Uint8Array(buf.buffer, buf.byteOffset, buf.length) : buf.toString('hex');
 }
 
-async function getWasmPBKDF2(password, salt, iterations, keyLength) {
-  const hash = await pbkdf2(password, salt, iterations, keyLength, createSHA512());
+async function getWasmPBKDF2(password, salt, iterations, keyLength, outputType?: 'hex' | 'binary') {
+  const hash = await pbkdf2(password, salt, iterations, keyLength, createSHA512(), outputType);
   return hash;
 }
 
@@ -22,6 +22,11 @@ test('invalid parameters', async () => {
   expect(() => pbkdf2('pwd', 'salt', 1, 1, (() => '') as any)).rejects.toThrow();
   const hasher = await createSHA512();
   expect(() => pbkdf2('pwd', 'salt', 1, 1, hasher as any)).rejects.toThrow();
+  expect(() => pbkdf2('pwd', 'salt', 1, 0, createSHA512())).rejects.toThrow();
+  expect(() => pbkdf2('pwd', 'salt', 0, 1, createSHA512())).rejects.toThrow();
+  expect(() => pbkdf2('pwd', 'salt', 1, 1, createSHA512(), null)).rejects.toThrow();
+  expect(() => pbkdf2('pwd', 'salt', 1, 1, createSHA512(), '' as any)).rejects.toThrow();
+  expect(() => pbkdf2('pwd', 'salt', 1, 1, createSHA512(), 'x' as any)).rejects.toThrow();
 });
 
 test('simple test', async () => {
@@ -36,8 +41,8 @@ test('various key lengths', async () => {
   ).toBe(getNodePBKDF2('password', 'salt', 500, 1));
 
   expect(
-    await getWasmPBKDF2('password', 'salt', 500, 0),
-  ).toBe(getNodePBKDF2('password', 'salt', 500, 0));
+    await getWasmPBKDF2('password', 'salt', 500, 2),
+  ).toBe(getNodePBKDF2('password', 'salt', 500, 2));
 
   expect(
     await getWasmPBKDF2('password', 'salt', 500, 600),
@@ -116,4 +121,16 @@ test('various password types', async () => {
   expect(
     await getWasmPBKDF2(Buffer.from([0]), 'salt', 10, 32),
   ).toBe(getNodePBKDF2(Buffer.from([0]), 'salt', 10, 32));
+});
+
+test('test binary output format', async () => {
+  expect(
+    ArrayBuffer.isView(
+      await getWasmPBKDF2('123', 'salt', 2, 10, 'binary'),
+    ),
+  ).toBe(true);
+
+  expect(
+    await getWasmPBKDF2('password', 'salt', 123, 57, 'binary'),
+  ).toStrictEqual(getNodePBKDF2('password', 'salt', 123, 57, 'binary'));
 });
