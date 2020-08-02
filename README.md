@@ -266,9 +266,9 @@ xxhash32(data: IDataType, seed?: number): Promise<string>
 xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
 
 interface IHasher {
-  init: () => void;
-  update: (data: IDataType) => void;
-  digest: () => string; // returns hash in hex format
+  init: () => IHasher;
+  update: (data: IDataType) => IHasher;
+  digest: (outputType: 'hex' | 'binary') => string | Uint8Array; // by default returns hex string
   blockSize: number; // in bytes
   digestSize: number; // in bytes
 }

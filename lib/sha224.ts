@@ -27,13 +27,14 @@ export function sha224(data: IDataType): Promise<string> {
 export function createSHA224(): Promise<IHasher> {
   return WASMInterface(wasmJson, 28).then((wasm) => {
     wasm.init(224);
-    return {
-      init: () => wasm.init(224),
-      update: wasm.update,
+    const obj: IHasher = {
+      init: () => { wasm.init(224); return obj; },
+      update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 64,
       digestSize: 28,
     };
+    return obj;
   });
 }
 

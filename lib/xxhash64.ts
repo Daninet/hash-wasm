@@ -66,16 +66,18 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
     writeSeed(seedLow, seedHigh);
     wasm.writeMemory(new Uint8Array(seedBuffer));
     wasm.init();
-    return {
+    const obj: IHasher = {
       init: () => {
         wasm.writeMemory(new Uint8Array(seedBuffer));
         wasm.init();
+        return obj;
       },
-      update: wasm.update,
+      update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 32,
       digestSize: 8,
     };
+    return obj;
   });
 }
 

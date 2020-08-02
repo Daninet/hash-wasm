@@ -85,18 +85,23 @@ export function createBLAKE2b(
     }
     wasm.init(initParam);
 
-    return {
+    const obj: IHasher = {
       init: initParam > 512
         ? () => {
           wasm.writeMemory(keyBuffer);
           wasm.init(initParam);
+          return obj;
         }
-        : () => wasm.init(initParam),
-      update: wasm.update,
+        : () => {
+          wasm.init(initParam);
+          return obj;
+        },
+      update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 1024,
       digestSize: outputSize,
     };
+    return obj;
   });
 }
 

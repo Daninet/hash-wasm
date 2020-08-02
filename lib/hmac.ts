@@ -35,14 +35,16 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
 
   hasher.update(keyBuffer);
 
-  return {
+  const obj: IHasher = {
     init: () => {
       hasher.init();
       hasher.update(keyBuffer);
+      return obj;
     },
 
     update: (data: IDataType) => {
       hasher.update(data);
+      return obj;
     },
     digest: ((outputType) => {
       const uintArr = hasher.digest('binary');
@@ -55,6 +57,7 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
     blockSize: hasher.blockSize,
     digestSize: hasher.digestSize,
   };
+  return obj;
 }
 
 export function createHMAC(hash: Promise<IHasher>, key: IDataType): Promise<IHasher> {

@@ -50,13 +50,14 @@ export function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
 
   return WASMInterface(wasmJson, outputSize).then((wasm) => {
     wasm.init(bits);
-    return {
-      init: () => wasm.init(bits),
-      update: wasm.update,
+    const obj: IHasher = {
+      init: () => { wasm.init(bits); return obj; },
+      update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType, 0x01) as any,
       blockSize: 200 - 2 * outputSize,
       digestSize: outputSize,
     };
+    return obj;
   });
 }
 

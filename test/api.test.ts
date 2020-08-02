@@ -22,6 +22,9 @@ test('IHasherApi', async () => {
 
   // eslint-disable-next-line no-restricted-syntax
   for (const fn of functions) {
+    expect(fn.blockSize).toBeGreaterThan(0);
+    expect(fn.digestSize).toBeGreaterThan(0);
+
     const startValueHex = fn.digest();
     expect(typeof startValueHex).toBe('string');
     fn.init();
@@ -43,10 +46,10 @@ test('IHasherApi', async () => {
     fn.update(buf);
     const hash = fn.digest();
 
-    fn.init();
+    let chain = fn.init();
     for (let i = 0; i < 2000; i++) {
-      fn.update(new Uint8Array([arr[i]]));
+      chain = chain.update(new Uint8Array([arr[i]]));
     }
-    expect(fn.digest()).toBe(hash);
+    expect(chain.digest()).toBe(hash);
   }
 });

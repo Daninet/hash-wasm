@@ -11,8 +11,8 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
   T;
 
 export type IHasher = {
-  init: () => void;
-  update: (data: IDataType) => void;
+  init: () => IHasher;
+  update: (data: IDataType) => IHasher;
   digest: {
     (outputType: 'binary'): Uint8Array;
     (outputType?: 'hex'): string;

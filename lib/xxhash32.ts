@@ -44,13 +44,14 @@ export function createXXHash32(seed = 0): Promise<IHasher> {
 
   return WASMInterface(wasmJson, 4).then((wasm) => {
     wasm.init(seed);
-    return {
-      init: () => wasm.init(seed),
-      update: wasm.update,
+    const obj: IHasher = {
+      init: () => { wasm.init(seed); return obj; },
+      update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 16,
       digestSize: 4,
     };
+    return obj;
   });
 }
 

@@ -27,13 +27,14 @@ export function sha512(data: IDataType): Promise<string> {
 export function createSHA512(): Promise<IHasher> {
   return WASMInterface(wasmJson, 64).then((wasm) => {
     wasm.init(512);
-    return {
-      init: () => wasm.init(512),
-      update: wasm.update,
+    const obj: IHasher = {
+      init: () => { wasm.init(512); return obj; },
+      update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 128,
       digestSize: 64,
     };
+    return obj;
   });
 }
 

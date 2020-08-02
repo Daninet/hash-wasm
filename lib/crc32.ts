@@ -27,13 +27,14 @@ export function crc32(data: IDataType): Promise<string> {
 export function createCRC32(): Promise<IHasher> {
   return WASMInterface(wasmJson, 4).then((wasm) => {
     wasm.init();
-    return {
-      init: () => wasm.init(),
-      update: wasm.update,
+    const obj: IHasher = {
+      init: () => { wasm.init(); return obj; },
+      update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 4,
       digestSize: 4,
     };
+    return obj;
   });
 }
 
