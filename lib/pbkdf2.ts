@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 import { IHasher } from './WASMInterface';
 import createHMAC from './hmac';
-import { writeHexToUInt8, IDataType } from './util';
+import { IDataType } from './util';
 
 function calculatePBKDF2(
   digest: IHasher, salt: IDataType, iterations: number, keyLength: number,
@@ -19,21 +19,21 @@ function calculatePBKDF2(
   const hLen = digest.digestSize;
   const l = Math.ceil(keyLength / hLen);
 
-  const T = new Uint8Array(hLen);
-  const U = new Uint8Array(hLen);
+  let T: Uint8Array = null;
+  let U: Uint8Array = null;
 
   for (let i = 1; i <= l; i++) {
     block1View.setUint32(salt.length, i);
 
     digest.init();
     digest.update(block1);
-    writeHexToUInt8(T, digest.digest());
-    U.set(T);
+    T = digest.digest('binary');
+    U = T.slice();
 
     for (let j = 1; j < iterations; j++) {
       digest.init();
       digest.update(U);
-      writeHexToUInt8(U, digest.digest());
+      U = digest.digest('binary');
       for (let k = 0; k < hLen; k++) {
         T[k] ^= U[k];
       }

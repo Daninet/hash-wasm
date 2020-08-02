@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 import { IHasher } from './WASMInterface';
-import { writeHexToUInt8, IDataType } from './util';
+import { IDataType } from './util';
 
 function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
   const { blockSize } = hasher;
@@ -9,8 +9,7 @@ function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
 
   if (buf.length > blockSize) {
     hasher.update(buf);
-    const uintArr = new Uint8Array(hasher.digestSize);
-    writeHexToUInt8(uintArr, hasher.digest());
+    const uintArr = hasher.digest('binary');
     hasher.init();
     return uintArr;
   }
@@ -21,12 +20,11 @@ function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
 function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
   hasher.init();
 
-  const { blockSize, digestSize } = hasher;
+  const { blockSize } = hasher;
   const keyBuf = calculateKeyBuffer(hasher, key);
   const keyBuffer = new Uint8Array(blockSize);
   keyBuffer.set(keyBuf);
 
-  const h = new Uint8Array(digestSize);
   const opad = new Uint8Array(blockSize);
 
   for (let i = 0; i < blockSize; i++) {
@@ -47,10 +45,10 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
       hasher.update(data);
     },
     digest: ((outputType) => {
-      writeHexToUInt8(h, hasher.digest());
+      const uintArr = hasher.digest('binary');
       hasher.init();
       hasher.update(opad);
-      hasher.update(h);
+      hasher.update(uintArr);
       return hasher.digest(outputType);
     }) as any,
 

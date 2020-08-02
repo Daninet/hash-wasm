@@ -26,9 +26,7 @@ async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promis
     const blake = await createBLAKE2b(len * 8);
     blake.update(int32LE(len));
     blake.update(buf);
-    const res = new Uint8Array(len);
-    writeHexToUInt8(res, blake.digest());
-    return res;
+    return blake.digest('binary');
   }
 
   const r = Math.ceil(len / 32) - 2;
@@ -37,14 +35,13 @@ async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promis
   blake512.init();
   blake512.update(int32LE(len));
   blake512.update(buf);
-  const vp = new Uint8Array(64);
-  writeHexToUInt8(vp, blake512.digest());
+  let vp = blake512.digest('binary');
   ret.set(vp.subarray(0, 32), 0);
 
   for (let i = 1; i < r; i++) {
     blake512.init();
     blake512.update(vp);
-    writeHexToUInt8(vp, blake512.digest());
+    vp = blake512.digest('binary');
     ret.set(vp.subarray(0, 32), i * 32);
   }
 
@@ -59,7 +56,7 @@ async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promis
   }
 
   blakeSmall.update(vp);
-  writeHexToUInt8(vp, blakeSmall.digest());
+  vp = blakeSmall.digest('binary');
   ret.set(vp.subarray(0, partialBytesNeeded), r * 32);
 
   return ret;
@@ -116,8 +113,8 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
   const lanes = segments * 4;
 
   const param = new Uint8Array(72);
-  const H0 = blake512.digest();
-  writeHexToUInt8(param, H0);
+  const H0 = blake512.digest('binary');
+  param.set(H0);
 
   for (let lane = 0; lane < parallelism; lane++) {
     param.set(int32LE(0), 64);
