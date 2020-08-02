@@ -164,10 +164,13 @@ run();
 Browser support
 =====
 
+<br/>
+
 Chrome | Safari | Firefox | Edge | IE            | Node.js
 -------|--------|---------|------|---------------|--------
 57+    | 11+    | 53+     | 16+  | Not supported | 8+
 
+<br/>
 
 Benchmark
 =====
