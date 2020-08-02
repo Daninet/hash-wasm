@@ -5,6 +5,7 @@
 * Throw an error when an IHasher instance is reused without init() call.
 * Add "binary" and "encoded" output types to argon2
 * Update benchmark results
+* Remove all dependencies on Buffer object in standalone mode
 
 ## 3.7.0 (August 1, 2020)
 

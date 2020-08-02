@@ -1,11 +1,11 @@
 /* eslint-disable no-bitwise */
 import { IHasher } from './WASMInterface';
-import { IDataType } from './util';
+import { getUInt8Buffer, IDataType } from './util';
 
 function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
   const { blockSize } = hasher;
 
-  const buf = Buffer.from(key);
+  const buf = getUInt8Buffer(key);
 
   if (buf.length > blockSize) {
     hasher.update(buf);

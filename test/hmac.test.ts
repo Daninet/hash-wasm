@@ -8,9 +8,13 @@ import {
 
 /* global test, expect */
 
-function getNodeHMAC(algorithm, key, data) {
+function getNodeHMAC(algorithm, key, data, outputType ?: 'hex' | 'binary') {
   const hmac = crypto.createHmac(algorithm, key);
   hmac.update(data);
+  if (outputType === 'binary') {
+    const buf = hmac.digest();
+    return new Uint8Array(buf.buffer, buf.byteOffset, buf.length);
+  }
   return hmac.digest('hex');
 }
 
@@ -144,4 +148,17 @@ test('HMAC can be reinitialized with long key', async () => {
     hasher.update(data);
     expect(hasher.digest()).toBe(getNodeHMAC('sha3-512', key, data));
   }
+});
+
+test('test binary output format', async () => {
+  const algo = createSHA3(512);
+  expect(
+    ArrayBuffer.isView(
+      (await createHMAC(algo, 'key')).digest('binary'),
+    ),
+  ).toBe(true);
+
+  expect(
+    (await createHMAC(algo, 'key')).digest('binary'),
+  ).toStrictEqual(getNodeHMAC('sha3-512', 'key', '', 'binary'));
 });
