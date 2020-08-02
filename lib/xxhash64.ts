@@ -72,7 +72,7 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
         wasm.init();
       },
       update: wasm.update,
-      digest: () => wasm.digest(),
+      digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 32,
       digestSize: 8,
     };

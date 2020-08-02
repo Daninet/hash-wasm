@@ -30,7 +30,7 @@ export function createSHA224(): Promise<IHasher> {
     return {
       init: () => wasm.init(224),
       update: wasm.update,
-      digest: () => wasm.digest(),
+      digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 64,
       digestSize: 28,
     };

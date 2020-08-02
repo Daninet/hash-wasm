@@ -52,7 +52,7 @@ export function createSHA3(bits: IValidBits = 512): Promise<IHasher> {
     return {
       init: () => wasm.init(bits),
       update: wasm.update,
-      digest: () => wasm.digest(0x06),
+      digest: (outputType) => wasm.digest(outputType, 0x06) as any,
       blockSize: 200 - 2 * outputSize,
       digestSize: outputSize,
     };

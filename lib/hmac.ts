@@ -46,14 +46,13 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
     update: (data: IDataType) => {
       hasher.update(data);
     },
-
-    digest: () => {
+    digest: ((outputType) => {
       writeHexToUInt8(h, hasher.digest());
       hasher.init();
       hasher.update(opad);
       hasher.update(h);
-      return hasher.digest();
-    },
+      return hasher.digest(outputType);
+    }) as any,
 
     blockSize: hasher.blockSize,
     digestSize: hasher.digestSize,

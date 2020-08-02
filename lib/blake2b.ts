@@ -93,7 +93,7 @@ export function createBLAKE2b(
         }
         : () => wasm.init(initParam),
       update: wasm.update,
-      digest: () => wasm.digest(),
+      digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 1024,
       digestSize: outputSize,
     };

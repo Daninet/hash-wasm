@@ -47,7 +47,7 @@ export function createXXHash32(seed = 0): Promise<IHasher> {
     return {
       init: () => wasm.init(seed),
       update: wasm.update,
-      digest: () => wasm.digest(),
+      digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 16,
       digestSize: 4,
     };

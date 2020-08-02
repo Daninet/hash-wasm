@@ -30,7 +30,7 @@ export function createRIPEMD160(): Promise<IHasher> {
     return {
       init: () => wasm.init(),
       update: wasm.update,
-      digest: () => wasm.digest(),
+      digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 64,
       digestSize: 20,
     };

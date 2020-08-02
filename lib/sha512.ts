@@ -30,7 +30,7 @@ export function createSHA512(): Promise<IHasher> {
     return {
       init: () => wasm.init(512),
       update: wasm.update,
-      digest: () => wasm.digest(),
+      digest: (outputType) => wasm.digest(outputType) as any,
       blockSize: 128,
       digestSize: 64,
     };

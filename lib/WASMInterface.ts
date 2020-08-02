@@ -13,7 +13,10 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
 export type IHasher = {
   init: () => void;
   update: (data: IDataType) => void;
-  digest: () => string;
+  digest: {
+    (outputType: 'binary'): Uint8Array;
+    (outputType?: 'hex'): string;
+  };
   blockSize: number;
   digestSize: number;
 }
@@ -85,8 +88,13 @@ async function WASMInterface(binary: any, hashLength: number) {
 
   const digestChars = new Uint8Array(hashLength * 2);
 
-  const digest = (padding: number = null): string => {
+  const digest = (outputType: 'hex' | 'binary', padding: number = null): Uint8Array | string => {
     wasmInstance.exports.Hash_Final(padding);
+
+    if (outputType === 'binary') {
+      return memoryView.slice(0, hashLength);
+    }
+
     return getDigestHex(digestChars, memoryView, hashLength);
   };
 
@@ -127,12 +135,13 @@ async function WASMInterface(binary: any, hashLength: number) {
     if (!canSimplify(data, initParam)) {
       init(initParam);
       update(data);
-      return digest(digestParam);
+      return digest('hex', digestParam) as string;
     }
 
     const buffer = getUInt8Buffer(data);
     memoryView.set(buffer);
     wasmInstance.exports.Hash_Calculate(buffer.length, initParam, digestParam);
+
     return getDigestHex(digestChars, memoryView, hashLength);
   };
 
