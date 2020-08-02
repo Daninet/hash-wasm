@@ -3,6 +3,8 @@
 * Allow returning Uint8Array from digest()
 * Allow operation chaining in createXXXX() response
 * Throw an error when an IHasher instance is reused without init() call.
+* Add "binary" and "encoded" output types to argon2
+* Update benchmark results
 
 ## 3.7.0 (August 1, 2020)
 
