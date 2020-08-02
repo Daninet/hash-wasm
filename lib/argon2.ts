@@ -1,4 +1,5 @@
 import {
+  encodeBase64,
   getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
 } from './util';
 import { createBLAKE2b } from './blake2b';
@@ -13,6 +14,17 @@ interface IArgon2Options {
   memorySize: number;
   hashLength: number;
   hashType: 'i' | 'd' | 'id';
+  outputType?: 'hex' | 'binary' | 'encoded';
+}
+
+function encodeResult(salt: Uint8Array, options: IArgon2Options, res: Uint8Array): string {
+  const parameters = [
+    `m=${options.memorySize}`,
+    `t=${options.iterations}`,
+    `p=${options.parallelism}`,
+  ].join(',');
+
+  return `$argon2${options.hashType}$v=19$${parameters}$${encodeBase64(salt, false)}$${encodeBase64(res, false)}`;
 }
 
 const uint32View = new DataView(new ArrayBuffer(4));
@@ -74,7 +86,7 @@ function getHashType(type: IArgon2Options['hashType']): number {
   return 0;
 }
 
-async function argon2Internal(options: IArgon2Options): Promise<string> {
+async function argon2Internal(options: IArgon2Options): Promise<string | Uint8Array> {
   const { parallelism, iterations, hashLength } = options;
   const password = getUInt8Buffer(options.password);
   const salt = getUInt8Buffer(options.salt);
@@ -135,8 +147,17 @@ async function argon2Internal(options: IArgon2Options): Promise<string> {
 
   const res = await hashFunc(blake512, C, hashLength);
 
-  const digestChars = new Uint8Array(hashLength * 2);
-  return getDigestHex(digestChars, res, hashLength);
+  if (options.outputType === 'hex') {
+    const digestChars = new Uint8Array(hashLength * 2);
+    return getDigestHex(digestChars, res, hashLength);
+  }
+
+  if (options.outputType === 'encoded') {
+    return encodeResult(salt, options, res);
+  }
+
+  // return binary format
+  return res;
 }
 
 const validateOptions = (options: IArgon2Options) => {
@@ -185,9 +206,17 @@ const validateOptions = (options: IArgon2Options) => {
   if (!['i', 'd', 'id'].includes(options.hashType)) {
     throw new Error(`Insupported hash type ${options.hashType}. Valid values: ['i', 'd', 'id']`);
   }
+
+  if (options.outputType === undefined) {
+    options.outputType = 'hex';
+  }
+
+  if (!['hex', 'binary', 'encoded'].includes(options.outputType)) {
+    throw new Error(`Insupported output type ${options.outputType}. Valid values: ['hex', 'binary', 'encoded']`);
+  }
 };
 
-export const argon2 = async (options: IArgon2Options): Promise<string> => {
+export const argon2 = async (options: IArgon2Options): Promise<string | Uint8Array> => {
   validateOptions(options);
 
   return argon2Internal(options);

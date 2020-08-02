@@ -2,7 +2,8 @@ import { argon2 } from '../lib';
 /* global test, expect */
 
 const hash = async (
-  password, salt, parallelism, iterations, memorySize, hashLength, hashType,
+  password, salt, parallelism, iterations, memorySize,
+  hashLength, outputType, hashType = null,
 ) => argon2({
   password,
   salt,
@@ -10,11 +11,11 @@ const hash = async (
   iterations,
   memorySize,
   hashLength,
+  outputType,
   hashType,
 });
 
 const hashMultiple = async (...params: Parameters<typeof hash>) => {
-  params.pop();
   const parr = [
     [...params, 'i'],
     [...params, 'd'],
@@ -26,73 +27,73 @@ const hashMultiple = async (...params: Parameters<typeof hash>) => {
 
 test('argon2d', async () => {
   expect(
-    await hash('a', 'abcdefgh', 1, 2, 16, 16, 'd'),
+    await hash('a', 'abcdefgh', 1, 2, 16, 16, 'hex', 'd'),
   ).toBe('77ab7ab1e8b3a4c3610327502709b131');
 
   expect(
-    await hash('text demo', '123456789', 7, 20, 56, 32, 'd'),
+    await hash('text demo', '123456789', 7, 20, 56, 32, 'hex', 'd'),
   ).toBe('4470e3dea5a56405b579940a0da1be1f0b93dde207abf29a97fa24ea80ec1ad7');
 
   expect(
-    await hash('text demo', '123456789', 2, 1, 32, 32, 'd'),
+    await hash('text demo', '123456789', 2, 1, 32, 32, 'hex', 'd'),
   ).toBe('e606633e6ce0148e7397c48fae9ce69e75c2dbb94fa87ac70b620d36855ca317');
 
   expect(
-    await hash('abc', '1234567812345678', 1, 1, 8, 4, 'd'),
+    await hash('abc', '1234567812345678', 1, 1, 8, 4, 'hex', 'd'),
   ).toBe('1fe14ab8');
 
   expect(
-    await hash('abc', '12345678', 3, 5, 31, 18, 'd'),
+    await hash('abc', '12345678', 3, 5, 31, 18, 'hex', 'd'),
   ).toBe('1a4a99591876ae1f0fa0a664c15cb727377e');
 });
 
 test('argon2id', async () => {
   expect(
-    await hash('a', 'abcdefgh', 1, 2, 16, 16, 'id'),
+    await hash('a', 'abcdefgh', 1, 2, 16, 16, 'hex', 'id'),
   ).toBe('f94aa50873d67fdd589d6774b87c0634');
 
   expect(
-    await hash('text demo', '123456789', 7, 20, 56, 32, 'id'),
+    await hash('text demo', '123456789', 7, 20, 56, 32, 'hex', 'id'),
   ).toBe('ec2f7a502b4bfe7dc758c4c5120c7420830d42efdc7a78971743649b30cafb15');
 
   expect(
-    await hash('text demo', '123456789', 2, 1, 64, 32, 'id'),
+    await hash('text demo', '123456789', 2, 1, 64, 32, 'hex', 'id'),
   ).toBe('b3f9d902f65bd329cf0810c78b19c746b6f46fbb8243647a8942ab83b6850d47');
 
   expect(
-    await hash('abc', '1234567812345678', 1, 1, 8, 4, 'id'),
+    await hash('abc', '1234567812345678', 1, 1, 8, 4, 'hex', 'id'),
   ).toBe('ffde3f6a');
 
   expect(
-    await hash('abc', '12345678', 3, 5, 31, 18, 'id'),
+    await hash('abc', '12345678', 3, 5, 31, 18, 'hex', 'id'),
   ).toBe('4e37e561150881c66096b17bc6a326e37e87');
 });
 
 test('argon2i', async () => {
   expect(
-    await hash('a', 'abcdefgh', 1, 2, 16, 16, 'i'),
+    await hash('a', 'abcdefgh', 1, 2, 16, 16, 'hex', 'i'),
   ).toBe('2852426eb498671a10f2a91185baec84');
 
   expect(
-    await hash('text demo', '123456789', 7, 20, 56, 32, 'i'),
+    await hash('text demo', '123456789', 7, 20, 56, 32, 'hex', 'i'),
   ).toBe('d8a577f24c319bfae90556a30851ac5e031c7f6e752fb6caf05471a26ce061bb');
 
   expect(
-    await hash('text demo', '123456789', 2, 1, 64, 32, 'i'),
+    await hash('text demo', '123456789', 2, 1, 64, 32, 'hex', 'i'),
   ).toBe('d88b0eafcd02b94b28f77246dda8c1a47533cfc7e6bd948edb5eca27fdbb7dc9');
 
   expect(
-    await hash('abc', '1234567812345678', 1, 1, 8, 4, 'i'),
+    await hash('abc', '1234567812345678', 1, 1, 8, 4, 'hex', 'i'),
   ).toBe('ced82c90');
 
   expect(
-    await hash('abc', '12345678', 3, 5, 31, 18, 'i'),
+    await hash('abc', '12345678', 3, 5, 31, 18, 'hex', 'i'),
   ).toBe('c0efcdc71934adfa47d3e48cb82679899b21');
 });
 
 test('others', async () => {
   expect(
-    await hashMultiple('password', 'somesalt', 1, 1, 64, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 1, 1, 64, 24, 'hex'),
   ).toMatchObject([
     'b9c401d1844a67d50eae3967dc28870b22e508092e861a37',
     '8727405fd07c32c78d64f547f24150d3f2e703a89f981a19',
@@ -100,7 +101,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt', 1, 2, 64, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 1, 2, 64, 24, 'hex'),
   ).toMatchObject([
     '8cf3d8f76a6617afe35fac48eb0b7433a9a670ca4a07ed64',
     '3be9ec79a69b75d3752acb59a1fbb8b295a46529c48fbb75',
@@ -108,7 +109,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt', 2, 2, 64, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 2, 2, 64, 24, 'hex'),
   ).toMatchObject([
     '2089f3e78a799720f80af806553128f29b132cafe40d059f',
     '68e2462c98b8bc6bb60ec68db418ae2c9ed24fc6748a40e9',
@@ -116,7 +117,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt', 2, 3, 256, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 2, 3, 256, 24, 'hex'),
   ).toMatchObject([
     'f5bbf5d4c3836af13193053155b73ec7476a6a2eb93fd5e6',
     'f4f0669218eaf3641f39cc97efb915721102f4b128211ef2',
@@ -124,7 +125,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt', 4, 4, 4096, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 4, 4, 4096, 24, 'hex'),
   ).toMatchObject([
     'a11f7b7f3f93f02ad4bddb59ab62d121e278369288a0d0e7',
     '935598181aa8dc2b720914aa6435ac8d3e3a4210c5b0fb2d',
@@ -132,7 +133,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt', 8, 4, 1024, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 8, 4, 1024, 24, 'hex'),
   ).toMatchObject([
     '0cdd3956aa35e6b475a7b0c63488822f774f15b43f6e6e17',
     '83604fc2ad0589b9d055578f4d3cc55bc616df3578a896e9',
@@ -140,7 +141,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt', 3, 2, 64, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 3, 2, 64, 24, 'hex'),
   ).toMatchObject([
     '5cab452fe6b8479c8661def8cd703b611a3905a6d5477fe6',
     '22474a423bda2ccd36ec9afd5119e5c8949798cadf659f51',
@@ -148,7 +149,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt', 6, 3, 1024, 24, 'i'),
+    await hashMultiple('password', 'somesalt', 6, 3, 1024, 24, 'hex'),
   ).toMatchObject([
     'd236b29c2b2a09babee842b0dec6aa1e83ccbdea8023dced',
     'a3351b0319a53229152023d9206902f4ef59661cdca89481',
@@ -156,7 +157,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('qwe', 'somesalt123', 1, 1, 8, 7, 'i'),
+    await hashMultiple('qwe', 'somesalt123', 1, 1, 8, 7, 'hex'),
   ).toMatchObject([
     '688c5ac265ee78',
     '3af555cede3a50',
@@ -164,7 +165,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('qwe', 'somesalt123', 1, 1, 9, 7, 'i'),
+    await hashMultiple('qwe', 'somesalt123', 1, 1, 9, 7, 'hex'),
   ).toMatchObject([
     '774cf6adb35c48',
     '68e9964c622ea7',
@@ -172,7 +173,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('qwe', 'somesalt123', 5, 7, 41, 15, 'i'),
+    await hashMultiple('qwe', 'somesalt123', 5, 7, 41, 15, 'hex'),
   ).toMatchObject([
     'b0e2e7a5ca0057aa65c0e7b0a77d03',
     '973b1c351d85311eec2aca0c2b05ec',
@@ -180,7 +181,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('qwe', 'somesalt123', 5, 7, 139, 15, 'i'),
+    await hashMultiple('qwe', 'somesalt123', 5, 7, 139, 15, 'hex'),
   ).toMatchObject([
     'ef0d9bb599133b5aae77072887f0dd',
     '9f4778f1620e755c20cf49e634211d',
@@ -188,7 +189,7 @@ test('others', async () => {
   ]);
 
   expect(
-    await hashMultiple('qwe', 'somesalt123', 1, 1, 32, 71, 'i'),
+    await hashMultiple('qwe', 'somesalt123', 1, 1, 32, 71, 'hex'),
   ).toMatchObject([
     'e89516925f17ba503ddf434ee9d95f74222afb51d215189f1ade81ef4b659a0bb1472f51b0d80afde4b255a29b8003aa63872eb56befdf0ea6a9686f781ea7fed679a31b8a9b64',
     'da947a6a055943ba464ebfceab7d7ae09641e6b36b91eed1e982d95791ae4d14b0c922d25f709c79a569dd71f18c14a64c209eef79cfff729286bb572d9a90f1967ea7f7e01d5d',
@@ -198,7 +199,7 @@ test('others', async () => {
 
 test('binary input', async () => {
   expect(
-    await hashMultiple(Buffer.from([0]), Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]), 5, 17, 53, 16, 'i'),
+    await hashMultiple(Buffer.from([0]), Buffer.from([0, 0, 0, 0, 0, 0, 0, 0]), 5, 17, 53, 16, 'hex'),
   ).toMatchObject([
     'e5b19d4a233d1d1c8454090d6ecaf5bc',
     '135fd6b89f6b06f3358f233e51b8f016',
@@ -206,7 +207,7 @@ test('binary input', async () => {
   ]);
 
   expect(
-    await hashMultiple(Buffer.from([255, 255]), Buffer.from([255, 255, 255, 255, 255, 255, 255, 255]), 5, 17, 53, 16, 'i'),
+    await hashMultiple(Buffer.from([255, 255]), Buffer.from([255, 255, 255, 255, 255, 255, 255, 255]), 5, 17, 53, 16, 'hex'),
   ).toMatchObject([
     '5edb1b6e86311f3eb95bcb4d57c27947',
     'eb470fa05da18e5b3691febff0f326dc',
@@ -214,9 +215,57 @@ test('binary input', async () => {
   ]);
 });
 
+test('encoded output', async () => {
+  expect(
+    await hashMultiple('qwe', 'somesalt123', 5, 7, 139, 15, 'encoded'),
+  ).toMatchObject([
+    '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd',
+    '$argon2d$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$n0d48WIOdVwgz0nmNCEd',
+    '$argon2id$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$g+mKY4wmjTKtrsQ6Cahc',
+  ]);
+
+  expect(
+    await hashMultiple('qwe', 'somesalt1234', 5, 7, 139, 14, 'encoded'),
+  ).toMatchObject([
+    '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$OjqEjKhIhkBJiOzuxF0',
+    '$argon2d$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$1X4UBqWUQ7jTkDk0TJ0',
+    '$argon2id$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$JGdE2OSkkRVj11OyKTY',
+  ]);
+
+  expect(
+    await hashMultiple('qwer', 'somesalt12345', 1, 3, 15, 13, 'encoded'),
+  ).toMatchObject([
+    '$argon2i$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$swV4i6hngm7sH6eJ+w',
+    '$argon2d$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$1JFQBXLo5kulbgktjA',
+    '$argon2id$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$1+hSMJUXYUFO9jVUnQ',
+  ]);
+});
+
+test('binary output', async () => {
+  expect(
+    ArrayBuffer.isView(
+      await hash('a', 'abcdefgh', 1, 2, 16, 16, 'binary', 'd'),
+    ),
+  ).toBe(true);
+
+  expect(
+    await hashMultiple('qwe', 'somesalt123', 5, 7, 41, 15, 'binary'),
+  ).toMatchObject([
+    new Uint8Array(
+      [0xb0, 0xe2, 0xe7, 0xa5, 0xca, 0x00, 0x57, 0xaa, 0x65, 0xc0, 0xe7, 0xb0, 0xa7, 0x7d, 0x03],
+    ),
+    new Uint8Array(
+      [0x97, 0x3b, 0x1c, 0x35, 0x1d, 0x85, 0x31, 0x1e, 0xec, 0x2a, 0xca, 0x0c, 0x2b, 0x05, 0xec],
+    ),
+    new Uint8Array(
+      [0xd5, 0x3b, 0xb6, 0x35, 0xcb, 0x70, 0x14, 0x33, 0xb9, 0x3c, 0x7d, 0x2e, 0x27, 0x65, 0xf3],
+    ),
+  ]);
+});
+
 test('longer calculations', async () => {
   expect(
-    await hashMultiple('password', 'somesalt123', 11, 27, 13921, 16, 'i'),
+    await hashMultiple('password', 'somesalt123', 11, 27, 13921, 16, 'hex'),
   ).toMatchObject([
     'fd8a90f92f5370af8b7d9a69193cf49f',
     '0a624df8eb80045d1c580fa353697dbb',
@@ -224,7 +273,7 @@ test('longer calculations', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt123', 3, 4500, 99, 16, 'i'),
+    await hashMultiple('password', 'somesalt123', 3, 4500, 99, 16, 'hex'),
   ).toMatchObject([
     '20b864a80f1de88c55102432df5869ff',
     '17a96f78d9a369d0d9141805d00f721d',
@@ -232,7 +281,7 @@ test('longer calculations', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt123', 3, 4500, 99, 16, 'i'),
+    await hashMultiple('password', 'somesalt123', 3, 4500, 99, 16, 'hex'),
   ).toMatchObject([
     '20b864a80f1de88c55102432df5869ff',
     '17a96f78d9a369d0d9141805d00f721d',
@@ -240,7 +289,7 @@ test('longer calculations', async () => {
   ]);
 
   expect(
-    await hashMultiple('password', 'somesalt123', 1, 2, 250000, 16, 'i'),
+    await hashMultiple('password', 'somesalt123', 1, 2, 250000, 16, 'hex'),
   ).toMatchObject([
     '3f9db9d0e65d9c78d53620bdcdcb04e0',
     '67f09ac991e535f9a99f4d6c4ac80f32',
@@ -307,4 +356,9 @@ test('Invalid parameters', async () => {
   await expect(argon2({ ...options, hashType: '' as any })).rejects.toThrow();
   await expect(argon2({ ...options, hashType: 'x' as any })).rejects.toThrow();
   await expect(argon2({ ...options, hashType: 'idx' as any })).rejects.toThrow();
+
+  await expect(argon2({ ...options, outputType: null })).rejects.toThrow();
+  await expect(argon2({ ...options, outputType: '' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, outputType: 'x' as any })).rejects.toThrow();
+  await expect(argon2({ ...options, outputType: 'idx' as any })).rejects.toThrow();
 });

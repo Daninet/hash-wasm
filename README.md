@@ -306,6 +306,7 @@ argon2({
   memorySize: number, // amount of memory to be used in kibibytes (1024 bytes)
   hashLength: number, // output size in bytes
   hashType: 'i' | 'd' | 'id', // argon2 variant selection
+  outputType: 'hex' | 'binary' | 'encoded', // by default returns hex string
 }): Promise<string>
 
 ```
