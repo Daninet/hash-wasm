@@ -51,5 +51,8 @@ test('IHasherApi', async () => {
       chain = chain.update(new Uint8Array([arr[i]]));
     }
     expect(chain.digest()).toBe(hash);
+
+    expect(() => fn.digest()).toThrow();
+    expect(() => fn.update('a')).toThrow();
   }
 });

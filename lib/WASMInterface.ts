@@ -26,6 +26,7 @@ const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();
 async function WASMInterface(binary: any, hashLength: number) {
   let wasmInstance = null;
   let memoryView: Uint8Array = null;
+  let initialized = false;
 
   if (typeof WebAssembly === 'undefined') {
     throw new Error('WebAssembly is not supported in this environment!');
@@ -68,6 +69,7 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 
   const init = (bits: number = null) => {
+    initialized = true;
     wasmInstance.exports.Hash_Init(bits);
   };
 
@@ -82,6 +84,9 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 
   const update = (data: IDataType) => {
+    if (!initialized) {
+      throw new Error('update() called before init()');
+    }
     const Uint8Buffer = getUInt8Buffer(data);
     updateUInt8Array(Uint8Buffer);
   };
@@ -89,6 +94,11 @@ async function WASMInterface(binary: any, hashLength: number) {
   const digestChars = new Uint8Array(hashLength * 2);
 
   const digest = (outputType: 'hex' | 'binary', padding: number = null): Uint8Array | string => {
+    if (!initialized) {
+      throw new Error('digest() called before init()');
+    }
+    initialized = false;
+
     wasmInstance.exports.Hash_Final(padding);
 
     if (outputType === 'binary') {
