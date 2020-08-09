@@ -2,10 +2,8 @@
 
 [![codecov](https://codecov.io/gh/Daninet/hash-wasm/branch/master/graph/badge.svg)](https://codecov.io/gh/Daninet/hash-wasm)
 
-Hash-WASM is a fast and portable hash function library.
-
+Hash-WASM is a ⚡lightning fast⚡ and portable hash function library.
 It is using hand-tuned WebAssembly binaries to calculate the hash faster than other libraries.
-
 
 Supported algorithms
 =======
@@ -35,12 +33,14 @@ Features
 - Works without Webpack or other bundlers
 - WASM modules are bundled as base64 strings (no problems with linking)
 - Supports tree shaking (it only bundles the hash algorithms you need)
+- It's lightweight. Including a single algorithm increases the bundle size with only 10-20KB
 - Includes TypeScript type definitions
 - Works in Web Workers
 - Zero dependencies
 - Supports concurrent hash calculations with multiple states
-- Transparent [build process](https://github.com/Daninet/hash-wasm/actions)
-- Easy to use Promise-based async API
+- [Unit tests](https://github.com/Daninet/hash-wasm/tree/master/test) for all algorithms
+- 100% open source & transparent [build process](https://github.com/Daninet/hash-wasm/actions)
+- Easy to use, Promise-based async API
 
 
 Installation
@@ -59,9 +59,11 @@ or it can be inserted directly into HTML (via [jsDelivr](https://www.jsdelivr.co
 Examples
 =======
 
-### React.js demo app
+### Demo apps
 
-[Hash calculator](https://3w4be.csb.app/) - [React.js source code](https://codesandbox.io/s/hash-wasm-3w4be?file=/src/App.tsx)
+[Hash calculator](https://3w4be.csb.app/) - [source code](https://codesandbox.io/s/hash-wasm-3w4be?file=/src/App.tsx)
+
+[MD5 file hasher using HTML5 File API](https://stackoverflow.com/a/63287199/6251760)
 
 ### Usage with the shorthand form
 
@@ -115,7 +117,7 @@ run();
 
 ### Calculating HMAC
 
-All supported hash functions can be used to calculate HMAC. For the best performance, avoid calling createXXXX() in loops (see `Advanced usage with chunked input` section above)
+All supported hash functions can be used to calculate HMAC. For the best performance, avoid calling createXXXX() in loops (see `Advanced usage with streaming input` section above)
 
 ```javascript
 import { createHMAC, createSHA3 } from 'hash-wasm';
@@ -143,7 +145,7 @@ run();
 
 ### Calculating PBKDF2
 
-All supported hash functions can be used to calculate PBKDF2. For the best performance, avoid calling createXXXX() in loops (see `Advanced usage with chunked input` section above)
+All supported hash functions can be used to calculate PBKDF2. For the best performance, avoid calling createXXXX() in loops (see `Advanced usage with streaming input` section above)
 
 ```javascript
 import { pbkdf2, createSHA1 } from 'hash-wasm';
@@ -315,3 +317,12 @@ argon2({
 }): Promise<string | Uint8Array>
 
 ```
+
+Future plans
+=====
+
+- Write a polyfill which keeps bundle sizes low and enables running binaries containing newer WASM instructions
+- Use WebAssembly Bulk Memory Operations
+- Use WebAssembly SIMD instructions (expecting a 10-20% performance increase)
+- Enable multithreading where it's possible (like at Argon2)
+- Add more algorithms
