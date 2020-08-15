@@ -17,7 +17,7 @@
  * limitations under the License.
  *
  * This file is part of mbed TLS (https://tls.mbed.org)
- * 
+ *
  * Modified for hash-wasm by Dani Biró
  */
 
@@ -27,8 +27,8 @@
  * http://ehash.iaik.tugraz.at/wiki/RIPEMD-160
  */
 
-#include <stdint.h>
 #include <emscripten.h>
+#include <stdint.h>
 #include <string.h>
 
 #define RIPEMD160_BLOCK_LENGTH 64
@@ -65,14 +65,12 @@ uint8_t array[16 * 1024];
 #endif
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t* Hash_GetBuffer() {
   return array;
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init()
-{
+void Hash_Init() {
   ctx->total[0] = 0;
   ctx->total[1] = 0;
   ctx->state[0] = 0x67452301;
@@ -82,20 +80,19 @@ void Hash_Init()
   ctx->state[4] = 0xC3D2E1F0;
 }
 
-void ripemd160_process(const uint8_t data[RIPEMD160_BLOCK_LENGTH])
-{
+void ripemd160_process(const uint8_t data[RIPEMD160_BLOCK_LENGTH]) {
   uint32_t A, B, C, D, E, Ap, Bp, Cp, Dp, Ep, X[16];
 
-  GET_UINT32_LE(X[ 0], data,  0);
-  GET_UINT32_LE(X[ 1], data,  4);
-  GET_UINT32_LE(X[ 2], data,  8);
-  GET_UINT32_LE(X[ 3], data, 12);
-  GET_UINT32_LE(X[ 4], data, 16);
-  GET_UINT32_LE(X[ 5], data, 20);
-  GET_UINT32_LE(X[ 6], data, 24);
-  GET_UINT32_LE(X[ 7], data, 28);
-  GET_UINT32_LE(X[ 8], data, 32);
-  GET_UINT32_LE(X[ 9], data, 36);
+  GET_UINT32_LE(X[0], data, 0);
+  GET_UINT32_LE(X[1], data, 4);
+  GET_UINT32_LE(X[2], data, 8);
+  GET_UINT32_LE(X[3], data, 12);
+  GET_UINT32_LE(X[4], data, 16);
+  GET_UINT32_LE(X[5], data, 20);
+  GET_UINT32_LE(X[6], data, 24);
+  GET_UINT32_LE(X[7], data, 28);
+  GET_UINT32_LE(X[8], data, 32);
+  GET_UINT32_LE(X[9], data, 36);
   GET_UINT32_LE(X[10], data, 40);
   GET_UINT32_LE(X[11], data, 44);
   GET_UINT32_LE(X[12], data, 48);
@@ -109,17 +106,17 @@ void ripemd160_process(const uint8_t data[RIPEMD160_BLOCK_LENGTH])
   D = Dp = ctx->state[3];
   E = Ep = ctx->state[4];
 
-#define F1(x, y, z)  (x ^ y ^ z)
-#define F2(x, y, z)  ((x & y) | (~x & z))
-#define F3(x, y, z)  ((x | ~y) ^ z)
-#define F4(x, y, z)  ((x & z) | (y & ~z))
-#define F5(x, y, z)  (x ^ (y | ~z))
+#define F1(x, y, z) (x ^ y ^ z)
+#define F2(x, y, z) ((x & y) | (~x & z))
+#define F3(x, y, z) ((x | ~y) ^ z)
+#define F4(x, y, z) ((x & z) | (y & ~z))
+#define F5(x, y, z) (x ^ (y | ~z))
 
 #define S(x, n) ((x << n) | (x >> (32 - n)))
 
-#define P(a, b, c, d, e, r, s, f, k)    \
-  a += f(b, c, d) + X[r] + k;           \
-  a = S(a, s) + e;                      \
+#define P(a, b, c, d, e, r, s, f, k) \
+  a += f(b, c, d) + X[r] + k;        \
+  a = S(a, s) + e;                   \
   c = S(c, 10);
 
 #define P2(a, b, c, d, e, r, s, rp, sp) \
@@ -250,7 +247,7 @@ void ripemd160_process(const uint8_t data[RIPEMD160_BLOCK_LENGTH])
 #undef K
 #undef Fp
 #undef Kp
-  C             = ctx->state[1] + C + Dp;
+  C = ctx->state[1] + C + Dp;
   ctx->state[1] = ctx->state[2] + D + Ep;
   ctx->state[2] = ctx->state[3] + E + Ap;
   ctx->state[3] = ctx->state[4] + A + Bp;
@@ -258,9 +255,8 @@ void ripemd160_process(const uint8_t data[RIPEMD160_BLOCK_LENGTH])
   ctx->state[0] = C;
 }
 
-
 EMSCRIPTEN_KEEPALIVE
-void ripemd160_update(const uint8_t *input, uint32_t ilen) {
+void ripemd160_update(const uint8_t* input, uint32_t ilen) {
   uint32_t fill;
   uint32_t left;
 
@@ -271,10 +267,10 @@ void ripemd160_update(const uint8_t *input, uint32_t ilen) {
   left = ctx->total[0] & 0x3F;
   fill = RIPEMD160_BLOCK_LENGTH - left;
 
-  ctx->total[0] += (uint32_t) ilen;
+  ctx->total[0] += (uint32_t)ilen;
   ctx->total[0] &= 0xFFFFFFFF;
 
-  if (ctx->total[0] < (uint32_t) ilen) {
+  if (ctx->total[0] < (uint32_t)ilen) {
     ctx->total[1]++;
   }
 
@@ -284,14 +280,14 @@ void ripemd160_update(const uint8_t *input, uint32_t ilen) {
     }
     ripemd160_process(ctx->buffer);
     input += fill;
-    ilen  -= fill;
+    ilen -= fill;
     left = 0;
   }
 
   while (ilen >= RIPEMD160_BLOCK_LENGTH) {
     ripemd160_process(input);
     input += RIPEMD160_BLOCK_LENGTH;
-    ilen  -= RIPEMD160_BLOCK_LENGTH;
+    ilen -= RIPEMD160_BLOCK_LENGTH;
   }
 
   if (ilen > 0) {
@@ -315,16 +311,15 @@ static const uint8_t ripemd160_padding[RIPEMD160_BLOCK_LENGTH] = {
 
 EMSCRIPTEN_KEEPALIVE
 void Hash_Final() {
-  uint8_t *result = array;
+  uint8_t* result = array;
   uint32_t last, padn;
   uint32_t high, low;
   uint8_t msglen[8];
 
-  high = (ctx->total[0] >> 29)
-       | (ctx->total[1] <<  3);
-  low  = (ctx->total[0] <<  3);
+  high = (ctx->total[0] >> 29) | (ctx->total[1] << 3);
+  low = (ctx->total[0] << 3);
 
-  PUT_UINT32_LE(low,  msglen, 0);
+  PUT_UINT32_LE(low, msglen, 0);
   PUT_UINT32_LE(high, msglen, 4);
 
   last = ctx->total[0] & 0x3F;
@@ -333,16 +328,15 @@ void Hash_Final() {
   ripemd160_update(ripemd160_padding, padn);
   ripemd160_update(msglen, 8);
 
-  PUT_UINT32_LE(ctx->state[0], result,  0);
-  PUT_UINT32_LE(ctx->state[1], result,  4);
-  PUT_UINT32_LE(ctx->state[2], result,  8);
+  PUT_UINT32_LE(ctx->state[0], result, 0);
+  PUT_UINT32_LE(ctx->state[1], result, 4);
+  PUT_UINT32_LE(ctx->state[2], result, 8);
   PUT_UINT32_LE(ctx->state[3], result, 12);
   PUT_UINT32_LE(ctx->state[4], result, 16);
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate(uint32_t length)
-{
+void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);
   Hash_Final();

@@ -13,88 +13,79 @@
   Modified for hash-wasm by Dani Biró
 */
 
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
 #include <emscripten.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 #define BLAKE2_PACKED(x) x __attribute__((packed))
 
 uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t *Hash_GetBuffer() {
   return array;
 }
 
-enum blake2b_constant
-{
+enum blake2b_constant {
   BLAKE2B_BLOCKBYTES = 128,
-  BLAKE2B_OUTBYTES   = 64,
-  BLAKE2B_KEYBYTES   = 64,
-  BLAKE2B_SALTBYTES  = 16,
+  BLAKE2B_OUTBYTES = 64,
+  BLAKE2B_KEYBYTES = 64,
+  BLAKE2B_SALTBYTES = 16,
   BLAKE2B_PERSONALBYTES = 16
 };
 
-typedef struct blake2b_state__
-{
+typedef struct blake2b_state__ {
   uint64_t h[8];
   uint64_t t[2];
   uint64_t f[2];
-  uint8_t  buf[BLAKE2B_BLOCKBYTES];
-  size_t   buflen;
-  size_t   outlen;
-  uint8_t  last_node;
+  uint8_t buf[BLAKE2B_BLOCKBYTES];
+  size_t buflen;
+  size_t outlen;
+  uint8_t last_node;
 } blake2b_state;
 
 blake2b_state S[1];
 
-BLAKE2_PACKED(struct blake2b_param__
-{
-  uint8_t  digest_length; /* 1 */
-  uint8_t  key_length;    /* 2 */
-  uint8_t  fanout;        /* 3 */
-  uint8_t  depth;         /* 4 */
-  uint32_t leaf_length;   /* 8 */
-  uint32_t node_offset;   /* 12 */
-  uint32_t xof_length;    /* 16 */
-  uint8_t  node_depth;    /* 17 */
-  uint8_t  inner_length;  /* 18 */
-  uint8_t  reserved[14];  /* 32 */
-  uint8_t  salt[BLAKE2B_SALTBYTES]; /* 48 */
-  uint8_t  personal[BLAKE2B_PERSONALBYTES];  /* 64 */
+BLAKE2_PACKED(struct blake2b_param__ {
+  uint8_t digest_length;                   /* 1 */
+  uint8_t key_length;                      /* 2 */
+  uint8_t fanout;                          /* 3 */
+  uint8_t depth;                           /* 4 */
+  uint32_t leaf_length;                    /* 8 */
+  uint32_t node_offset;                    /* 12 */
+  uint32_t xof_length;                     /* 16 */
+  uint8_t node_depth;                      /* 17 */
+  uint8_t inner_length;                    /* 18 */
+  uint8_t reserved[14];                    /* 32 */
+  uint8_t salt[BLAKE2B_SALTBYTES];         /* 48 */
+  uint8_t personal[BLAKE2B_PERSONALBYTES]; /* 64 */
 });
 
 typedef struct blake2b_param__ blake2b_param;
 
 blake2b_param P[1];
 
-static __inline__ uint64_t load64( const void *src )
-{
+static __inline__ uint64_t load64(const void *src) {
   return *(uint64_t *)src;
 }
 
-static __inline__ void store64( void *dst, uint64_t w )
-{
-  *(uint64_t*)dst = w;
+static __inline__ void store64(void *dst, uint64_t w) {
+  *(uint64_t *)dst = w;
 }
 
-static __inline__ uint64_t rotr64( const uint64_t w, const unsigned c )
-{
-  return ( w >> c ) | ( w << ( 64 - c ) );
+static __inline__ uint64_t rotr64(const uint64_t w, const unsigned c) {
+  return (w >> c) | (w << (64 - c));
 }
 
-static const uint64_t blake2b_IV[8] =
-{
+static const uint64_t blake2b_IV[8] = {
   0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL,
   0x3c6ef372fe94f82bULL, 0xa54ff53a5f1d36f1ULL,
   0x510e527fade682d1ULL, 0x9b05688c2b3e6c1fULL,
   0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL
 };
 
-static const uint8_t blake2b_sigma[12][16] =
-{
+static const uint8_t blake2b_sigma[12][16] = {
   {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15 },
   { 14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3 },
   { 11,  8, 12,  0,  5,  2, 15, 13, 10, 14,  3,  6,  7,  1,  9,  4 },
@@ -109,57 +100,47 @@ static const uint8_t blake2b_sigma[12][16] =
   { 14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3 }
 };
 
-
-static __inline__ void blake2b_set_lastnode()
-{
-  S->f[1] = (uint64_t)-1;
-}
+static __inline__ void blake2b_set_lastnode() { S->f[1] = (uint64_t)-1; }
 
 /* Some helper functions, not necessarily useful */
-static __inline__ int blake2b_is_lastblock()
-{
-  return S->f[0] != 0;
-}
+static __inline__ int blake2b_is_lastblock() { return S->f[0] != 0; }
 
-static __inline__ void blake2b_set_lastblock()
-{
-  if(S->last_node) blake2b_set_lastnode();
+static __inline__ void blake2b_set_lastblock() {
+  if (S->last_node) blake2b_set_lastnode();
 
   S->f[0] = (uint64_t)-1;
 }
 
-static __inline__ void blake2b_increment_counter(const uint64_t inc)
-{
+static __inline__ void blake2b_increment_counter(const uint64_t inc) {
   S->t[0] += inc;
   S->t[1] += (S->t[0] < inc);
 }
 
-#define G(r,i,a,b,c,d)                      \
-  do {                                      \
-    a = a + b + m[blake2b_sigma[r][2*i+0]]; \
-    d = rotr64(d ^ a, 32);                  \
-    c = c + d;                              \
-    b = rotr64(b ^ c, 24);                  \
-    a = a + b + m[blake2b_sigma[r][2*i+1]]; \
-    d = rotr64(d ^ a, 16);                  \
-    c = c + d;                              \
-    b = rotr64(b ^ c, 63);                  \
-  } while(0)
+#define G(r, i, a, b, c, d)                     \
+  do {                                          \
+    a = a + b + m[blake2b_sigma[r][2 * i + 0]]; \
+    d = rotr64(d ^ a, 32);                      \
+    c = c + d;                                  \
+    b = rotr64(b ^ c, 24);                      \
+    a = a + b + m[blake2b_sigma[r][2 * i + 1]]; \
+    d = rotr64(d ^ a, 16);                      \
+    c = c + d;                                  \
+    b = rotr64(b ^ c, 63);                      \
+  } while (0)
 
-#define ROUND(r)                    \
-  do {                              \
-    G(r,0,v[ 0],v[ 4],v[ 8],v[12]); \
-    G(r,1,v[ 1],v[ 5],v[ 9],v[13]); \
-    G(r,2,v[ 2],v[ 6],v[10],v[14]); \
-    G(r,3,v[ 3],v[ 7],v[11],v[15]); \
-    G(r,4,v[ 0],v[ 5],v[10],v[15]); \
-    G(r,5,v[ 1],v[ 6],v[11],v[12]); \
-    G(r,6,v[ 2],v[ 7],v[ 8],v[13]); \
-    G(r,7,v[ 3],v[ 4],v[ 9],v[14]); \
-  } while(0)
+#define ROUND(r)                       \
+  do {                                 \
+    G(r, 0, v[0], v[4], v[8], v[12]);  \
+    G(r, 1, v[1], v[5], v[9], v[13]);  \
+    G(r, 2, v[2], v[6], v[10], v[14]); \
+    G(r, 3, v[3], v[7], v[11], v[15]); \
+    G(r, 4, v[0], v[5], v[10], v[15]); \
+    G(r, 5, v[1], v[6], v[11], v[12]); \
+    G(r, 6, v[2], v[7], v[8], v[13]);  \
+    G(r, 7, v[3], v[4], v[9], v[14]);  \
+  } while (0)
 
-static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES])
-{
+static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES]) {
   uint64_t m[16];
   uint64_t v[16];
 
@@ -171,8 +152,8 @@ static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES])
     v[i] = S->h[i];
   }
 
-  v[ 8] = blake2b_IV[0];
-  v[ 9] = blake2b_IV[1];
+  v[8] = blake2b_IV[0];
+  v[9] = blake2b_IV[1];
   v[10] = blake2b_IV[2];
   v[11] = blake2b_IV[3];
   v[12] = blake2b_IV[4] ^ S->t[0];
@@ -201,9 +182,8 @@ static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES])
 #undef G
 #undef ROUND
 
-void blake2b_update(const void *pin, size_t inlen)
-{
-  const unsigned char * in = (const unsigned char *)pin;
+void blake2b_update(const void *pin, size_t inlen) {
+  const unsigned char *in = (const unsigned char *)pin;
   if (inlen > 0) {
     size_t left = S->buflen;
     size_t fill = BLAKE2B_BLOCKBYTES - left;
@@ -215,7 +195,8 @@ void blake2b_update(const void *pin, size_t inlen)
       }
       blake2b_increment_counter(BLAKE2B_BLOCKBYTES);
       blake2b_compress(S->buf); /* Compress */
-      in += fill; inlen -= fill;
+      in += fill;
+      inlen -= fill;
       while (inlen > BLAKE2B_BLOCKBYTES) {
         blake2b_increment_counter(BLAKE2B_BLOCKBYTES);
         blake2b_compress(in);
@@ -231,8 +212,7 @@ void blake2b_update(const void *pin, size_t inlen)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final()
-{
+void Hash_Final() {
   size_t outlen = S->outlen;
   uint8_t buffer[BLAKE2B_OUTBYTES] = {0};
 
@@ -255,8 +235,7 @@ void Hash_Final()
   }
 }
 
-static void blake2b_init0()
-{
+static void blake2b_init0() {
   size_t i;
   memset(S, 0, sizeof(blake2b_state));
 
@@ -266,8 +245,7 @@ static void blake2b_init0()
 }
 
 /* init xors IV with input parameter block */
-void blake2b_init_param()
-{
+void blake2b_init_param() {
   const uint8_t *p = (const uint8_t *)(P);
   size_t i;
 
@@ -281,17 +259,16 @@ void blake2b_init_param()
   S->outlen = P->digest_length;
 }
 
-void blake2b_init_key(size_t outlen, const uint8_t *key, size_t keylen)
-{
+void blake2b_init_key(size_t outlen, const uint8_t *key, size_t keylen) {
   P->digest_length = (uint8_t)outlen;
-  P->key_length    = (uint8_t)keylen;
-  P->fanout        = 1;
-  P->depth         = 1;
-  // P->leaf_length   = 0;
-  // P->node_offset   = 0;
-  // P->xof_length    = 0;
-  // P->node_depth    = 0;
-  // P->inner_length  = 0;
+  P->key_length = (uint8_t)keylen;
+  P->fanout = 1;
+  P->depth = 1;
+  // P->leaf_length = 0;
+  // P->node_offset = 0;
+  // P->xof_length = 0;
+  // P->node_depth = 0;
+  // P->inner_length = 0;
   // memset(P->reserved, 0, sizeof(P->reserved));
   // memset(P->salt,     0, sizeof(P->salt));
   // memset(P->personal, 0, sizeof(P->personal));
@@ -309,22 +286,19 @@ void blake2b_init_key(size_t outlen, const uint8_t *key, size_t keylen)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init(uint32_t bits)
-{
+void Hash_Init(uint32_t bits) {
   size_t outlen = bits & 0xFFFF;
   size_t keylen = bits >> 16;
   blake2b_init_key(outlen / 8, array, keylen);
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(uint32_t size)
-{
+void Hash_Update(uint32_t size) {
   blake2b_update(array, size);
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate(uint32_t length, uint32_t initParam)
-{
+void Hash_Calculate(uint32_t length, uint32_t initParam) {
   Hash_Init(initParam);
   Hash_Update(length);
   Hash_Final();

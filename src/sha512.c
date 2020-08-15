@@ -17,19 +17,18 @@
  * Modified for hash-wasm by Dani Biró
  */
 
+#include <emscripten.h>
 #include <string.h>
 #include <sys/types.h>
-#include <emscripten.h>
 
 #define sha512_block_size 128
-#define sha512_hash_size  64
-#define sha384_hash_size  48
+#define sha512_hash_size 64
+#define sha384_hash_size 48
 #define I64(x) x##ULL
 #define ROTR64(qword, n) ((qword) >> (n) ^ ((qword) << (64 - (n))))
 #define bswap_64(x) __builtin_bswap64(x)
 
-struct sha512_ctx
-{
+struct sha512_ctx {
   uint64_t message[16];   /* 1024-bit buffer for leftovers */
   uint64_t length;        /* number of processed bytes */
   uint64_t hash[8];       /* 512-bit algorithm internal hashing state */
@@ -41,8 +40,7 @@ struct sha512_ctx* ctx = &sctx;
 uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t* Hash_GetBuffer() {
   return array;
 }
 
@@ -81,34 +79,36 @@ static const uint64_t rhash_k512[80] = {
 
 /* The SHA512/384 functions defined by FIPS 180-3, 4.1.3 */
 /* Optimized version of Ch(x,y,z)=((x & y) | (~x & z)) */
-#define Ch(x,y,z)  ((z) ^ ((x) & ((y) ^ (z))))
+#define Ch(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
 /* Optimized version of Maj(x,y,z)=((x & y) ^ (x & z) ^ (y & z)) */
-#define Maj(x,y,z) (((x) & (y)) ^ ((z) & ((x) ^ (y))))
+#define Maj(x, y, z) (((x) & (y)) ^ ((z) & ((x) ^ (y))))
 
 #define Sigma0(x) (ROTR64((x), 28) ^ ROTR64((x), 34) ^ ROTR64((x), 39))
 #define Sigma1(x) (ROTR64((x), 14) ^ ROTR64((x), 18) ^ ROTR64((x), 41))
-#define sigma0(x) (ROTR64((x),  1) ^ ROTR64((x),  8) ^ ((x) >> 7))
+#define sigma0(x) (ROTR64((x), 1) ^ ROTR64((x), 8) ^ ((x) >> 7))
 #define sigma1(x) (ROTR64((x), 19) ^ ROTR64((x), 61) ^ ((x) >> 6))
 
 /* Recalculate element n-th of circular buffer W using formula
  *   W[n] = sigma1(W[n - 2]) + W[n - 7] + sigma0(W[n - 15]) + W[n - 16]; */
-#define RECALCULATE_W(W,n) (W[n] += \
-  (sigma1(W[(n - 2) & 15]) + W[(n - 7) & 15] + sigma0(W[(n - 15) & 15])))
+#define RECALCULATE_W(W, n) \
+  (W[n] +=                  \
+   (sigma1(W[(n - 2) & 15]) + W[(n - 7) & 15] + sigma0(W[(n - 15) & 15])))
 
-#define ROUND(a,b,c,d,e,f,g,h,k,data) { \
-  uint64_t T1 = h + Sigma1(e) + Ch(e,f,g) + k + (data); \
-  d += T1, h = T1 + Sigma0(a) + Maj(a,b,c); }
-#define ROUND_1_16(a,b,c,d,e,f,g,h,n) \
-  ROUND(a,b,c,d,e,f,g,h, rhash_k512[n], W[n] = bswap_64(block[n]))
-#define ROUND_17_80(a,b,c,d,e,f,g,h,n) \
-  ROUND(a,b,c,d,e,f,g,h, k[n], RECALCULATE_W(W, n))
+#define ROUND(a, b, c, d, e, f, g, h, k, data)              \
+  {                                                         \
+    uint64_t T1 = h + Sigma1(e) + Ch(e, f, g) + k + (data); \
+    d += T1, h = T1 + Sigma0(a) + Maj(a, b, c);             \
+  }
+#define ROUND_1_16(a, b, c, d, e, f, g, h, n) \
+  ROUND(a, b, c, d, e, f, g, h, rhash_k512[n], W[n] = bswap_64(block[n]))
+#define ROUND_17_80(a, b, c, d, e, f, g, h, n) \
+  ROUND(a, b, c, d, e, f, g, h, k[n], RECALCULATE_W(W, n))
 
 /**
  * Initialize context before calculating hash.
  *
  */
-void sha512_init()
-{
+void sha512_init() {
   /* Initial values. These words were obtained by taking the first 32
    * bits of the fractional parts of the square roots of the first
    * eight prime numbers. */
@@ -132,8 +132,7 @@ void sha512_init()
  * Initialize context before calculaing hash.
  *
  */
-void sha384_init()
-{
+void sha384_init() {
   /* Initial values from FIPS 180-3. These words were obtained by taking
    * the first sixty-four bits of the fractional parts of the square
    * roots of ninth through sixteenth prime numbers. */
@@ -153,8 +152,7 @@ void sha384_init()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init(uint32_t bits)
-{
+void Hash_Init(uint32_t bits) {
   if (bits == 384) {
     sha384_init();
   } else {
@@ -168,8 +166,7 @@ void Hash_Init(uint32_t bits)
  * @param hash algorithm state
  * @param block the message block to process
  */
-static void sha512_process_block(uint64_t hash[8], uint64_t block[16])
-{
+static void sha512_process_block(uint64_t hash[8], uint64_t block[16]) {
   uint64_t A, B, C, D, E, F, G, H;
   uint64_t W[16];
   const uint64_t* k;
@@ -198,16 +195,16 @@ static void sha512_process_block(uint64_t hash[8], uint64_t block[16])
 
   #pragma clang loop unroll(full)
   for (i = 16, k = &rhash_k512[16]; i < 80; i += 16, k += 16) {
-    ROUND_17_80(A, B, C, D, E, F, G, H,  0);
-    ROUND_17_80(H, A, B, C, D, E, F, G,  1);
-    ROUND_17_80(G, H, A, B, C, D, E, F,  2);
-    ROUND_17_80(F, G, H, A, B, C, D, E,  3);
-    ROUND_17_80(E, F, G, H, A, B, C, D,  4);
-    ROUND_17_80(D, E, F, G, H, A, B, C,  5);
-    ROUND_17_80(C, D, E, F, G, H, A, B,  6);
-    ROUND_17_80(B, C, D, E, F, G, H, A,  7);
-    ROUND_17_80(A, B, C, D, E, F, G, H,  8);
-    ROUND_17_80(H, A, B, C, D, E, F, G,  9);
+    ROUND_17_80(A, B, C, D, E, F, G, H, 0);
+    ROUND_17_80(H, A, B, C, D, E, F, G, 1);
+    ROUND_17_80(G, H, A, B, C, D, E, F, 2);
+    ROUND_17_80(F, G, H, A, B, C, D, E, 3);
+    ROUND_17_80(E, F, G, H, A, B, C, D, 4);
+    ROUND_17_80(D, E, F, G, H, A, B, C, 5);
+    ROUND_17_80(C, D, E, F, G, H, A, B, 6);
+    ROUND_17_80(B, C, D, E, F, G, H, A, 7);
+    ROUND_17_80(A, B, C, D, E, F, G, H, 8);
+    ROUND_17_80(H, A, B, C, D, E, F, G, 9);
     ROUND_17_80(G, H, A, B, C, D, E, F, 10);
     ROUND_17_80(F, G, H, A, B, C, D, E, 11);
     ROUND_17_80(E, F, G, H, A, B, C, D, 12);
@@ -227,9 +224,8 @@ static void sha512_process_block(uint64_t hash[8], uint64_t block[16])
  * @param size length of the message chunk
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(uint32_t size)
-{
-  const uint8_t *msg = array;
+void Hash_Update(uint32_t size) {
+  const uint8_t* msg = array;
   uint32_t index = (uint32_t)ctx->length & 127;
   ctx->length += size;
 
@@ -245,7 +241,7 @@ void Hash_Update(uint32_t size)
 
     /* process partial block */
     sha512_process_block(ctx->hash, ctx->message);
-    msg  += left;
+    msg += left;
     size -= left;
   }
 
@@ -253,7 +249,7 @@ void Hash_Update(uint32_t size)
     uint64_t* aligned_message_block = (uint64_t*)msg;
 
     sha512_process_block(ctx->hash, aligned_message_block);
-    msg  += sha512_block_size;
+    msg += sha512_block_size;
     size -= sha512_block_size;
   }
 
@@ -269,16 +265,15 @@ void Hash_Update(uint32_t size)
  * Store calculated hash into the given array.
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final()
-{
+void Hash_Final() {
   uint32_t index = ((uint32_t)ctx->length & 127) >> 3;
   uint32_t shift = ((uint32_t)ctx->length & 7) * 8;
 
   /* pad message and process the last block */
 
   /* append the byte 0x80 to the message */
-  ctx->message[index]   &=  ~(I64(0xFFFFFFFFFFFFFFFF) << shift);
-  ctx->message[index++] ^=  I64(0x80) << shift;
+  ctx->message[index] &= ~(I64(0xFFFFFFFFFFFFFFFF) << shift);
+  ctx->message[index++] ^= I64(0x80) << shift;
 
   /* if no room left in the message to store 128-bit message length */
   if (index >= 15) {
@@ -295,7 +290,7 @@ void Hash_Final()
   sha512_process_block(ctx->hash, ctx->message);
 
   #pragma clang loop unroll(full)
-  for(int32_t i = 7; i >= 0; i--) {
+  for (int32_t i = 7; i >= 0; i--) {
     ctx->hash[i] = bswap_64(ctx->hash[i]);
   }
 
@@ -305,8 +300,7 @@ void Hash_Final()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate(uint32_t length, uint32_t initParam)
-{
+void Hash_Calculate(uint32_t length, uint32_t initParam) {
   Hash_Init(initParam);
   Hash_Update(length);
   Hash_Final();

@@ -19,9 +19,9 @@
  * Modified for hash-wasm by Dani Biró
  */
 
+#include <emscripten.h>
 #include <string.h>
 #include <sys/types.h>
-#include <emscripten.h>
 
 #define NumberOfRounds 24
 #define sha3_max_permutation_size 25
@@ -30,8 +30,7 @@
 #define I64(x) x##ULL
 #define ROTL64(qword, n) ((qword) << (n) ^ ((qword) >> (64 - (n))))
 
-struct SHA3_CTX
-{
+struct SHA3_CTX {
   /* 1600 bits algorithm hashing state */
   uint64_t hash[sha3_max_permutation_size];
   /* 1536-bit buffer for leftovers */
@@ -47,8 +46,7 @@ struct SHA3_CTX* ctx = &sctx;
 uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t* Hash_GetBuffer() {
   return array;
 }
 
@@ -64,8 +62,7 @@ static uint64_t keccak_round_constants[NumberOfRounds] = {
 
 /* Initializing a sha3 context for given number of output bits */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init(uint32_t bits)
-{
+void Hash_Init(uint32_t bits) {
   /* NB: The Keccak capacity parameter = bits * 2 */
   uint32_t rate = 1600 - bits * 2;
 
@@ -74,16 +71,15 @@ void Hash_Init(uint32_t bits)
 }
 
 #define XORED_A(i) A[(i)] ^ A[(i) + 5] ^ A[(i) + 10] ^ A[(i) + 15] ^ A[(i) + 20]
-#define THETA_STEP(i) \
-  A[(i)]      ^= D[(i)]; \
-  A[(i) + 5]  ^= D[(i)]; \
+#define THETA_STEP(i)    \
+  A[(i)] ^= D[(i)];      \
+  A[(i) + 5] ^= D[(i)];  \
   A[(i) + 10] ^= D[(i)]; \
   A[(i) + 15] ^= D[(i)]; \
-  A[(i) + 20] ^= D[(i)] \
+  A[(i) + 20] ^= D[(i)]
 
 /* Keccak theta() transformation */
-static void keccak_theta(uint64_t* A)
-{
+static void keccak_theta(uint64_t* A) {
   uint64_t D[5];
   D[0] = ROTL64(XORED_A(1), 1) ^ XORED_A(4);
   D[1] = ROTL64(XORED_A(2), 1) ^ XORED_A(0);
@@ -98,49 +94,47 @@ static void keccak_theta(uint64_t* A)
 }
 
 /* Keccak pi() transformation */
-static void keccak_pi(uint64_t* A)
-{
+static void keccak_pi(uint64_t* A) {
   uint64_t A1;
   A1 = A[1];
-  A[ 1] = A[ 6];
-  A[ 6] = A[ 9];
-  A[ 9] = A[22];
+  A[1] = A[6];
+  A[6] = A[9];
+  A[9] = A[22];
   A[22] = A[14];
   A[14] = A[20];
-  A[20] = A[ 2];
-  A[ 2] = A[12];
+  A[20] = A[2];
+  A[2] = A[12];
   A[12] = A[13];
   A[13] = A[19];
   A[19] = A[23];
   A[23] = A[15];
-  A[15] = A[ 4];
-  A[ 4] = A[24];
+  A[15] = A[4];
+  A[4] = A[24];
   A[24] = A[21];
-  A[21] = A[ 8];
-  A[ 8] = A[16];
-  A[16] = A[ 5];
-  A[ 5] = A[ 3];
-  A[ 3] = A[18];
+  A[21] = A[8];
+  A[8] = A[16];
+  A[16] = A[5];
+  A[5] = A[3];
+  A[3] = A[18];
   A[18] = A[17];
   A[17] = A[11];
-  A[11] = A[ 7];
-  A[ 7] = A[10];
+  A[11] = A[7];
+  A[7] = A[10];
   A[10] = A1;
   /* note: A[ 0] is left as is */
 }
 
-#define CHI_STEP(i) \
-  A0 = A[0 + (i)]; \
-  A1 = A[1 + (i)]; \
-  A[0 + (i)] ^= ~A1 & A[2 + (i)]; \
+#define CHI_STEP(i)                       \
+  A0 = A[0 + (i)];                        \
+  A1 = A[1 + (i)];                        \
+  A[0 + (i)] ^= ~A1 & A[2 + (i)];         \
   A[1 + (i)] ^= ~A[2 + (i)] & A[3 + (i)]; \
   A[2 + (i)] ^= ~A[3 + (i)] & A[4 + (i)]; \
-  A[3 + (i)] ^= ~A[4 + (i)] & A0; \
-  A[4 + (i)] ^= ~A0 & A1 \
+  A[3 + (i)] ^= ~A[4 + (i)] & A0;         \
+  A[4 + (i)] ^= ~A0 & A1
 
 /* Keccak chi() transformation */
-static void keccak_chi(uint64_t* A)
-{
+static void keccak_chi(uint64_t* A) {
   uint64_t A0, A1;
   CHI_STEP(0);
   CHI_STEP(5);
@@ -149,22 +143,21 @@ static void keccak_chi(uint64_t* A)
   CHI_STEP(20);
 }
 
-static void sha3_permutation(uint64_t* state)
-{
+static void sha3_permutation(uint64_t* state) {
   for (int round = 0; round < NumberOfRounds; round++) {
     keccak_theta(state);
 
     /* apply Keccak rho() transformation */
-    state[ 1] = ROTL64(state[ 1],  1);
+    state[ 1] = ROTL64(state[ 1], 1);
     state[ 2] = ROTL64(state[ 2], 62);
     state[ 3] = ROTL64(state[ 3], 28);
     state[ 4] = ROTL64(state[ 4], 27);
     state[ 5] = ROTL64(state[ 5], 36);
     state[ 6] = ROTL64(state[ 6], 44);
-    state[ 7] = ROTL64(state[ 7],  6);
+    state[ 7] = ROTL64(state[ 7], 6);
     state[ 8] = ROTL64(state[ 8], 55);
     state[ 9] = ROTL64(state[ 9], 20);
-    state[10] = ROTL64(state[10],  3);
+    state[10] = ROTL64(state[10], 3);
     state[11] = ROTL64(state[11], 10);
     state[12] = ROTL64(state[12], 43);
     state[13] = ROTL64(state[13], 25);
@@ -173,9 +166,9 @@ static void sha3_permutation(uint64_t* state)
     state[16] = ROTL64(state[16], 45);
     state[17] = ROTL64(state[17], 15);
     state[18] = ROTL64(state[18], 21);
-    state[19] = ROTL64(state[19],  8);
+    state[19] = ROTL64(state[19], 8);
     state[20] = ROTL64(state[20], 18);
-    state[21] = ROTL64(state[21],  2);
+    state[21] = ROTL64(state[21], 2);
     state[22] = ROTL64(state[22], 61);
     state[23] = ROTL64(state[23], 56);
     state[24] = ROTL64(state[24], 14);
@@ -195,21 +188,22 @@ static void sha3_permutation(uint64_t* state)
  * @param block the message block to process
  * @param block_size the size of the processed block in bytes
  */
-static void sha3_process_block(uint64_t hash[25], const uint64_t* block, uint32_t block_size)
-{
+static void sha3_process_block(
+  uint64_t hash[25], const uint64_t* block, uint32_t block_size
+) {
   /* expanded loop */
-  hash[ 0] ^= block[0];
-  hash[ 1] ^= block[1];
-  hash[ 2] ^= block[2];
-  hash[ 3] ^= block[3];
-  hash[ 4] ^= block[4];
-  hash[ 5] ^= block[5];
-  hash[ 6] ^= block[6];
-  hash[ 7] ^= block[7];
-  hash[ 8] ^= block[8];
+  hash[0] ^= block[0];
+  hash[1] ^= block[1];
+  hash[2] ^= block[2];
+  hash[3] ^= block[3];
+  hash[4] ^= block[4];
+  hash[5] ^= block[5];
+  hash[6] ^= block[6];
+  hash[7] ^= block[7];
+  hash[8] ^= block[8];
   /* if not sha3-512 */
   if (block_size > 72) {
-    hash[ 9] ^= block[9];
+    hash[9] ^= block[9];
     hash[10] ^= block[10];
     hash[11] ^= block[11];
     hash[12] ^= block[12];
@@ -251,9 +245,8 @@ static void sha3_process_block(uint64_t hash[25], const uint64_t* block, uint32_
  * @param size length of the message chunk
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(uint32_t size)
-{
-  const uint8_t *msg = array;
+void Hash_Update(uint32_t size) {
+  const uint8_t* msg = array;
   uint32_t index = (uint32_t)ctx->rest;
   uint32_t block_size = (uint32_t)ctx->block_size;
 
@@ -272,7 +265,7 @@ void Hash_Update(uint32_t size)
 
     /* process partial block */
     sha3_process_block(ctx->hash, ctx->message, block_size);
-    msg  += left;
+    msg += left;
     size -= left;
   }
 
@@ -280,7 +273,7 @@ void Hash_Update(uint32_t size)
     uint64_t* aligned_message_block = (uint64_t*)msg;
 
     sha3_process_block(ctx->hash, aligned_message_block, block_size);
-    msg  += block_size;
+    msg += block_size;
     size -= block_size;
   }
 
@@ -297,8 +290,7 @@ void Hash_Update(uint32_t size)
  * Store calculated hash into the given array.
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final(uint8_t padding)
-{
+void Hash_Final(uint8_t padding) {
   uint32_t digest_length = 100 - ctx->block_size / 2;
   const uint32_t block_size = ctx->block_size;
 
@@ -321,8 +313,7 @@ void Hash_Final(uint8_t padding)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate(uint32_t length, uint32_t initParam, uint8_t finalParam)
-{
+void Hash_Calculate(uint32_t length, uint32_t initParam, uint8_t finalParam) {
   Hash_Init(initParam);
   Hash_Update(length);
   Hash_Final(finalParam);

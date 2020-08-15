@@ -3,63 +3,62 @@
 // Copyright (c) 2016 Stephan Brumme. All rights reserved.
 // see http://create.stephan-brumme.com/disclaimer.html
 //
-// XXHash (64 bit), based on Yann Collet's descriptions, see http://cyan4973.github.io/xxHash/
+// XXHash (64 bit), based on Yann Collet's descriptions, see
+// http://cyan4973.github.io/xxHash/
 //
 // Modified for hash-wasm by Dani Biró
 //
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <emscripten.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 const uint64_t Prime1 = 11400714785074694791ULL;
 const uint64_t Prime2 = 14029467366897019727ULL;
-const uint64_t Prime3 =  1609587929392839161ULL;
-const uint64_t Prime4 =  9650029242287828579ULL;
-const uint64_t Prime5 =  2870177450012600261ULL;
+const uint64_t Prime3 = 1609587929392839161ULL;
+const uint64_t Prime4 = 9650029242287828579ULL;
+const uint64_t Prime5 = 2870177450012600261ULL;
 
-/// temporarily store up to 31 bytes between multiple add() calls
-const uint64_t MaxBufferSize = 31+1;
+// temporarily store up to 31 bytes between multiple add() calls
+const uint64_t MaxBufferSize = 31 + 1;
 
-uint64_t      state[4];
+uint64_t state[4];
 unsigned char buffer[MaxBufferSize];
-unsigned int  bufferSize;
-uint64_t      totalLength;
+unsigned int bufferSize;
+uint64_t totalLength;
 
-uint8_t       array[16 * 1024];
+uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t* Hash_GetBuffer() {
   return array;
 }
 
-/// rotate bits, should compile to a single CPU instruction (ROL)
-static inline uint64_t rotateLeft(uint64_t x, unsigned char bits)
-{
+// rotate bits, should compile to a single CPU instruction (ROL)
+static inline uint64_t rotateLeft(uint64_t x, unsigned char bits) {
   return (x << bits) | (x >> (64 - bits));
 }
 
-/// process a single 64 bit value
-static inline uint64_t processSingle(uint64_t previous, uint64_t input)
-{
+// process a single 64 bit value
+static inline uint64_t processSingle(uint64_t previous, uint64_t input) {
   return rotateLeft(previous + input * Prime2, 31) * Prime1;
 }
 
-/// process a block of 4x4 bytes, this is the main part of the XXHash32 algorithm
-static inline void process(const void* data, uint64_t* state0, uint64_t* state1, uint64_t* state2, uint64_t* state3)
-{
-  const uint64_t* block = (const uint64_t*) data;
+// process a block of 4x4 bytes, this is the main part of the XXHash32
+// algorithm
+static inline void process(
+  const void* data, uint64_t* state0, uint64_t* state1,
+  uint64_t* state2, uint64_t* state3
+) {
+  const uint64_t* block = (const uint64_t*)data;
   *state0 = processSingle(*state0, block[0]);
   *state1 = processSingle(*state1, block[1]);
   *state2 = processSingle(*state2, block[2]);
   *state3 = processSingle(*state3, block[3]);
 }
 
-/// create new XXHash (64 bit)
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init()
-{
+void Hash_Init() {
   // seed is at the memory object
   uint64_t seed = *((uint64_t*)array);
 
@@ -67,46 +66,45 @@ void Hash_Init()
   state[1] = seed + Prime2;
   state[2] = seed;
   state[3] = seed - Prime1;
-  bufferSize  = 0;
+  bufferSize = 0;
   totalLength = 0;
 }
 
-/// add a chunk of bytes
+// add a chunk of bytes
 /** @param  length number of bytes
     @return false if parameters are invalid / zero **/
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(uint32_t length)
-{
+void Hash_Update(uint32_t length) {
   const void* input = array;
 
   // no data ?
-  if (length == 0)
-    return;
+  if (length == 0) return;
 
   totalLength += length;
   // byte-wise access
   const unsigned char* data = (const unsigned char*)input;
 
   // unprocessed old data plus new data still fit in temporary buffer ?
-  if (bufferSize + length < MaxBufferSize)
-  {
+  if (bufferSize + length < MaxBufferSize) {
     // just add new data
-    while (length-- > 0)
+    while (length-- > 0) {
       buffer[bufferSize++] = *data++;
+    }
+
     return;
   }
 
   // point beyond last byte
-  const unsigned char* stop      = data + length;
+  const unsigned char* stop = data + length;
   const unsigned char* stopBlock = stop - MaxBufferSize;
 
   // some data left from previous update ?
-  if (bufferSize > 0)
-  {
+  if (bufferSize > 0) {
     // make sure temporary buffer is full (16 bytes)
-    while (bufferSize < MaxBufferSize)
+    while (bufferSize < MaxBufferSize) {
       buffer[bufferSize++] = *data++;
+    }
 
     // process these 32 bytes (4x8)
     process(buffer, &state[0], &state[1], &state[2], &state[3]);
@@ -115,44 +113,41 @@ void Hash_Update(uint32_t length)
   // copying state to local variables helps optimizer A LOT
   uint64_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
   // 32 bytes at once
-  while (data <= stopBlock)
-  {
+  while (data <= stopBlock) {
     // local variables s0..s3 instead of state[0]..state[3] are much faster
     process(data, &s0, &s1, &s2, &s3);
     data += 32;
   }
   // copy back
-  state[0] = s0; state[1] = s1; state[2] = s2; state[3] = s3;
+  state[0] = s0;
+  state[1] = s1;
+  state[2] = s2;
+  state[3] = s3;
 
   // copy remainder to temporary buffer
   bufferSize = stop - data;
-  for (unsigned int i = 0; i < bufferSize; i++)
+  for (unsigned int i = 0; i < bufferSize; i++) {
     buffer[i] = data[i];
+  }
 
-  // done
   return;
 }
 
 /// get current hash
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final()
-{
+void Hash_Final() {
   // fold 256 bit state into one single 64 bit value
   uint64_t result;
-  if (totalLength >= MaxBufferSize)
-  {
-    result = rotateLeft(state[0],  1) +
-              rotateLeft(state[1],  7) +
-              rotateLeft(state[2], 12) +
-              rotateLeft(state[3], 18);
+  if (totalLength >= MaxBufferSize) {
+    result = rotateLeft(state[0], 1) + rotateLeft(state[1], 7) +
+             rotateLeft(state[2], 12) + rotateLeft(state[3], 18);
     result = (result ^ processSingle(0, state[0])) * Prime1 + Prime4;
     result = (result ^ processSingle(0, state[1])) * Prime1 + Prime4;
     result = (result ^ processSingle(0, state[2])) * Prime1 + Prime4;
     result = (result ^ processSingle(0, state[3])) * Prime1 + Prime4;
-  }
-  else
-  {
-    // internal state wasn't set in add(), therefore original seed is still stored in state2
+  } else {
+    // internal state wasn't set in add(), therefore original seed is still
+    // stored in state2
     result = state[2] + Prime5;
   }
 
@@ -164,19 +159,23 @@ void Hash_Final()
   const unsigned char* stop = data + bufferSize;
 
   // at least 8 bytes left ? => eat 8 bytes per step
-  for (; data + 8 <= stop; data += 8)
-    result = rotateLeft(result ^ processSingle(0, *(uint64_t*)data), 27) * Prime1 + Prime4;
+  for (; data + 8 <= stop; data += 8) {
+    result =
+        rotateLeft(result ^ processSingle(0, *(uint64_t*)data), 27) * Prime1 +
+        Prime4;
+  }
 
   // 4 bytes left ? => eat those
-  if (data + 4 <= stop)
-  {
-    result = rotateLeft(result ^ (*(uint32_t*)data) * Prime1,   23) * Prime2 + Prime3;
-    data  += 4;
+  if (data + 4 <= stop) {
+    result =
+        rotateLeft(result ^ (*(uint32_t*)data) * Prime1, 23) * Prime2 + Prime3;
+    data += 4;
   }
 
   // take care of remaining 0..3 bytes, eat 1 byte per step
-  while (data != stop)
-    result = rotateLeft(result ^ (*data++) * Prime5,            11) * Prime1;
+  while (data != stop) {
+    result = rotateLeft(result ^ (*data++) * Prime5, 11) * Prime1;
+  }
 
   // mix bits
   result ^= result >> 33;
@@ -199,7 +198,6 @@ void Hash_Final()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate()
-{
-  return; // TODO
+void Hash_Calculate() {
+  return;
 }

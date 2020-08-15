@@ -17,18 +17,17 @@
  * Modified for hash-wasm by Dani Biró
  */
 
+#include <emscripten.h>
 #include <string.h>
 #include <sys/types.h>
-#include <emscripten.h>
 
 #define sha256_block_size 64
-#define sha256_hash_size  32
-#define sha224_hash_size  28
+#define sha256_hash_size 32
+#define sha224_hash_size 28
 #define ROTR32(dword, n) ((dword) >> (n) ^ ((dword) << (32 - (n))))
 #define bswap_32(x) __builtin_bswap32(x)
 
-struct sha256_ctx
-{
+struct sha256_ctx {
   uint32_t message[16];   /* 512-bit buffer for leftovers */
   uint64_t length;        /* number of processed bytes */
   uint32_t hash[8];       /* 256-bit algorithm internal hashing state */
@@ -40,8 +39,7 @@ struct sha256_ctx* ctx = &sctx;
 uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t* Hash_GetBuffer() {
   return array;
 }
 
@@ -64,35 +62,36 @@ static const uint32_t rhash_k256[64] = {
 
 /* The SHA256/224 functions defined by FIPS 180-3, 4.1.2 */
 /* Optimized version of Ch(x,y,z)=((x & y) | (~x & z)) */
-#define Ch(x,y,z)  ((z) ^ ((x) & ((y) ^ (z))))
+#define Ch(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
 /* Optimized version of Maj(x,y,z)=((x & y) ^ (x & z) ^ (y & z)) */
-#define Maj(x,y,z) (((x) & (y)) ^ ((z) & ((x) ^ (y))))
+#define Maj(x, y, z) (((x) & (y)) ^ ((z) & ((x) ^ (y))))
 
 #define Sigma0(x) (ROTR32((x), 2) ^ ROTR32((x), 13) ^ ROTR32((x), 22))
 #define Sigma1(x) (ROTR32((x), 6) ^ ROTR32((x), 11) ^ ROTR32((x), 25))
-#define sigma0(x) (ROTR32((x), 7) ^ ROTR32((x), 18) ^ ((x) >>  3))
-#define sigma1(x) (ROTR32((x),17) ^ ROTR32((x), 19) ^ ((x) >> 10))
+#define sigma0(x) (ROTR32((x), 7) ^ ROTR32((x), 18) ^ ((x) >> 3))
+#define sigma1(x) (ROTR32((x), 17) ^ ROTR32((x), 19) ^ ((x) >> 10))
 
 /* Recalculate element n-th of circular buffer W using formula
  *   W[n] = sigma1(W[n - 2]) + W[n - 7] + sigma0(W[n - 15]) + W[n - 16]; */
-#define RECALCULATE_W(W,n) (W[n] += \
-  (sigma1(W[(n - 2) & 15]) + W[(n - 7) & 15] + sigma0(W[(n - 15) & 15])))
+#define RECALCULATE_W(W, n) \
+  (W[n] +=                  \
+   (sigma1(W[(n - 2) & 15]) + W[(n - 7) & 15] + sigma0(W[(n - 15) & 15])))
 
-#define ROUND(a,b,c,d,e,f,g,h,k,data) { \
-  uint32_t T1 = h + Sigma1(e) + Ch(e,f,g) + k + (data); \
-  d += T1, h = T1 + Sigma0(a) + Maj(a,b,c); }
-#define ROUND_1_16(a,b,c,d,e,f,g,h,n) \
-  ROUND(a,b,c,d,e,f,g,h, rhash_k256[n], W[n] = bswap_32(block[n]))
-#define ROUND_17_64(a,b,c,d,e,f,g,h,n) \
-  ROUND(a,b,c,d,e,f,g,h, k[n], RECALCULATE_W(W, n))
-
+#define ROUND(a, b, c, d, e, f, g, h, k, data)              \
+  {                                                         \
+    uint32_t T1 = h + Sigma1(e) + Ch(e, f, g) + k + (data); \
+    d += T1, h = T1 + Sigma0(a) + Maj(a, b, c);             \
+  }
+#define ROUND_1_16(a, b, c, d, e, f, g, h, n) \
+  ROUND(a, b, c, d, e, f, g, h, rhash_k256[n], W[n] = bswap_32(block[n]))
+#define ROUND_17_64(a, b, c, d, e, f, g, h, n) \
+  ROUND(a, b, c, d, e, f, g, h, k[n], RECALCULATE_W(W, n))
 
 /**
  * Initialize context before calculaing hash.
  *
  */
-void sha256_init()
-{
+void sha256_init() {
   /* Initial values. These words were obtained by taking the first 32
    * bits of the fractional parts of the square roots of the first
    * eight prime numbers. */
@@ -116,8 +115,7 @@ void sha256_init()
  * Initialize context before calculaing hash.
  *
  */
-void sha224_init()
-{
+void sha224_init() {
   /* Initial values from FIPS 180-3. These words were obtained by taking
    * bits from 33th to 64th of the fractional parts of the square
    * roots of ninth through sixteenth prime numbers. */
@@ -136,8 +134,7 @@ void sha224_init()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init(uint32_t bits)
-{
+void Hash_Init(uint32_t bits) {
   if (bits == 224) {
     sha224_init();
   } else {
@@ -151,8 +148,7 @@ void Hash_Init(uint32_t bits)
  * @param hash algorithm state
  * @param block the message block to process
  */
-static void sha256_process_block(uint32_t hash[8], uint32_t block[16])
-{
+static void sha256_process_block(uint32_t hash[8], uint32_t block[16]) {
   uint32_t A, B, C, D, E, F, G, H;
   uint32_t W[16];
   const uint32_t* k;
@@ -181,16 +177,16 @@ static void sha256_process_block(uint32_t hash[8], uint32_t block[16])
 
   #pragma clang loop unroll(full)
   for (i = 16, k = &rhash_k256[16]; i < 64; i += 16, k += 16) {
-    ROUND_17_64(A, B, C, D, E, F, G, H,  0);
-    ROUND_17_64(H, A, B, C, D, E, F, G,  1);
-    ROUND_17_64(G, H, A, B, C, D, E, F,  2);
-    ROUND_17_64(F, G, H, A, B, C, D, E,  3);
-    ROUND_17_64(E, F, G, H, A, B, C, D,  4);
-    ROUND_17_64(D, E, F, G, H, A, B, C,  5);
-    ROUND_17_64(C, D, E, F, G, H, A, B,  6);
-    ROUND_17_64(B, C, D, E, F, G, H, A,  7);
-    ROUND_17_64(A, B, C, D, E, F, G, H,  8);
-    ROUND_17_64(H, A, B, C, D, E, F, G,  9);
+    ROUND_17_64(A, B, C, D, E, F, G, H, 0);
+    ROUND_17_64(H, A, B, C, D, E, F, G, 1);
+    ROUND_17_64(G, H, A, B, C, D, E, F, 2);
+    ROUND_17_64(F, G, H, A, B, C, D, E, 3);
+    ROUND_17_64(E, F, G, H, A, B, C, D, 4);
+    ROUND_17_64(D, E, F, G, H, A, B, C, 5);
+    ROUND_17_64(C, D, E, F, G, H, A, B, 6);
+    ROUND_17_64(B, C, D, E, F, G, H, A, 7);
+    ROUND_17_64(A, B, C, D, E, F, G, H, 8);
+    ROUND_17_64(H, A, B, C, D, E, F, G, 9);
     ROUND_17_64(G, H, A, B, C, D, E, F, 10);
     ROUND_17_64(F, G, H, A, B, C, D, E, 11);
     ROUND_17_64(E, F, G, H, A, B, C, D, 12);
@@ -210,9 +206,8 @@ static void sha256_process_block(uint32_t hash[8], uint32_t block[16])
  * @param size length of the message chunk
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(uint32_t size)
-{
-  const uint8_t *msg = array;
+void Hash_Update(uint32_t size) {
+  const uint8_t* msg = array;
   uint32_t index = (uint32_t)ctx->length & 63;
   ctx->length += size;
 
@@ -228,7 +223,7 @@ void Hash_Update(uint32_t size)
 
     /* process partial block */
     sha256_process_block(ctx->hash, (uint32_t*)ctx->message);
-    msg  += left;
+    msg += left;
     size -= left;
   }
 
@@ -236,7 +231,7 @@ void Hash_Update(uint32_t size)
     uint32_t* aligned_message_block = (uint32_t*)msg;
 
     sha256_process_block(ctx->hash, aligned_message_block);
-    msg  += sha256_block_size;
+    msg += sha256_block_size;
     size -= sha256_block_size;
   }
 
@@ -253,15 +248,14 @@ void Hash_Update(uint32_t size)
  *
  */
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final()
-{
+void Hash_Final() {
   uint32_t index = ((uint32_t)ctx->length & 63) >> 2;
   uint32_t shift = ((uint32_t)ctx->length & 3) * 8;
 
   /* pad message and run for last block */
 
   /* append the byte 0x80 to the message */
-  ctx->message[index]   &= ~(0xFFFFFFFFu << shift);
+  ctx->message[index] &= ~(0xFFFFFFFFu << shift);
   ctx->message[index++] ^= 0x80u << shift;
 
   /* if no room left in the message to store 64-bit message length */
@@ -278,12 +272,12 @@ void Hash_Final()
     ctx->message[index++] = 0;
   }
 
-  ctx->message[14] = bswap_32( (uint32_t)(ctx->length >> 29) );
-  ctx->message[15] = bswap_32( (uint32_t)(ctx->length << 3) );
+  ctx->message[14] = bswap_32((uint32_t)(ctx->length >> 29));
+  ctx->message[15] = bswap_32((uint32_t)(ctx->length << 3));
   sha256_process_block(ctx->hash, ctx->message);
 
   #pragma clang loop unroll(full)
-  for(int32_t i = 7; i >= 0; i--) {
+  for (int32_t i = 7; i >= 0; i--) {
     ctx->hash[i] = bswap_32(ctx->hash[i]);
   }
 
@@ -293,8 +287,7 @@ void Hash_Final()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate(uint32_t length, uint32_t initParam)
-{
+void Hash_Calculate(uint32_t length, uint32_t initParam) {
   Hash_Init(initParam);
   Hash_Update(length);
   Hash_Final();

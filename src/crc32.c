@@ -8,14 +8,13 @@
 // Modified for hash-wasm by Dani Biró
 //
 
+#include <emscripten.h>
 #include <stdint.h>
 #include <string.h>
-#include <emscripten.h>
 
 #define bswap_32(x) __builtin_bswap32(x)
 
-const uint32_t Crc32Lookup[8][256] =
-{
+const uint32_t Crc32Lookup[8][256] = {
   { 0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,0xE963A535,0x9E6495A3,
     0x0EDB8832,0x79DCB8A4,0xE0D5E91E,0x97D2D988,0x09B64C2B,0x7EB17CBD,0xE7B82D07,0x90BF1D91,
     0x1DB71064,0x6AB020F2,0xF3B97148,0x84BE41DE,0x1ADAD47D,0x6DDDE4EB,0xF4D4B551,0x83D385C7,
@@ -285,24 +284,21 @@ uint32_t previousCrc32 = 0;
 uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init()
-{
+void Hash_Init() {
   previousCrc32 = 0;
 }
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t* Hash_GetBuffer() {
   return array;
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(uint32_t length)
-{
-  const uint8_t *data = array;
+void Hash_Update(uint32_t length) {
+  const uint8_t* data = array;
 
   uint32_t crc = ~previousCrc32; // same as previousCrc32 ^ 0xFFFFFFFF
-  const uint32_t* current = (const uint32_t*) data;
+  const uint32_t* current = (const uint32_t*)data;
 
   // process eight bytes at once (Slicing-by-8)
   while (length >= 8) {
@@ -320,7 +316,7 @@ void Hash_Update(uint32_t length)
     length -= 8;
   }
 
-  const uint8_t* currentChar = (const uint8_t*) current;
+  const uint8_t* currentChar = (const uint8_t*)current;
 
   // remaining 1 to 7 bytes (standard algorithm)
   while (length-- != 0) {
@@ -331,8 +327,7 @@ void Hash_Update(uint32_t length)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final()
-{
+void Hash_Final() {
   array[0] = (previousCrc32 >> 24) & 0xFF;
   array[1] = (previousCrc32 >> 16) & 0xFF;
   array[2] = (previousCrc32 >> 8) & 0xFF;
@@ -340,8 +335,7 @@ void Hash_Final()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate(uint32_t length)
-{
+void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);
   Hash_Final();

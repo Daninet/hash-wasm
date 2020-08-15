@@ -37,8 +37,8 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <stdint.h>
 #include <emscripten.h>
+#include <stdint.h>
 #include <string.h>
 
 struct MD5_CTX {
@@ -49,7 +49,7 @@ struct MD5_CTX {
 };
 
 struct MD5_CTX sctx;
-struct MD5_CTX* ctx = &sctx;
+struct MD5_CTX *ctx = &sctx;
 uint8_t array[16 * 1024];
 
 /*
@@ -59,18 +59,18 @@ uint8_t array[16 * 1024];
  * architectures that lack an AND-NOT instruction, just like in Colin Plumb's
  * implementation.
  */
-#define F(x, y, z)			((z) ^ ((x) & ((y) ^ (z))))
-#define G(x, y, z)			((y) ^ ((z) & ((x) ^ (y))))
-#define H(x, y, z)			(((x) ^ (y)) ^ (z))
-#define H2(x, y, z)			((x) ^ ((y) ^ (z)))
-#define I(x, y, z)			((y) ^ ((x) | ~(z)))
+#define F(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
+#define G(x, y, z) ((y) ^ ((z) & ((x) ^ (y))))
+#define H(x, y, z) (((x) ^ (y)) ^ (z))
+#define H2(x, y, z) ((x) ^ ((y) ^ (z)))
+#define I(x, y, z) ((y) ^ ((x) | ~(z)))
 
 /*
  * The MD5 transformation for all four rounds.
  */
-#define STEP(f, a, b, c, d, x, t, s) \
-  (a) += f((b), (c), (d)) + (x) + (t); \
-  (a) = (((a) << (s)) | (((a) & 0xffffffff) >> (32 - (s)))); \
+#define STEP(f, a, b, c, d, x, t, s)                       \
+  (a) += f((b), (c), (d)) + (x) + (t);                     \
+  (a) = (((a) << (s)) | (((a)&0xffffffff) >> (32 - (s)))); \
   (a) += (b);
 
 /*
@@ -89,17 +89,14 @@ uint8_t array[16 * 1024];
  * their own translation unit avoids the problem.
  */
 
-#define SET(n) \
-  (*(uint32_t *)&ptr[(n) * 4])
-#define GET(n) \
-  SET(n)
+#define SET(n) (*(uint32_t *)&ptr[(n)*4])
+#define GET(n) SET(n)
 
 /*
  * This processes one or more 64-byte data blocks, but does NOT update the bit
  * counters.  There are no alignment requirements.
  */
-static const void *body(const void *data, uint32_t size)
-{
+static const void *body(const void *data, uint32_t size) {
   const uint8_t *ptr;
   uint32_t a, b, c, d;
   uint32_t saved_a, saved_b, saved_c, saved_d;
@@ -171,7 +168,7 @@ static const void *body(const void *data, uint32_t size)
     STEP(H, c, d, a, b, GET(15), 0x1fa27cf8, 16)
     STEP(H2, b, c, d, a, GET(2), 0xc4ac5665, 23)
 
-/* Round 4 */
+    /* Round 4 */
     STEP(I, a, b, c, d, GET(0), 0xf4292244, 6)
     STEP(I, d, a, b, c, GET(7), 0x432aff97, 10)
     STEP(I, c, d, a, b, GET(14), 0xab9423a7, 15)
@@ -206,8 +203,7 @@ static const void *body(const void *data, uint32_t size)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Init()
-{
+void Hash_Init() {
   ctx->a = 0x67452301;
   ctx->b = 0xefcdab89;
   ctx->c = 0x98badcfe;
@@ -218,14 +214,12 @@ void Hash_Init()
 }
 
 EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer()
-{
+uint8_t *Hash_GetBuffer() {
   return array;
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Update(uint32_t size)
-{
+void Hash_Update(uint32_t size) {
   const uint8_t *data = array;
   uint32_t saved_lo;
   uint32_t used, available;
@@ -266,15 +260,14 @@ void Hash_Update(uint32_t size)
   }
 }
 
-#define OUT(dst, src) \
-  (dst)[0] = (uint8_t)(src); \
-  (dst)[1] = (uint8_t)((src) >> 8); \
+#define OUT(dst, src)                \
+  (dst)[0] = (uint8_t)(src);         \
+  (dst)[1] = (uint8_t)((src) >> 8);  \
   (dst)[2] = (uint8_t)((src) >> 16); \
   (dst)[3] = (uint8_t)((src) >> 24);
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Final()
-{
+void Hash_Final() {
   uint8_t *result = array;
   uint32_t used, available;
 
@@ -306,8 +299,7 @@ void Hash_Final()
 }
 
 EMSCRIPTEN_KEEPALIVE
-void Hash_Calculate(uint32_t length)
-{
+void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);
   Hash_Final();
