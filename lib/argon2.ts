@@ -80,10 +80,9 @@ function getHashType(type: IArgon2Options['hashType']): number {
       return 0;
     case 'i':
       return 1;
-    case 'id':
+    default:
       return 2;
   }
-  return 0;
 }
 
 async function argon2Internal(options: IArgon2Options): Promise<string | Uint8Array> {
