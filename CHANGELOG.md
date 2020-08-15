@@ -1,3 +1,10 @@
+## 3.7.2 (August 15, 2020)
+
+* Add more badges to README
+* Update dependencies
+* Increase code coverage
+* Consistent coding style in C files
+
 ## 3.7.1 (August 2, 2020)
 
 * Allow returning Uint8Array from digest()
