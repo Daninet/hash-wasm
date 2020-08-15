@@ -1,6 +1,10 @@
 # hash-wasm
 
+[![npm package](https://img.shields.io/npm/v/hash-wasm.svg)](http://npmjs.org/package/hash-wasm)
 [![codecov](https://codecov.io/gh/Daninet/hash-wasm/branch/master/graph/badge.svg)](https://codecov.io/gh/Daninet/hash-wasm)
+[![Dependencies Status](https://david-dm.org/Daninet/hash-wasm/status.svg)](https://david-dm.org/Daninet/hash-wasm)
+[![License](https://badgen.net/bundlephobia/minzip/hash-wasm)](https://bundlephobia.com/result?p=hash-wasm)
+[![Build & publish](https://github.com/Daninet/hash-wasm/workflows/Build%20&%20publish/badge.svg?branch=master)](https://github.com/Daninet/hash-wasm/actions)
 
 Hash-WASM is a ⚡lightning fast⚡ and portable hash function library.
 It is using hand-tuned WebAssembly binaries to calculate the hash faster than other libraries.
