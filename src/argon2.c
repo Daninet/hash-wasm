@@ -82,17 +82,6 @@ void P(
   G(*a3,*a4,*a9,*a14);
 }
 
-// uint64_t aa[128];
-// EMSCRIPTEN_KEEPALIVE
-// void trap(uint32_t randHi, uint32_t randLo, uint32_t a, uint32_t b, uint32_t c) {
-//   aa[0] = a;
-//   aa[1] = b;
-//   aa[2] = c;
-//   aa[3] = randHi;
-//   aa[4] = randLo;
-// }
-
-// EMSCRIPTEN_KEEPALIVE
 uint32_t indexAlpha(uint64_t rand, uint32_t lanes, uint32_t segments, uint32_t parallelism, uint32_t k, uint32_t slice, uint32_t lane, uint32_t index) {
   uint32_t rlane = ((uint32_t)(rand >> 32)) % parallelism;
 
@@ -129,7 +118,6 @@ uint32_t indexAlpha(uint64_t rand, uint32_t lanes, uint32_t segments, uint32_t p
 
 uint64_t t[128];
 
-// EMSCRIPTEN_KEEPALIVE
 void block(uint64_t *z, uint64_t *a, uint64_t *b, int32_t xor) {
   #pragma clang loop unroll(full)
   for (int i = 0; i<128; i++) {
@@ -219,7 +207,6 @@ void Hash_Calculate(uint32_t length, uint32_t memorySize)
           }
           uint32_t newOffset = indexAlpha(rand, lanes, segments, parallelism, k, slice, lane, index);
 
-          // trap(rand >> 32, rand & 0xFFFFFFFF, offset, prev, newOffset);
           block((uint64_t*)&B[offset * 1024], (uint64_t*)&B[prev * 1024], (uint64_t*)&B[newOffset * 1024], 1);
           index++;
           offset++;
