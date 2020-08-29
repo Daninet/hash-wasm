@@ -1,7 +1,7 @@
 {
   "name": "hash-wasm",
   "version": "3.7.2",
-  "description": "Fast hash functions compiled to WebAssembly (MD4, MD5, xxHash, SHA-1, SHA-2, SHA-3, Keccak, BLAKE2, CRC32, RIPEMD-160, HMAC, PBKDF2, Argon2)",
+  "description": "Fast hash functions compiled to WebAssembly (PBKDF2, Argon2, MD4, MD5, SHA-1, SHA-2, SHA-3, Keccak, BLAKE2, CRC32, RIPEMD-160, HMAC, xxHash)",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
   "types": "dist/lib/index.d.ts",
@@ -70,9 +70,9 @@
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-typescript": "^5.0.2",
     "@types/jest": "^26.0.10",
-    "@types/node": "^14.0.27",
-    "@typescript-eslint/eslint-plugin": "^3.9.0",
-    "@typescript-eslint/parser": "^3.9.0",
+    "@types/node": "^14.6.2",
+    "@typescript-eslint/eslint-plugin": "^3.10.1",
+    "@typescript-eslint/parser": "^3.10.1",
     "eslint": "^7.7.0",
     "eslint-config-airbnb": "^18.2.0",
     "eslint-config-standard": "^14.1.1",
@@ -81,13 +81,13 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-react": "^7.20.6",
-    "jest": "^26.4.0",
-    "rollup": "^2.26.0",
-    "ts-jest": "^26.2.0",
-    "ts-loader": "^8.0.2",
-    "ts-node": "^8.10.2",
+    "jest": "^26.4.2",
+    "rollup": "^2.26.8",
+    "ts-jest": "^26.3.0",
+    "ts-loader": "^8.0.3",
+    "ts-node": "^9.0.0",
     "tslib": "^2.0.1",
-    "typescript": "^3.9.7"
+    "typescript": "^4.0.2"
   },
   "dependencies": {}
 }

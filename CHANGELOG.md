@@ -2,8 +2,10 @@
 
 * **BREAKING CHANGE**: All APIs were converted to **synchronous** functions, so you don't need to use `await` or `.then()` anymore. There are multiple reasons for this:
   - It's easier to use
-  - Better performance
+  - About 15% faster, when hashing small buffers 
+  - Smaller bundle size
   - WebAssembly runs in the same thread, which is used by JavaScript, so the hash calculation was blocking anyway. It was only used to compile the binary asynchronously, where it did not make any difference, because the binaries are very small (~ 10kb / algorithm)
+* Update dependencies
 
 ## 3.7.2 (August 15, 2020)
 
