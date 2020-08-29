@@ -167,9 +167,17 @@ All supported hash functions can be used to calculate PBKDF2. For the best perfo
 ```javascript
 import { pbkdf2, createSHA1 } from 'hash-wasm';
 
-const iterations = 1000;
-const keyLen = 32;
-const key = pbkdf2('password', 'salt', iterations, keyLen, createSHA1());
+const salt = new Uint8Array(16);
+window.crypto.getRandomValues(salt);
+
+const key = pbkdf2({
+  password: 'password',
+  salt,
+  iterations: 1000,
+  hashLength: 32,
+  hashFunction: createSHA1(),
+  outputType: 'hex',
+});
 
 console.log('Derived key:', key);
 ```
@@ -307,16 +315,16 @@ createSHA512(): IHasher
 createXXHash32(seed: number): IHasher
 createXXHash64(seedLow: number, seedHigh: number): IHasher
 
-createHMAC(hashFunc: IHasher, key: IDataType): IHasher
+createHMAC(hashFunction: IHasher, key: IDataType): IHasher
 
-pbkdf2(
+pbkdf2({
   password: IDataType, // password (or message) to be hashed
   salt: IDataType, // salt
   iterations: number, // number of iterations to perform
   hashLength: number, // output size in bytes
-  hashFunc: IHasher // the return value of a function like createSHA1()
+  hashFunction: IHasher, // the return value of a function like createSHA1()
   outputType: 'hex' | 'binary', // by default returns hex string
-): string | Uint8Array
+}): string | Uint8Array
 
 interface IArgon2Options {
   password: IDataType; // password (or message) to be hashed

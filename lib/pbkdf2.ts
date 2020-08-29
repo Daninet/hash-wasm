@@ -3,6 +3,15 @@ import { IHasher } from './WASMInterface';
 import { createHMAC } from './hmac';
 import { getDigestHex, getUInt8Buffer, IDataType } from './util';
 
+export interface IPBKDF2Options {
+  password: IDataType;
+  salt: IDataType;
+  iterations: number;
+  hashLength: number;
+  hashFunction: IHasher;
+  outputType?: 'hex' | 'binary';
+}
+
 function calculatePBKDF2(
   digest: IHasher, salt: IDataType, iterations: number,
   hashLength: number, outputType?: 'hex' | 'binary',
@@ -52,30 +61,41 @@ function calculatePBKDF2(
   return getDigestHex(digestChars, DK, hashLength);
 }
 
-export function pbkdf2(
-  password: IDataType, salt: IDataType, iterations: number,
-  hashLength: number, digest: IHasher, outputType?: 'hex' | 'binary',
-): Uint8Array | string {
-  if (!digest || !digest.init || !digest.digestSize) {
+const validateOptions = (options: IPBKDF2Options) => {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Invalid options parameter. It requires an object.');
+  }
+
+  if (!options.hashFunction || !options.hashFunction.init || !options.hashFunction.digestSize) {
     throw new Error('Invalid hash function is provided! Usage: pbkdf2("password", "salt", 1000, 32, createSHA1()).');
   }
 
-  if (!Number.isInteger(iterations) || iterations < 1) {
+  if (!Number.isInteger(options.iterations) || options.iterations < 1) {
     throw new Error('Iterations should be a positive number');
   }
 
-  if (!Number.isInteger(hashLength) || hashLength < 1) {
+  if (!Number.isInteger(options.hashLength) || options.hashLength < 1) {
     throw new Error('Hash length should be a positive number');
   }
 
-  if (outputType === undefined) {
-    outputType = 'hex';
+  if (options.outputType === undefined) {
+    options.outputType = 'hex';
   }
 
-  if (!['hex', 'binary'].includes(outputType)) {
-    throw new Error(`Insupported output type ${outputType}. Valid values: ['hex', 'binary']`);
+  if (!['hex', 'binary'].includes(options.outputType)) {
+    throw new Error(`Insupported output type ${options.outputType}. Valid values: ['hex', 'binary']`);
   }
+};
 
-  const hmac = createHMAC(digest, password);
-  return calculatePBKDF2(hmac, salt, iterations, hashLength, outputType);
+export function pbkdf2(options: IPBKDF2Options): Uint8Array | string {
+  validateOptions(options);
+
+  const hmac = createHMAC(options.hashFunction, options.password);
+  return calculatePBKDF2(
+    hmac,
+    options.salt,
+    options.iterations,
+    options.hashLength,
+    options.outputType,
+  );
 }

@@ -15,19 +15,55 @@ function getNodePBKDF2(password, salt, iterations, keyLength, outputType?: strin
 }
 
 function getWasmPBKDF2(password, salt, iterations, keyLength, outputType?: 'hex' | 'binary') {
-  const hash = pbkdf2(password, salt, iterations, keyLength, createSHA512(), outputType);
+  const hash = pbkdf2({
+    password,
+    salt,
+    iterations,
+    hashLength: keyLength,
+    hashFunction: createSHA512(),
+    outputType,
+  });
+
   return hash;
 }
 
 test('invalid parameters', () => {
-  expect(() => pbkdf2('pwd', 'salt', 1, 1, '' as any)).toThrow();
-  expect(() => pbkdf2('pwd', 'salt', 1, 1, (() => '') as any)).toThrow();
-  expect(() => pbkdf2('pwd', 'salt', 1, 1, {} as any)).toThrow();
-  expect(() => pbkdf2('pwd', 'salt', 1, 0, createSHA512())).toThrow();
-  expect(() => pbkdf2('pwd', 'salt', 0, 1, createSHA512())).toThrow();
-  expect(() => pbkdf2('pwd', 'salt', 1, 1, createSHA512(), null)).toThrow();
-  expect(() => pbkdf2('pwd', 'salt', 1, 1, createSHA512(), '' as any)).toThrow();
-  expect(() => pbkdf2('pwd', 'salt', 1, 1, createSHA512(), 'x' as any)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, '' as any)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, (() => '') as any)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, {} as any)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 0)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 0, 1)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, null)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, '' as any)).toThrow();
+  expect(() => getWasmPBKDF2('pwd', 'salt', 1, 1, 'x' as any)).toThrow();
+
+  expect(() => (pbkdf2 as any)()).toThrow();
+  expect(() => (pbkdf2 as any)(() => {})).toThrow();
+  expect(() => (pbkdf2 as any)([])).toThrow();
+
+  expect(() => pbkdf2({
+    password: 'x',
+    salt: 'y',
+    iterations: 1,
+    hashLength: 32,
+    hashFunction: null,
+  })).toThrow();
+
+  expect(() => pbkdf2({
+    password: 'x',
+    salt: 'y',
+    iterations: 1,
+    hashLength: 32,
+    hashFunction: pbkdf2 as any,
+  })).toThrow();
+
+  expect(() => pbkdf2({
+    password: 'x',
+    salt: 'y',
+    iterations: 1,
+    hashLength: 32,
+    hashFunction: createSHA512 as any,
+  })).toThrow();
 });
 
 test('simple test', () => {

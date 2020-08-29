@@ -5,6 +5,8 @@
   - About 15% faster, when hashing small buffers 
   - Smaller bundle size
   - WebAssembly runs in the same thread, which is used by JavaScript, so the hash calculation was blocking anyway. It was only used to compile the binary asynchronously, where it did not make any difference, because the binaries are very small (~ 10kb / algorithm)
+* **BREAKING CHANGE**: `argon2()` function was renamed to `argon2i()`, `argon2d()` and `argon2id()`.
+* **BREAKING CHANGE**: `pbkdf2()` function requires now an object containing all parameters
 * Update dependencies
 
 ## 3.7.2 (August 15, 2020)
