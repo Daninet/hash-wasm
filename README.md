@@ -318,16 +318,19 @@ pbkdf2(
   outputType: 'hex' | 'binary', // by default returns hex string
 ): string | Uint8Array
 
-argon2({
-  password: IDataType, // password (or message) to be hashed
-  salt: IDataType, // salt
-  iterations: number, // number of iterations to perform
-  parallelism: number, // degree of parallelism
-  memorySize: number, // amount of memory to be used in kibibytes (1024 bytes)
-  hashLength: number, // output size in bytes
-  hashType: 'i' | 'd' | 'id', // argon2 variant selection
-  outputType: 'hex' | 'binary' | 'encoded', // by default returns hex string
-}): string | Uint8Array
+interface IArgon2Options {
+  password: IDataType; // password (or message) to be hashed
+  salt: IDataType; // salt (usually containing random bytes)
+  iterations: number; // number of iterations to perform
+  parallelism: number; // degree of parallelism
+  memorySize: number; // amount of memory to be used in kibibytes (1024 bytes)
+  hashLength: number; // output size in bytes
+  outputType?: 'hex' | 'binary' | 'encoded'; // by default returns hex string
+}
+
+argon2i(options: IArgon2Options): string | Uint8Array
+argon2d(options: IArgon2Options): string | Uint8Array
+argon2id(options: IArgon2Options): string | Uint8Array
 
 ```
 
