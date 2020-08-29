@@ -310,7 +310,8 @@ test('longer calculations', async () => {
 test('Invalid parameters', async () => {
   const functions = [argon2i, argon2d, argon2id];
 
-  functions.forEach(async (fn) => {
+  // eslint-disable-next-line no-restricted-syntax
+  for (const fn of functions) {
     await expect(fn('' as any)).rejects.toThrow();
     await expect(fn([] as any)).rejects.toThrow();
     await expect((fn as any)()).rejects.toThrow();
@@ -367,5 +368,5 @@ test('Invalid parameters', async () => {
     await expect(fn({ ...options, outputType: '' as any })).rejects.toThrow();
     await expect(fn({ ...options, outputType: 'x' as any })).rejects.toThrow();
     await expect(fn({ ...options, outputType: 'idx' as any })).rejects.toThrow();
-  });
+  }
 });
