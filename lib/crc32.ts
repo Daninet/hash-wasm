@@ -1,41 +1,29 @@
 import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
-import Mutex from './mutex';
 import wasmJson from '../wasm/crc32.wasm.json';
-import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
-const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let cachedInstance: IWASMInterface = null;
 
-export function crc32(data: IDataType): Promise<string> {
-  if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 4)
-      .then((wasm) => {
-        wasmCache = wasm;
-        return wasmCache.calculate(data);
-      });
+export function crc32(data: IDataType): string {
+  if (cachedInstance === null) {
+    cachedInstance = WASMInterface(wasmJson, 4);
   }
 
-  try {
-    const hash = wasmCache.calculate(data);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  const hash = cachedInstance.calculate(data);
+  return hash;
 }
 
-export function createCRC32(): Promise<IHasher> {
-  return WASMInterface(wasmJson, 4).then((wasm) => {
-    wasm.init();
-    const obj: IHasher = {
-      init: () => { wasm.init(); return obj; },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType) as any,
-      blockSize: 4,
-      digestSize: 4,
-    };
-    return obj;
-  });
+export function createCRC32(): IHasher {
+  const wasm = WASMInterface(wasmJson, 4);
+  wasm.init();
+  const obj: IHasher = {
+    init: () => { wasm.init(); return obj; },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType) as any,
+    blockSize: 4,
+    digestSize: 4,
+  };
+  return obj;
 }
 
 export default crc32;

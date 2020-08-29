@@ -52,11 +52,11 @@ function calculatePBKDF2(
   return getDigestHex(digestChars, DK, hashLength);
 }
 
-export async function pbkdf2(
+export function pbkdf2(
   password: IDataType, salt: IDataType, iterations: number,
-  hashLength: number, digest: Promise<IHasher>, outputType?: 'hex' | 'binary',
-): Promise<Uint8Array | string> {
-  if (!digest || !digest.then) {
+  hashLength: number, digest: IHasher, outputType?: 'hex' | 'binary',
+): Uint8Array | string {
+  if (!digest || !digest.init || !digest.digestSize) {
     throw new Error('Invalid hash function is provided! Usage: pbkdf2("password", "salt", 1000, 32, createSHA1()).');
   }
 
@@ -76,7 +76,7 @@ export async function pbkdf2(
     throw new Error(`Insupported output type ${outputType}. Valid values: ['hex', 'binary']`);
   }
 
-  const hmac = await createHMAC(digest, password);
+  const hmac = createHMAC(digest, password);
   return calculatePBKDF2(hmac, salt, iterations, hashLength, outputType);
 }
 

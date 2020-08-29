@@ -1,11 +1,8 @@
 import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
-import Mutex from './mutex';
 import wasmJson from '../wasm/xxhash32.wasm.json';
-import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
-const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let cachedInstance: IWASMInterface = null;
 
 function validateSeed(seed: number) {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xFFFFFFFF) {
@@ -14,45 +11,34 @@ function validateSeed(seed: number) {
   return null;
 }
 
-export function xxhash32(
-  data: IDataType, seed = 0,
-): Promise<string> {
+export function xxhash32(data: IDataType, seed = 0): string {
   if (validateSeed(seed)) {
-    return Promise.reject(validateSeed(seed));
+    throw validateSeed(seed);
   }
 
-  if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 4)
-      .then((wasm) => {
-        wasmCache = wasm;
-        return wasmCache.calculate(data, seed);
-      });
+  if (cachedInstance === null) {
+    cachedInstance = WASMInterface(wasmJson, 4);
   }
 
-  try {
-    const hash = wasmCache.calculate(data, seed);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  const hash = cachedInstance.calculate(data, seed);
+  return hash;
 }
 
-export function createXXHash32(seed = 0): Promise<IHasher> {
+export function createXXHash32(seed = 0): IHasher {
   if (validateSeed(seed)) {
-    return Promise.reject(validateSeed(seed));
+    throw validateSeed(seed);
   }
 
-  return WASMInterface(wasmJson, 4).then((wasm) => {
-    wasm.init(seed);
-    const obj: IHasher = {
-      init: () => { wasm.init(seed); return obj; },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType) as any,
-      blockSize: 16,
-      digestSize: 4,
-    };
-    return obj;
-  });
+  const wasm = WASMInterface(wasmJson, 4);
+  wasm.init(seed);
+  const obj: IHasher = {
+    init: () => { wasm.init(seed); return obj; },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType) as any,
+    blockSize: 16,
+    digestSize: 4,
+  };
+  return obj;
 }
 
 export default xxhash32;

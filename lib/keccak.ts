@@ -1,12 +1,9 @@
 import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
-import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
-import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
 type IValidBits = 224 | 256 | 384 | 512;
-const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let cachedInstance: IWASMInterface = null;
 
 function validateBits(bits: IValidBits) {
   if (![224, 256, 384, 512].includes(bits)) {
@@ -16,49 +13,38 @@ function validateBits(bits: IValidBits) {
   return null;
 }
 
-export function keccak(
-  data: IDataType, bits: IValidBits = 512,
-): Promise<string> {
+export function keccak(data: IDataType, bits: IValidBits = 512): string {
   if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
+    throw validateBits(bits);
   }
 
   const hashLength = bits / 8;
 
-  if (wasmCache === null || wasmCache.hashLength !== hashLength) {
-    return lockedCreate(mutex, wasmJson, hashLength)
-      .then((wasm) => {
-        wasmCache = wasm;
-        return wasmCache.calculate(data, bits, 0x01);
-      });
+  if (cachedInstance === null || cachedInstance.hashLength !== hashLength) {
+    cachedInstance = WASMInterface(wasmJson, hashLength);
   }
 
-  try {
-    const hash = wasmCache.calculate(data, bits, 0x01);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  const hash = cachedInstance.calculate(data, bits, 0x01);
+  return hash;
 }
 
-export function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
+export function createKeccak(bits: IValidBits = 512): IHasher {
   if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
+    throw validateBits(bits);
   }
 
   const outputSize = bits / 8;
 
-  return WASMInterface(wasmJson, outputSize).then((wasm) => {
-    wasm.init(bits);
-    const obj: IHasher = {
-      init: () => { wasm.init(bits); return obj; },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType, 0x01) as any,
-      blockSize: 200 - 2 * outputSize,
-      digestSize: outputSize,
-    };
-    return obj;
-  });
+  const wasm = WASMInterface(wasmJson, outputSize);
+  wasm.init(bits);
+  const obj: IHasher = {
+    init: () => { wasm.init(bits); return obj; },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType, 0x01) as any,
+    blockSize: 200 - 2 * outputSize,
+    digestSize: outputSize,
+  };
+  return obj;
 }
 
 export default keccak;

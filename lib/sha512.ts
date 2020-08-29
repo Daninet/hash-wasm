@@ -1,41 +1,29 @@
 import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
-import Mutex from './mutex';
 import wasmJson from '../wasm/sha512.wasm.json';
-import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
-const mutex = new Mutex();
-let wasmCache: IWASMInterface = null;
+let cachedInstance: IWASMInterface = null;
 
-export function sha512(data: IDataType): Promise<string> {
-  if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 64)
-      .then((wasm) => {
-        wasmCache = wasm;
-        return wasmCache.calculate(data, 512);
-      });
+export function sha512(data: IDataType): string {
+  if (cachedInstance === null) {
+    cachedInstance = WASMInterface(wasmJson, 64);
   }
 
-  try {
-    const hash = wasmCache.calculate(data, 512);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  const hash = cachedInstance.calculate(data, 512);
+  return hash;
 }
 
-export function createSHA512(): Promise<IHasher> {
-  return WASMInterface(wasmJson, 64).then((wasm) => {
-    wasm.init(512);
-    const obj: IHasher = {
-      init: () => { wasm.init(512); return obj; },
-      update: (data) => { wasm.update(data); return obj; },
-      digest: (outputType) => wasm.digest(outputType) as any,
-      blockSize: 128,
-      digestSize: 64,
-    };
-    return obj;
-  });
+export function createSHA512(): IHasher {
+  const wasm = WASMInterface(wasmJson, 64);
+  wasm.init(512);
+  const obj: IHasher = {
+    init: () => { wasm.init(512); return obj; },
+    update: (data) => { wasm.update(data); return obj; },
+    digest: (outputType) => wasm.digest(outputType) as any,
+    blockSize: 128,
+    digestSize: 64,
+  };
+  return obj;
 }
 
 export default sha512;

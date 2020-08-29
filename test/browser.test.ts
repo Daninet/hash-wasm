@@ -6,13 +6,13 @@ beforeEach(() => {
   jest.resetModules();
 });
 
-test('Throws when WebAssembly is unavailable', async () => {
+test('Throws when WebAssembly is unavailable', () => {
   const { md5 } = jest.requireActual('../lib');
 
   const WASM = globalThis.WebAssembly;
   globalThis.WebAssembly = undefined;
 
-  await expect(() => md5('a')).rejects.toThrow();
+  expect(() => md5('a')).toThrow();
   globalThis.WebAssembly = WASM;
 });
 
@@ -26,7 +26,7 @@ class TextEncoderMock {
   }
 }
 
-test('Simulate browsers', async () => {
+test('Simulate browsers', () => {
   const global = globalThis;
   ((globalThis as any).TextEncoder as any) = TextEncoderMock;
   ((globalThis as any).Buffer as any) = undefined;
@@ -34,31 +34,31 @@ test('Simulate browsers', async () => {
   (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
-  expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
-  expect(await md5(new Uint8Array([0]))).toBe('93b885adfe0da089cdf634904fd59f71');
-  expect(() => md5(1)).rejects.toThrow();
+  expect(md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
+  expect(md5(new Uint8Array([0]))).toBe('93b885adfe0da089cdf634904fd59f71');
+  expect(() => md5(1)).toThrow();
 
   (globalThis as any) = global;
 });
 
-test('Delete global self', async () => {
+test('Delete global self', () => {
   const global = globalThis;
   delete globalThis.self;
   (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
-  expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
+  expect(md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
 
   (globalThis as any) = global;
 });
 
-test('Delete global self + window', async () => {
+test('Delete global self + window', () => {
   const global = globalThis;
   delete globalThis.window;
   (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
-  expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
+  expect(md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
 
   (globalThis as any) = global;
 });

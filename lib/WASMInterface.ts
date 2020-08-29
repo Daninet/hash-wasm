@@ -1,14 +1,8 @@
-import Mutex from './mutex';
 import {
   decodeBase64, getDigestHex, getUInt8Buffer, IDataType,
 } from './util';
 
 export const MAX_HEAP = 16 * 1024;
-const wasmMutex = new Mutex();
-
-type ThenArg<T> = T extends Promise<infer U> ? U :
-  T extends ((...args: any[]) => Promise<infer V>) ? V :
-  T;
 
 export type IHasher = {
   init: () => IHasher;
@@ -21,9 +15,9 @@ export type IHasher = {
   digestSize: number;
 }
 
-const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();
+const wasmModuleCache = new Map<string, WebAssembly.Module>();
 
-async function WASMInterface(binary: any, hashLength: number) {
+function WASMInterface(binary: any, hashLength: number) {
   let wasmInstance = null;
   let memoryView: Uint8Array = null;
   let initialized = false;
@@ -43,24 +37,24 @@ async function WASMInterface(binary: any, hashLength: number) {
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, totalSize);
   };
 
-  const loadWASMPromise = wasmMutex.dispatch(async () => {
+  const loadWASMPromise = () => {
     if (!wasmModuleCache.has(binary.name)) {
       const asm = decodeBase64(binary.data);
-      const promise = WebAssembly.compile(asm);
+      const mod = new WebAssembly.Module(asm);
 
-      wasmModuleCache.set(binary.name, promise);
+      wasmModuleCache.set(binary.name, mod);
     }
 
-    const module = await wasmModuleCache.get(binary.name);
-    wasmInstance = await WebAssembly.instantiate(module);
+    const module = wasmModuleCache.get(binary.name);
+    wasmInstance = new WebAssembly.Instance(module);
 
     // eslint-disable-next-line no-underscore-dangle
     wasmInstance.exports._start();
-  });
+  };
 
-  const setupInterface = async () => {
+  const setupInterface = () => {
     if (!wasmInstance) {
-      await loadWASMPromise;
+      loadWASMPromise();
     }
 
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
@@ -155,7 +149,7 @@ async function WASMInterface(binary: any, hashLength: number) {
     return getDigestHex(digestChars, memoryView, hashLength);
   };
 
-  await setupInterface();
+  setupInterface();
 
   return {
     writeMemory,
@@ -168,6 +162,6 @@ async function WASMInterface(binary: any, hashLength: number) {
   };
 }
 
-export type IWASMInterface = ThenArg<ReturnType<typeof WASMInterface>>;
+export type IWASMInterface = ReturnType<typeof WASMInterface>;
 
 export default WASMInterface;
