@@ -106,8 +106,34 @@ while (hasMoreData()) {
   sha1.update(chunk);
 }
 
-const hash = sha1.digest();
+const hash = sha1.digest('binary'); // returns Uint8Array
 console.log('SHA1:', hash);
+```
+
+*\* See [API reference](#api)*
+
+### Calculating Argon2
+
+The recommended process for choosing the parameters can be found here: https://tools.ietf.org/html/draft-irtf-cfrg-argon2-04#section-4
+
+```javascript
+import { argon2 } from 'hash-wasm';
+
+const salt = new Uint8Array(16);
+window.crypto.getRandomValues(salt);
+
+const key = argon2({
+  password: 'pass',
+  salt, // salt is a buffer containing random bytes
+  parallelism: 1,
+  iterations: 256,
+  memorySize: 512, // use 512 kb memory
+  hashLength: 32, // output size = 32 bytes
+  outputType: 'encoded', // return standard encoded string containing parameters needed to verify the key
+  hashType: 'id', // use argon2id variant
+})
+
+console.log('Derived key:', key);
 ```
 
 *\* See [API reference](#api)*
@@ -309,6 +335,7 @@ argon2({
 Future plans
 =====
 
+- Write a helper function, which allows calculating the hashes in different threads using WebWorkers and Worker Threads
 - Write a polyfill which keeps bundle sizes low and enables running binaries containing newer WASM instructions
 - Use WebAssembly Bulk Memory Operations
 - Use WebAssembly SIMD instructions (expecting a 10-20% performance increase)
