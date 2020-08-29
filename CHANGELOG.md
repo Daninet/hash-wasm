@@ -1,10 +1,6 @@
-## 4.0.0 (August 29, 2020)
+## 4.0.1 (August 29, 2020)
 
-* **BREAKING CHANGE**: All APIs were converted to **synchronous** functions, so you don't need to use `await` or `.then()` anymore. There are multiple reasons for this:
-  - It's easier to use
-  - About 15% faster, when hashing small buffers 
-  - Smaller bundle size
-  - WebAssembly runs in the same thread, which is used by JavaScript, so the hash calculation was blocking anyway. It was only used to compile the binary asynchronously, where it did not make any difference, because the binaries are very small (~ 10kb / algorithm)
+* ~~**BREAKING CHANGE**: All APIs were converted to **synchronous** functions, so you don't need to use `await` or `.then()` anymore.~~ It turned out that Chrome does not allow sync WebAssembly instantiation of binaries larger than 4KB.
 * **BREAKING CHANGE**: `argon2()` function was renamed to `argon2i()`, `argon2d()` and `argon2id()`.
 * **BREAKING CHANGE**: `pbkdf2()` function requires now an object containing all parameters
 * Update dependencies
