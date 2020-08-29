@@ -37,7 +37,7 @@ function WASMInterface(binary: any, hashLength: number) {
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, totalSize);
   };
 
-  const loadWASMPromise = () => {
+  const loadWASM = () => {
     if (!wasmModuleCache.has(binary.name)) {
       const asm = decodeBase64(binary.data);
       const mod = new WebAssembly.Module(asm);
@@ -54,7 +54,7 @@ function WASMInterface(binary: any, hashLength: number) {
 
   const setupInterface = () => {
     if (!wasmInstance) {
-      loadWASMPromise();
+      loadWASM();
     }
 
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
