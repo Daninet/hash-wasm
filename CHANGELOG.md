@@ -1,6 +1,6 @@
 ## 4.0.1 (August 29, 2020)
 
-* ~~**BREAKING CHANGE**: All APIs were converted to **synchronous** functions, so you don't need to use `await` or `.then()` anymore.~~ It turned out that Chrome does not allow sync WebAssembly instantiation of binaries larger than 4KB. So this change was reverted.
+* ~~**BREAKING CHANGE**: All APIs were converted to **synchronous** functions, so you don't need to use `await` or `.then()` anymore.~~ It turned out that Chrome does not allow synchronous WebAssembly instantiation of binaries larger than 4KB. So this change was reverted.
 * **BREAKING CHANGE**: `argon2()` function was renamed to `argon2i()`, `argon2d()` and `argon2id()`.
 * **BREAKING CHANGE**: `pbkdf2()` function requires now an object containing all parameters
 * Update dependencies
