@@ -26,3 +26,6 @@ dist
 .jest-cache
 
 wasm
+.bench
+
+benchmark.js
