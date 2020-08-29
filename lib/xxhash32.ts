@@ -1,4 +1,4 @@
-import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
 import wasmJson from '../wasm/xxhash32.wasm.json';
 import { IDataType } from './util';
 
@@ -40,5 +40,3 @@ export function createXXHash32(seed = 0): IHasher {
   };
   return obj;
 }
-
-export default xxhash32;

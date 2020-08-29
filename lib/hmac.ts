@@ -67,5 +67,3 @@ export function createHMAC(hasher: IHasher, key: IDataType): IHasher {
 
   return calculateHmac(hasher, key);
 }
-
-export default createHMAC;

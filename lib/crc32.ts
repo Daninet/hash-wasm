@@ -1,4 +1,4 @@
-import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
 import wasmJson from '../wasm/crc32.wasm.json';
 import { IDataType } from './util';
 
@@ -25,5 +25,3 @@ export function createCRC32(): IHasher {
   };
   return obj;
 }
-
-export default crc32;

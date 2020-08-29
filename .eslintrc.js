@@ -20,6 +20,7 @@ module.exports = {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     'no-await-in-loop': 'off',
     'default-case': 'off',
+    'import/prefer-default-export': 'off',
   },
   ignorePatterns: [
     'benchmark/node_modules/',

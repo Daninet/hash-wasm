@@ -3,7 +3,7 @@ import {
   getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
 } from './util';
 import { createBLAKE2b } from './blake2b';
-import WASMInterface, { IHasher } from './WASMInterface';
+import { WASMInterface, IHasher } from './WASMInterface';
 import wasmJson from '../wasm/argon2.wasm.json';
 
 interface IArgon2Options {
@@ -13,11 +13,14 @@ interface IArgon2Options {
   parallelism: number;
   memorySize: number;
   hashLength: number;
-  hashType: 'i' | 'd' | 'id';
   outputType?: 'hex' | 'binary' | 'encoded';
 }
 
-function encodeResult(salt: Uint8Array, options: IArgon2Options, res: Uint8Array): string {
+interface IArgon2OptionsExtended extends IArgon2Options {
+  hashType: 'i' | 'd' | 'id';
+}
+
+function encodeResult(salt: Uint8Array, options: IArgon2OptionsExtended, res: Uint8Array): string {
   const parameters = [
     `m=${options.memorySize}`,
     `t=${options.iterations}`,
@@ -74,7 +77,7 @@ function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Uint8Array {
   return ret;
 }
 
-function getHashType(type: IArgon2Options['hashType']): number {
+function getHashType(type: IArgon2OptionsExtended['hashType']): number {
   switch (type) {
     case 'd':
       return 0;
@@ -85,7 +88,7 @@ function getHashType(type: IArgon2Options['hashType']): number {
   }
 }
 
-function argon2Internal(options: IArgon2Options): string | Uint8Array {
+function argon2Internal(options: IArgon2OptionsExtended): string | Uint8Array {
   const { parallelism, iterations, hashLength } = options;
   const password = getUInt8Buffer(options.password);
   const salt = getUInt8Buffer(options.salt);
@@ -200,10 +203,6 @@ const validateOptions = (options: IArgon2Options) => {
     throw new Error('Memory size should be at least 8 * parallelism.');
   }
 
-  if (!['i', 'd', 'id'].includes(options.hashType)) {
-    throw new Error(`Insupported hash type ${options.hashType}. Valid values: ['i', 'd', 'id']`);
-  }
-
   if (options.outputType === undefined) {
     options.outputType = 'hex';
   }
@@ -213,10 +212,29 @@ const validateOptions = (options: IArgon2Options) => {
   }
 };
 
-export const argon2 = (options: IArgon2Options): string | Uint8Array => {
+export const argon2i = (options: IArgon2Options): string | Uint8Array => {
   validateOptions(options);
 
-  return argon2Internal(options);
+  return argon2Internal({
+    ...options,
+    hashType: 'i',
+  });
 };
 
-export default argon2;
+export const argon2id = (options: IArgon2Options): string | Uint8Array => {
+  validateOptions(options);
+
+  return argon2Internal({
+    ...options,
+    hashType: 'id',
+  });
+};
+
+export const argon2d = (options: IArgon2Options): string | Uint8Array => {
+  validateOptions(options);
+
+  return argon2Internal({
+    ...options,
+    hashType: 'd',
+  });
+};

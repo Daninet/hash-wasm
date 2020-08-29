@@ -1,4 +1,4 @@
-import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
 import wasmJson from '../wasm/md4.wasm.json';
 import { IDataType } from './util';
 
@@ -25,5 +25,3 @@ export function createMD4(): IHasher {
   };
   return obj;
 }
-
-export default md4;

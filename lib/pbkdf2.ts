@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 import { IHasher } from './WASMInterface';
-import createHMAC from './hmac';
+import { createHMAC } from './hmac';
 import { getDigestHex, getUInt8Buffer, IDataType } from './util';
 
 function calculatePBKDF2(
@@ -79,5 +79,3 @@ export function pbkdf2(
   const hmac = createHMAC(digest, password);
   return calculatePBKDF2(hmac, salt, iterations, hashLength, outputType);
 }
-
-export default pbkdf2;

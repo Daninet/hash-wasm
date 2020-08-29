@@ -1,4 +1,4 @@
-import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
 import wasmJson from '../wasm/blake2b.wasm.json';
 import { getUInt8Buffer, IDataType } from './util';
 
@@ -86,5 +86,3 @@ export function createBLAKE2b(bits = 512, key: IDataType = null): IHasher {
   };
   return obj;
 }
-
-export default blake2b;

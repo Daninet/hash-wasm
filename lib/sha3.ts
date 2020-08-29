@@ -1,4 +1,4 @@
-import WASMInterface, { IWASMInterface, IHasher } from './WASMInterface';
+import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
 import wasmJson from '../wasm/sha3.wasm.json';
 import { IDataType } from './util';
 
@@ -45,5 +45,3 @@ export function createSHA3(bits: IValidBits = 512): IHasher {
   };
   return obj;
 }
-
-export default sha3;

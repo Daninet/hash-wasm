@@ -17,7 +17,7 @@ export type IHasher = {
 
 const wasmModuleCache = new Map<string, WebAssembly.Module>();
 
-function WASMInterface(binary: any, hashLength: number) {
+export function WASMInterface(binary: any, hashLength: number) {
   let wasmInstance = null;
   let memoryView: Uint8Array = null;
   let initialized = false;
@@ -163,5 +163,3 @@ function WASMInterface(binary: any, hashLength: number) {
 }
 
 export type IWASMInterface = ReturnType<typeof WASMInterface>;
-
-export default WASMInterface;
