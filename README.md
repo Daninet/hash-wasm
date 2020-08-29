@@ -57,7 +57,7 @@ npm i hash-wasm
 or it can be inserted directly into HTML (via [jsDelivr](https://www.jsdelivr.com/package/npm/hash-wasm))
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/hash-wasm"></script>
+<script src="https://cdn.jsdelivr.net/npm/hash-wasm@4"></script>
 <!-- defines the global `hashwasm` variable -->
 ```
 
