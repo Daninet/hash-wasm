@@ -1,9 +1,12 @@
 import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
+import Mutex from './mutex';
 import wasmJson from '../wasm/sha3.wasm.json';
+import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
 type IValidBits = 224 | 256 | 384 | 512;
-let cachedInstance: IWASMInterface = null;
+const mutex = new Mutex();
+let wasmCache: IWASMInterface = null;
 
 function validateBits(bits: IValidBits) {
   if (![224, 256, 384, 512].includes(bits)) {
@@ -13,36 +16,47 @@ function validateBits(bits: IValidBits) {
   return null;
 }
 
-export function keccak(data: IDataType, bits: IValidBits = 512): string {
+export function keccak(
+  data: IDataType, bits: IValidBits = 512,
+): Promise<string> {
   if (validateBits(bits)) {
-    throw validateBits(bits);
+    return Promise.reject(validateBits(bits));
   }
 
   const hashLength = bits / 8;
 
-  if (cachedInstance === null || cachedInstance.hashLength !== hashLength) {
-    cachedInstance = WASMInterface(wasmJson, hashLength);
+  if (wasmCache === null || wasmCache.hashLength !== hashLength) {
+    return lockedCreate(mutex, wasmJson, hashLength)
+      .then((wasm) => {
+        wasmCache = wasm;
+        return wasmCache.calculate(data, bits, 0x01);
+      });
   }
 
-  const hash = cachedInstance.calculate(data, bits, 0x01);
-  return hash;
+  try {
+    const hash = wasmCache.calculate(data, bits, 0x01);
+    return Promise.resolve(hash);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }
 
-export function createKeccak(bits: IValidBits = 512): IHasher {
+export function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
   if (validateBits(bits)) {
-    throw validateBits(bits);
+    return Promise.reject(validateBits(bits));
   }
 
   const outputSize = bits / 8;
 
-  const wasm = WASMInterface(wasmJson, outputSize);
-  wasm.init(bits);
-  const obj: IHasher = {
-    init: () => { wasm.init(bits); return obj; },
-    update: (data) => { wasm.update(data); return obj; },
-    digest: (outputType) => wasm.digest(outputType, 0x01) as any,
-    blockSize: 200 - 2 * outputSize,
-    digestSize: outputSize,
-  };
-  return obj;
+  return WASMInterface(wasmJson, outputSize).then((wasm) => {
+    wasm.init(bits);
+    const obj: IHasher = {
+      init: () => { wasm.init(bits); return obj; },
+      update: (data) => { wasm.update(data); return obj; },
+      digest: (outputType) => wasm.digest(outputType, 0x01) as any,
+      blockSize: 200 - 2 * outputSize,
+      digestSize: outputSize,
+    };
+    return obj;
+  });
 }

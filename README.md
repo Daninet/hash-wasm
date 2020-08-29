@@ -45,7 +45,7 @@ Features
 - Supports concurrent hash calculations with multiple states
 - [Unit tests](https://github.com/Daninet/hash-wasm/tree/master/test) for all algorithms
 - 100% open source & transparent [build process](https://github.com/Daninet/hash-wasm/actions)
-- Easy to use, synchronous API
+- Easy to use, Promise-based API
 
 
 Installation
@@ -77,14 +77,18 @@ It is the easiest and the fastest way to calculate hashes. Use it when the input
 ```javascript
 import { md5, sha1, sha512, sha3 } from 'hash-wasm';
 
-console.log('MD5:', md5('demo'));
+async function run() {
+  console.log('MD5:', await md5('demo'));
 
-const int8Buffer = new Uint8Array([0, 1, 2, 3]);
-console.log('SHA1:', sha1(int8Buffer));
-console.log('SHA512:', sha512(int8Buffer));
+  const int8Buffer = new Uint8Array([0, 1, 2, 3]);
+  console.log('SHA1:', await sha1(int8Buffer));
+  console.log('SHA512:', await sha512(int8Buffer));
 
-const int32Buffer = new Uint32Array([1056, 641]);
-console.log('SHA3-256:', sha3(int32Buffer, 256));
+  const int32Buffer = new Uint32Array([1056, 641]);
+  console.log('SHA3-256:', await sha3(int32Buffer, 256));
+}
+
+run();
 ```
 
 *\* See [API reference](#api)*
@@ -98,16 +102,20 @@ For the best performance, avoid calling createXXXX() functions in loops. When ca
 ```javascript
 import { createSHA1 } from 'hash-wasm';
 
-const sha1 = createSHA1();
-sha1.init();
+async function run() {
+  const sha1 = await createSHA1();
+  sha1.init();
 
-while (hasMoreData()) {
-  const chunk = readChunk();
-  sha1.update(chunk);
+  while (hasMoreData()) {
+    const chunk = readChunk();
+    sha1.update(chunk);
+  }
+
+  const hash = sha1.digest('binary'); // returns Uint8Array
+  console.log('SHA1:', hash);
 }
 
-const hash = sha1.digest('binary'); // returns Uint8Array
-console.log('SHA1:', hash);
+run();
 ```
 
 *\* See [API reference](#api)*
@@ -144,18 +152,23 @@ All supported hash functions can be used to calculate HMAC. For the best perform
 ```javascript
 import { createHMAC, createSHA3 } from 'hash-wasm';
 
-const hmac = createHMAC(createSHA3(224), 'key'); // HMAC-SHA3-224
+async function run() {
+  const hashFunc = createSHA3(224); // SHA3-224
+  const hmac = await createHMAC(hashFunc, 'key');
 
-const fruits = ['apple', 'raspberry', 'watermelon'];
-console.log('Input:', fruits);
+  const fruits = ['apple', 'raspberry', 'watermelon'];
+  console.log('Input:', fruits);
 
-const codes = fruits.map(data => {
-  hmac.init();
-  hmac.update(data);
-  return hmac.digest();
-});
+  const codes = fruits.map(data => {
+    hmac.init();
+    hmac.update(data);
+    return hmac.digest();
+  });
 
-console.log('HMAC:', codes);
+  console.log('HMAC:', codes);
+}
+
+run();
 ```
 
 *\* See [API reference](#api)*
@@ -167,19 +180,23 @@ All supported hash functions can be used to calculate PBKDF2. For the best perfo
 ```javascript
 import { pbkdf2, createSHA1 } from 'hash-wasm';
 
-const salt = new Uint8Array(16);
-window.crypto.getRandomValues(salt);
+async function run() {
+  const salt = new Uint8Array(16);
+  window.crypto.getRandomValues(salt);
 
-const key = pbkdf2({
-  password: 'password',
-  salt,
-  iterations: 1000,
-  hashLength: 32,
-  hashFunction: createSHA1(),
-  outputType: 'hex',
-});
+  const key = await pbkdf2({
+    password: 'password',
+    salt,
+    iterations: 1000,
+    hashLength: 32,
+    hashFunction: createSHA1(),
+    outputType: 'hex',
+  });
 
-console.log('Derived key:', key);
+  console.log('Derived key:', key);
+}
+
+run();
 ```
 
 *\* See [API reference](#api)*
@@ -277,20 +294,20 @@ API
 type IDataType = string | Buffer | Uint8Array | Uint16Array | Uint32Array;
 
 // all functions return hash in hex format
-blake2b(data: IDataType, bits?: number, key?: IDataType): string // default is 512 bits
-crc32(data: IDataType): string
-keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): string // default is 512 bits
-md4(data: IDataType): string
-md5(data: IDataType): string
-ripemd160(data: IDataType): string
-sha1(data: IDataType): string
-sha224(data: IDataType): string
-sha256(data: IDataType): string
-sha3(data: IDataType, bits?: 224 | 256 | 384 | 512): string // default is 512 bits
-sha384(data: IDataType): string
-sha512(data: IDataType): string
-xxhash32(data: IDataType, seed?: number): string
-xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): string
+blake2b(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 512 bits
+crc32(data: IDataType): Promise<string>
+keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+md4(data: IDataType): Promise<string>
+md5(data: IDataType): Promise<string>
+ripemd160(data: IDataType): Promise<string>
+sha1(data: IDataType): Promise<string>
+sha224(data: IDataType): Promise<string>
+sha256(data: IDataType): Promise<string>
+sha3(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
+sha384(data: IDataType): Promise<string>
+sha512(data: IDataType): Promise<string>
+xxhash32(data: IDataType, seed?: number): Promise<string>
+xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
 
 interface IHasher {
   init: () => IHasher;
@@ -300,31 +317,31 @@ interface IHasher {
   digestSize: number; // in bytes
 }
 
-createBLAKE2b(bits?: number, key?: IDataType): IHasher // default is 512 bits
-createCRC32(): IHasher
-createKeccak(bits?: 224 | 256 | 384 | 512): IHasher // default is 512 bits
-createMD4(): IHasher
-createMD5(): IHasher
-createRIPEMD160(): IHasher
-createSHA1(): IHasher
-createSHA224(): IHasher
-createSHA256(): IHasher
-createSHA3(bits?: 224 | 256 | 384 | 512): IHasher // default is 512 bits
-createSHA384(): IHasher
-createSHA512(): IHasher
-createXXHash32(seed: number): IHasher
-createXXHash64(seedLow: number, seedHigh: number): IHasher
+createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 512 bits
+createCRC32(): Promise<IHasher>
+createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createMD4(): Promise<IHasher>
+createMD5(): Promise<IHasher>
+createRIPEMD160(): Promise<IHasher>
+createSHA1(): Promise<IHasher>
+createSHA224(): Promise<IHasher>
+createSHA256(): Promise<IHasher>
+createSHA3(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
+createSHA384(): Promise<IHasher>
+createSHA512(): Promise<IHasher>
+createXXHash32(seed: number): Promise<IHasher>
+createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 
-createHMAC(hashFunction: IHasher, key: IDataType): IHasher
+createHMAC(hashFunction: Promise<IHasher>, key: IDataType): Promise<IHasher>
 
 pbkdf2({
   password: IDataType, // password (or message) to be hashed
   salt: IDataType, // salt
   iterations: number, // number of iterations to perform
   hashLength: number, // output size in bytes
-  hashFunction: IHasher, // the return value of a function like createSHA1()
+  hashFunction: Promise<IHasher>, // the return value of a function like createSHA1()
   outputType: 'hex' | 'binary', // by default returns hex string
-}): string | Uint8Array
+}): Promise<string | Uint8Array>
 
 interface IArgon2Options {
   password: IDataType; // password (or message) to be hashed
@@ -336,16 +353,15 @@ interface IArgon2Options {
   outputType?: 'hex' | 'binary' | 'encoded'; // by default returns hex string
 }
 
-argon2i(options: IArgon2Options): string | Uint8Array
-argon2d(options: IArgon2Options): string | Uint8Array
-argon2id(options: IArgon2Options): string | Uint8Array
+argon2i(options: IArgon2Options): Promise<string | Uint8Array>
+argon2d(options: IArgon2Options): Promise<string | Uint8Array>
+argon2id(options: IArgon2Options): Promise<string | Uint8Array>
 
 ```
 
 Future plans
 =====
 
-- Write a helper function, which allows calculating the hashes in different threads using WebWorkers and Worker Threads
 - Write a polyfill which keeps bundle sizes low and enables running binaries containing newer WASM instructions
 - Use WebAssembly Bulk Memory Operations
 - Use WebAssembly SIMD instructions (expecting a 10-20% performance increase)

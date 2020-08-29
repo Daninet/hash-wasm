@@ -8,14 +8,14 @@ export interface IPBKDF2Options {
   salt: IDataType;
   iterations: number;
   hashLength: number;
-  hashFunction: IHasher;
+  hashFunction: Promise<IHasher>;
   outputType?: 'hex' | 'binary';
 }
 
-function calculatePBKDF2(
+async function calculatePBKDF2(
   digest: IHasher, salt: IDataType, iterations: number,
   hashLength: number, outputType?: 'hex' | 'binary',
-): Uint8Array | string {
+): Promise<Uint8Array | string> {
   const DK = new Uint8Array(hashLength);
   const block1 = new Uint8Array(salt.length + 4);
   const block1View = new DataView(block1.buffer);
@@ -66,7 +66,7 @@ const validateOptions = (options: IPBKDF2Options) => {
     throw new Error('Invalid options parameter. It requires an object.');
   }
 
-  if (!options.hashFunction || !options.hashFunction.init || !options.hashFunction.digestSize) {
+  if (!options.hashFunction || !options.hashFunction.then) {
     throw new Error('Invalid hash function is provided! Usage: pbkdf2("password", "salt", 1000, 32, createSHA1()).');
   }
 
@@ -87,10 +87,10 @@ const validateOptions = (options: IPBKDF2Options) => {
   }
 };
 
-export function pbkdf2(options: IPBKDF2Options): Uint8Array | string {
+export async function pbkdf2(options: IPBKDF2Options): Promise<Uint8Array | string> {
   validateOptions(options);
 
-  const hmac = createHMAC(options.hashFunction, options.password);
+  const hmac = await createHMAC(options.hashFunction, options.password);
   return calculatePBKDF2(
     hmac,
     options.salt,

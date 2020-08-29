@@ -1,8 +1,14 @@
+import Mutex from './mutex';
 import {
   decodeBase64, getDigestHex, getUInt8Buffer, IDataType,
 } from './util';
 
 export const MAX_HEAP = 16 * 1024;
+const wasmMutex = new Mutex();
+
+type ThenArg<T> = T extends Promise<infer U> ? U :
+  T extends ((...args: any[]) => Promise<infer V>) ? V :
+  T;
 
 export type IHasher = {
   init: () => IHasher;
@@ -15,9 +21,9 @@ export type IHasher = {
   digestSize: number;
 }
 
-const wasmModuleCache = new Map<string, WebAssembly.Module>();
+const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();
 
-export function WASMInterface(binary: any, hashLength: number) {
+export async function WASMInterface(binary: any, hashLength: number) {
   let wasmInstance = null;
   let memoryView: Uint8Array = null;
   let initialized = false;
@@ -37,23 +43,25 @@ export function WASMInterface(binary: any, hashLength: number) {
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, totalSize);
   };
 
-  const loadWASM = () => {
+  const loadWASMPromise = wasmMutex.dispatch(async () => {
     if (!wasmModuleCache.has(binary.name)) {
       const asm = decodeBase64(binary.data);
-      const mod = new WebAssembly.Module(asm);
+      const promise = WebAssembly.compile(asm);
 
-      wasmModuleCache.set(binary.name, mod);
+      wasmModuleCache.set(binary.name, promise);
     }
 
-    const module = wasmModuleCache.get(binary.name);
-    wasmInstance = new WebAssembly.Instance(module);
+    const module = await wasmModuleCache.get(binary.name);
+    wasmInstance = await WebAssembly.instantiate(module);
 
     // eslint-disable-next-line no-underscore-dangle
     wasmInstance.exports._start();
-  };
+  });
 
-  const setupInterface = () => {
-    loadWASM();
+  const setupInterface = async () => {
+    if (!wasmInstance) {
+      await loadWASMPromise;
+    }
 
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
     const memoryBuffer = wasmInstance.exports.memory.buffer;
@@ -147,7 +155,7 @@ export function WASMInterface(binary: any, hashLength: number) {
     return getDigestHex(digestChars, memoryView, hashLength);
   };
 
-  setupInterface();
+  await setupInterface();
 
   return {
     writeMemory,
@@ -160,4 +168,4 @@ export function WASMInterface(binary: any, hashLength: number) {
   };
 }
 
-export type IWASMInterface = ReturnType<typeof WASMInterface>;
+export type IWASMInterface = ThenArg<ReturnType<typeof WASMInterface>>;

@@ -36,9 +36,9 @@ function int32LE(x: number): Uint8Array {
   return new Uint8Array(uint32View.buffer);
 }
 
-function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Uint8Array {
+async function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Promise<Uint8Array> {
   if (len <= 64) {
-    const blake = createBLAKE2b(len * 8);
+    const blake = await createBLAKE2b(len * 8);
     blake.update(int32LE(len));
     blake.update(buf);
     return blake.digest('binary');
@@ -67,7 +67,7 @@ function hashFunc(blake512: IHasher, buf: Uint8Array, len: number): Uint8Array {
     blakeSmall = blake512;
     blakeSmall.init();
   } else {
-    blakeSmall = createBLAKE2b(partialBytesNeeded * 8);
+    blakeSmall = await createBLAKE2b(partialBytesNeeded * 8);
   }
 
   blakeSmall.update(vp);
@@ -88,7 +88,7 @@ function getHashType(type: IArgon2OptionsExtended['hashType']): number {
   }
 }
 
-function argon2Internal(options: IArgon2OptionsExtended): string | Uint8Array {
+async function argon2Internal(options: IArgon2OptionsExtended): Promise<string | Uint8Array> {
   const { parallelism, iterations, hashLength } = options;
   const password = getUInt8Buffer(options.password);
   const salt = getUInt8Buffer(options.salt);
@@ -96,8 +96,10 @@ function argon2Internal(options: IArgon2OptionsExtended): string | Uint8Array {
   const hashType = getHashType(options.hashType);
   const { memorySize } = options; // in KB
 
-  const argon2Interface = WASMInterface(wasmJson, 1024);
-  const blake512 = createBLAKE2b(512);
+  const [argon2Interface, blake512] = await Promise.all([
+    WASMInterface(wasmJson, 1024),
+    createBLAKE2b(512),
+  ]);
 
   // last block is for storing the init vector
   argon2Interface.setMemorySize(memorySize * 1024 + 1024);
@@ -133,19 +135,19 @@ function argon2Internal(options: IArgon2OptionsExtended): string | Uint8Array {
     param.set(int32LE(lane), 68);
 
     let position = lane * lanes;
-    let chunk = hashFunc(blake512, param, 1024);
+    let chunk = await hashFunc(blake512, param, 1024);
     argon2Interface.writeMemory(chunk, position * 1024);
 
     position += 1;
     param.set(int32LE(1), 64);
-    chunk = hashFunc(blake512, param, 1024);
+    chunk = await hashFunc(blake512, param, 1024);
     argon2Interface.writeMemory(chunk, position * 1024);
   }
 
   const C = new Uint8Array(1024);
   writeHexToUInt8(C, argon2Interface.calculate(new Uint8Array([]), memorySize));
 
-  const res = hashFunc(blake512, C, hashLength);
+  const res = await hashFunc(blake512, C, hashLength);
 
   if (options.outputType === 'hex') {
     const digestChars = new Uint8Array(hashLength * 2);
@@ -212,7 +214,7 @@ const validateOptions = (options: IArgon2Options) => {
   }
 };
 
-export const argon2i = (options: IArgon2Options): string | Uint8Array => {
+export const argon2i = async (options: IArgon2Options): Promise<string | Uint8Array> => {
   validateOptions(options);
 
   return argon2Internal({
@@ -221,7 +223,7 @@ export const argon2i = (options: IArgon2Options): string | Uint8Array => {
   });
 };
 
-export const argon2id = (options: IArgon2Options): string | Uint8Array => {
+export const argon2id = async (options: IArgon2Options): Promise<string | Uint8Array> => {
   validateOptions(options);
 
   return argon2Internal({
@@ -230,7 +232,7 @@ export const argon2id = (options: IArgon2Options): string | Uint8Array => {
   });
 };
 
-export const argon2d = (options: IArgon2Options): string | Uint8Array => {
+export const argon2d = async (options: IArgon2Options): Promise<string | Uint8Array> => {
   validateOptions(options);
 
   return argon2Internal({

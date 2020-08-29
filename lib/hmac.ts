@@ -60,10 +60,10 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
   return obj;
 }
 
-export function createHMAC(hasher: IHasher, key: IDataType): IHasher {
-  if (!hasher || !hasher.init || !hasher.digestSize) {
+export function createHMAC(hash: Promise<IHasher>, key: IDataType): Promise<IHasher> {
+  if (!hash || !hash.then) {
     throw new Error('Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").');
   }
 
-  return calculateHmac(hasher, key);
+  return hash.then((hasher) => calculateHmac(hasher, key));
 }

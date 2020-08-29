@@ -1,27 +1,39 @@
 import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
+import Mutex from './mutex';
 import wasmJson from '../wasm/sha256.wasm.json';
+import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
-let cachedInstance: IWASMInterface = null;
+const mutex = new Mutex();
+let wasmCache: IWASMInterface = null;
 
-export function sha256(data: IDataType): string {
-  if (cachedInstance === null) {
-    cachedInstance = WASMInterface(wasmJson, 32);
+export function sha256(data: IDataType): Promise<string> {
+  if (wasmCache === null) {
+    return lockedCreate(mutex, wasmJson, 32)
+      .then((wasm) => {
+        wasmCache = wasm;
+        return wasmCache.calculate(data, 256);
+      });
   }
 
-  const hash = cachedInstance.calculate(data, 256);
-  return hash;
+  try {
+    const hash = wasmCache.calculate(data, 256);
+    return Promise.resolve(hash);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }
 
-export function createSHA256(): IHasher {
-  const wasm = WASMInterface(wasmJson, 32);
-  wasm.init(256);
-  const obj: IHasher = {
-    init: () => { wasm.init(256); return obj; },
-    update: (data) => { wasm.update(data); return obj; },
-    digest: (outputType) => wasm.digest(outputType) as any,
-    blockSize: 64,
-    digestSize: 32,
-  };
-  return obj;
+export function createSHA256(): Promise<IHasher> {
+  return WASMInterface(wasmJson, 32).then((wasm) => {
+    wasm.init(256);
+    const obj: IHasher = {
+      init: () => { wasm.init(256); return obj; },
+      update: (data) => { wasm.update(data); return obj; },
+      digest: (outputType) => wasm.digest(outputType) as any,
+      blockSize: 64,
+      digestSize: 32,
+    };
+    return obj;
+  });
 }
