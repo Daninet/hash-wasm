@@ -122,15 +122,14 @@ import { argon2 } from 'hash-wasm';
 const salt = new Uint8Array(16);
 window.crypto.getRandomValues(salt);
 
-const key = argon2({
+const key = argon2id({
   password: 'pass',
   salt, // salt is a buffer containing random bytes
   parallelism: 1,
   iterations: 256,
-  memorySize: 512, // use 512 kb memory
+  memorySize: 512, // use 512KB memory
   hashLength: 32, // output size = 32 bytes
   outputType: 'encoded', // return standard encoded string containing parameters needed to verify the key
-  hashType: 'id', // use argon2id variant
 })
 
 console.log('Derived key:', key);

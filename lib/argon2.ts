@@ -6,7 +6,7 @@ import { createBLAKE2b } from './blake2b';
 import { WASMInterface, IHasher } from './WASMInterface';
 import wasmJson from '../wasm/argon2.wasm.json';
 
-interface IArgon2Options {
+export interface IArgon2Options {
   password: IDataType;
   salt: IDataType;
   iterations: number;

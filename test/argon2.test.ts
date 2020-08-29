@@ -1,19 +1,29 @@
-import { argon2 } from '../lib';
+import { argon2d, argon2i, argon2id } from '../lib';
 /* global test, expect */
 
 const hash = (
   password, salt, parallelism, iterations, memorySize,
   hashLength, outputType, hashType = null,
-) => argon2({
-  password,
-  salt,
-  parallelism,
-  iterations,
-  memorySize,
-  hashLength,
-  outputType,
-  hashType,
-});
+) => {
+  let fn = null;
+  if (hashType === 'd') {
+    fn = argon2d;
+  } else if (hashType === 'id') {
+    fn = argon2id;
+  } else if (hashType === 'i') {
+    fn = argon2i;
+  }
+
+  return fn({
+    password,
+    salt,
+    parallelism,
+    iterations,
+    memorySize,
+    hashLength,
+    outputType,
+  });
+};
 
 const hashMultiple = (...params: Parameters<typeof hash>) => {
   const parr = [
@@ -298,67 +308,64 @@ test('longer calculations', () => {
 });
 
 test('Invalid parameters', () => {
-  expect(() => argon2('' as any)).toThrow();
-  expect(() => argon2([] as any)).toThrow();
-  expect(() => (argon2 as any)()).toThrow();
-  const options: Parameters<typeof argon2>[0] = {
-    password: 'p',
-    salt: 'salt1234',
-    iterations: 1,
-    parallelism: 8,
-    memorySize: 1024,
-    hashLength: 32,
-    hashType: 'd',
-  };
+  const functions = [argon2i, argon2d, argon2id];
 
-  expect(() => argon2(options)).not.toThrow();
+  functions.forEach((fn) => {
+    expect(() => fn('' as any)).toThrow();
+    expect(() => fn([] as any)).toThrow();
+    expect(() => (fn as any)()).toThrow();
+    const options: Parameters<typeof argon2i>[0] = {
+      password: 'p',
+      salt: 'salt1234',
+      iterations: 1,
+      parallelism: 8,
+      memorySize: 1024,
+      hashLength: 32,
+    };
 
-  expect(() => argon2({ ...options, password: undefined })).toThrow();
-  expect(() => argon2({ ...options, password: null })).toThrow();
-  expect(() => argon2({ ...options, password: 1 as any })).toThrow();
-  expect(() => argon2({ ...options, password: [] as any })).toThrow();
-  expect(() => argon2({ ...options, password: Buffer.from([]) })).toThrow();
+    expect(() => fn(options)).not.toThrow();
 
-  expect(() => argon2({ ...options, salt: undefined })).toThrow();
-  expect(() => argon2({ ...options, salt: null })).toThrow();
-  expect(() => argon2({ ...options, salt: '1234567' })).toThrow();
-  expect(() => argon2({ ...options, salt: '' })).toThrow();
-  expect(() => argon2({ ...options, salt: Buffer.from([1, 2, 3, 4, 5, 6, 7]) })).toThrow();
+    expect(() => fn({ ...options, password: undefined })).toThrow();
+    expect(() => fn({ ...options, password: null })).toThrow();
+    expect(() => fn({ ...options, password: 1 as any })).toThrow();
+    expect(() => fn({ ...options, password: [] as any })).toThrow();
+    expect(() => fn({ ...options, password: Buffer.from([]) })).toThrow();
 
-  expect(() => argon2({ ...options, iterations: undefined })).toThrow();
-  expect(() => argon2({ ...options, iterations: null })).toThrow();
-  expect(() => argon2({ ...options, iterations: 0 })).toThrow();
-  expect(() => argon2({ ...options, iterations: '' as any })).toThrow();
-  expect(() => argon2({ ...options, iterations: '0' as any })).toThrow();
+    expect(() => fn({ ...options, salt: undefined })).toThrow();
+    expect(() => fn({ ...options, salt: null })).toThrow();
+    expect(() => fn({ ...options, salt: '1234567' })).toThrow();
+    expect(() => fn({ ...options, salt: '' })).toThrow();
+    expect(() => fn({ ...options, salt: Buffer.from([1, 2, 3, 4, 5, 6, 7]) })).toThrow();
 
-  expect(() => argon2({ ...options, parallelism: undefined })).toThrow();
-  expect(() => argon2({ ...options, parallelism: null })).toThrow();
-  expect(() => argon2({ ...options, parallelism: 0 })).toThrow();
-  expect(() => argon2({ ...options, parallelism: '' as any })).toThrow();
-  expect(() => argon2({ ...options, parallelism: '0' as any })).toThrow();
+    expect(() => fn({ ...options, iterations: undefined })).toThrow();
+    expect(() => fn({ ...options, iterations: null })).toThrow();
+    expect(() => fn({ ...options, iterations: 0 })).toThrow();
+    expect(() => fn({ ...options, iterations: '' as any })).toThrow();
+    expect(() => fn({ ...options, iterations: '0' as any })).toThrow();
 
-  expect(() => argon2({ ...options, hashLength: undefined })).toThrow();
-  expect(() => argon2({ ...options, hashLength: null })).toThrow();
-  expect(() => argon2({ ...options, hashLength: 3 })).toThrow();
-  expect(() => argon2({ ...options, hashLength: '' as any })).toThrow();
-  expect(() => argon2({ ...options, hashLength: '3' as any })).toThrow();
+    expect(() => fn({ ...options, parallelism: undefined })).toThrow();
+    expect(() => fn({ ...options, parallelism: null })).toThrow();
+    expect(() => fn({ ...options, parallelism: 0 })).toThrow();
+    expect(() => fn({ ...options, parallelism: '' as any })).toThrow();
+    expect(() => fn({ ...options, parallelism: '0' as any })).toThrow();
 
-  expect(() => argon2({ ...options, memorySize: undefined })).toThrow();
-  expect(() => argon2({ ...options, memorySize: null })).toThrow();
-  expect(() => argon2({ ...options, memorySize: 7 })).toThrow();
-  expect(() => argon2({ ...options, memorySize: '' as any })).toThrow();
-  expect(() => argon2({ ...options, memorySize: '7' as any })).toThrow();
-  expect(() => argon2({ ...options, parallelism: 2, memorySize: 15 })).toThrow();
-  expect(() => argon2({ ...options, parallelism: 5, memorySize: 39 })).toThrow();
+    expect(() => fn({ ...options, hashLength: undefined })).toThrow();
+    expect(() => fn({ ...options, hashLength: null })).toThrow();
+    expect(() => fn({ ...options, hashLength: 3 })).toThrow();
+    expect(() => fn({ ...options, hashLength: '' as any })).toThrow();
+    expect(() => fn({ ...options, hashLength: '3' as any })).toThrow();
 
-  expect(() => argon2({ ...options, hashType: undefined })).toThrow();
-  expect(() => argon2({ ...options, hashType: null })).toThrow();
-  expect(() => argon2({ ...options, hashType: '' as any })).toThrow();
-  expect(() => argon2({ ...options, hashType: 'x' as any })).toThrow();
-  expect(() => argon2({ ...options, hashType: 'idx' as any })).toThrow();
+    expect(() => fn({ ...options, memorySize: undefined })).toThrow();
+    expect(() => fn({ ...options, memorySize: null })).toThrow();
+    expect(() => fn({ ...options, memorySize: 7 })).toThrow();
+    expect(() => fn({ ...options, memorySize: '' as any })).toThrow();
+    expect(() => fn({ ...options, memorySize: '7' as any })).toThrow();
+    expect(() => fn({ ...options, parallelism: 2, memorySize: 15 })).toThrow();
+    expect(() => fn({ ...options, parallelism: 5, memorySize: 39 })).toThrow();
 
-  expect(() => argon2({ ...options, outputType: null })).toThrow();
-  expect(() => argon2({ ...options, outputType: '' as any })).toThrow();
-  expect(() => argon2({ ...options, outputType: 'x' as any })).toThrow();
-  expect(() => argon2({ ...options, outputType: 'idx' as any })).toThrow();
+    expect(() => fn({ ...options, outputType: null })).toThrow();
+    expect(() => fn({ ...options, outputType: '' as any })).toThrow();
+    expect(() => fn({ ...options, outputType: 'x' as any })).toThrow();
+    expect(() => fn({ ...options, outputType: 'idx' as any })).toThrow();
+  });
 });
