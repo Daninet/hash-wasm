@@ -117,7 +117,7 @@ console.log('SHA1:', hash);
 The recommended process for choosing the parameters can be found here: https://tools.ietf.org/html/draft-irtf-cfrg-argon2-04#section-4
 
 ```javascript
-import { argon2 } from 'hash-wasm';
+import { argon2id } from 'hash-wasm';
 
 const salt = new Uint8Array(16);
 window.crypto.getRandomValues(salt);
@@ -130,7 +130,7 @@ const key = argon2id({
   memorySize: 512, // use 512KB memory
   hashLength: 32, // output size = 32 bytes
   outputType: 'encoded', // return standard encoded string containing parameters needed to verify the key
-})
+});
 
 console.log('Derived key:', key);
 ```
