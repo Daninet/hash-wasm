@@ -45,7 +45,7 @@ Features
 - Supports concurrent hash calculations with multiple states
 - [Unit tests](https://github.com/Daninet/hash-wasm/tree/master/test) for all algorithms
 - 100% open source & transparent [build process](https://github.com/Daninet/hash-wasm/actions)
-- Easy to use, sync API
+- Easy to use, synchronous API
 
 
 Installation

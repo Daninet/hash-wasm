@@ -53,9 +53,7 @@ export function WASMInterface(binary: any, hashLength: number) {
   };
 
   const setupInterface = () => {
-    if (!wasmInstance) {
-      loadWASM();
-    }
+    loadWASM();
 
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
     const memoryBuffer = wasmInstance.exports.memory.buffer;

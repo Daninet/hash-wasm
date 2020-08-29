@@ -6,9 +6,7 @@ function getGlobal() {
   // eslint-disable-next-line no-restricted-globals
   if (typeof self !== 'undefined') return self;
   if (typeof window !== 'undefined') return window;
-  // eslint-disable-next-line no-use-before-define
-  if (typeof global !== 'undefined') return global;
-  throw new Error('unable to locate global object');
+  return global;
 }
 
 const globalObject = getGlobal();
