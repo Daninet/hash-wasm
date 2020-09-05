@@ -87,7 +87,20 @@ const validateOptions = (options: IPBKDF2Options) => {
   }
 };
 
-export async function pbkdf2(options: IPBKDF2Options): Promise<Uint8Array | string> {
+interface IPBKDF2OptionsHex {
+  outputType: 'hex';
+}
+
+interface IPBKDF2OptionsBinary {
+  outputType: 'binary';
+}
+
+type PBKDF2ReturnType<T> =
+  T extends IPBKDF2OptionsHex ? string :
+  T extends IPBKDF2OptionsBinary ? Uint8Array :
+  string;
+
+export async function pbkdf2<T extends IPBKDF2Options>(options: T): Promise<PBKDF2ReturnType<T>> {
   validateOptions(options);
 
   const hmac = await createHMAC(options.hashFunction, options.password);
@@ -97,5 +110,5 @@ export async function pbkdf2(options: IPBKDF2Options): Promise<Uint8Array | stri
     options.iterations,
     options.hashLength,
     options.outputType,
-  );
+  ) as any;
 }

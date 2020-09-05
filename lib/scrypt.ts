@@ -99,8 +99,21 @@ const validateOptions = (options: ScryptOptions) => {
   }
 };
 
-export const scrypt = async (options: ScryptOptions): Promise<string | Uint8Array> => {
+interface IScryptOptionsHex {
+  outputType: 'hex';
+}
+
+interface IScryptOptionsBinary {
+  outputType: 'binary';
+}
+
+type ScryptReturnType<T> =
+  T extends IScryptOptionsHex ? string :
+  T extends IScryptOptionsBinary ? Uint8Array :
+  string;
+
+export async function scrypt<T extends ScryptOptions>(options: T): Promise<ScryptReturnType<T>> {
   validateOptions(options);
 
-  return scryptInternal(options);
-};
+  return scryptInternal(options) as any;
+}

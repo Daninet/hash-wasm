@@ -214,29 +214,42 @@ const validateOptions = (options: IArgon2Options) => {
   }
 };
 
-export const argon2i = async (options: IArgon2Options): Promise<string | Uint8Array> => {
+interface IArgon2OptionsHex {
+  outputType: 'hex';
+}
+
+interface IArgon2OptionsBinary {
+  outputType: 'binary';
+}
+
+type Argon2ReturnType<T> =
+  T extends IArgon2OptionsHex ? string :
+  T extends IArgon2OptionsBinary ? Uint8Array :
+  string;
+
+export async function argon2i<T extends IArgon2Options>(options: T): Promise<Argon2ReturnType<T>> {
   validateOptions(options);
 
   return argon2Internal({
     ...options,
     hashType: 'i',
-  });
-};
+  }) as any;
+}
 
-export const argon2id = async (options: IArgon2Options): Promise<string | Uint8Array> => {
+export async function argon2id<T extends IArgon2Options>(options: T): Promise<Argon2ReturnType<T>> {
   validateOptions(options);
 
   return argon2Internal({
     ...options,
     hashType: 'id',
-  });
-};
+  }) as any;
+}
 
-export const argon2d = async (options: IArgon2Options): Promise<string | Uint8Array> => {
+export async function argon2d<T extends IArgon2Options>(options: T): Promise<Argon2ReturnType<T>> {
   validateOptions(options);
 
   return argon2Internal({
     ...options,
     hashType: 'd',
-  });
-};
+  }) as any;
+}
