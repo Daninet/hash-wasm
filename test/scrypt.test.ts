@@ -20,6 +20,16 @@ test('scrypt', async () => {
   ).toBe('fa76e020d54d9e8aa24023c6baecdd46');
 
   expect(
+    await hash('', '', 2, 1, 1, 16, undefined),
+  ).toBe('fa76e020d54d9e8aa24023c6baecdd46');
+
+  expect(
+    await hash('', '', 2, 1, 1, 16, 'binary'),
+  ).toMatchObject(new Uint8Array([
+    0xfa, 0x76, 0xe0, 0x20, 0xd5, 0x4d, 0x9e, 0x8a, 0xa2, 0x40, 0x23, 0xc6, 0xba, 0xec, 0xdd, 0x46
+  ]));
+
+  expect(
     await hash('a', 'abcdefgh', 128, 1, 1, 16, 'hex'),
   ).toBe('7a386084f8c60a04238de836c2d5dff1');
 
@@ -56,4 +66,46 @@ test('scrypt official test vectors', async () => {
   expect(
     await hash('pleaseletmein', 'SodiumChloride', 1048576, 8, 1, 64, 'hex'),
   ).toBe('2101cb9b6a511aaeaddbbe09cf70f881ec568d574a2ffd4dabe5ee9820adaa478e56fd8f4ba5d09ffa1c6d927c40f4c337304049e8a952fbcbf45c6fa77a41a4');
+});
+
+test('scrypt binary', async () => {
+  expect(
+    await hash('\0', '\u0001', 16, 1, 1, 16, 'hex'),
+  ).toBe('20e4dedae031ba96c1b1fe3e21b236fc');
+
+  expect(
+    await hash(Buffer.from('\0'), Buffer.from('\u0001'), 16, 1, 1, 16, 'hex'),
+  ).toBe('20e4dedae031ba96c1b1fe3e21b236fc');
+
+  expect(
+    await hash('\0\0\0\0\0', '\0\0\0\u0001', 16, 1, 1, 16, 'hex'),
+  ).toBe('6fac8ee2ffdce78632fee3a5935d4f53');
+
+  expect(
+    await hash(Buffer.from('\0\0\0\0\0'), Buffer.from('\0\0\0\u0001'), 16, 1, 1, 16, 'hex'),
+  ).toBe('6fac8ee2ffdce78632fee3a5935d4f53');
+});
+
+test('invalid parameters', async () => {
+  await expect(() => hash('', '', '', 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 1, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 3, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 9, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 63, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 65, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 2, '', 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 2, 0, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 2, 1, '', 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 2, 1, 0, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 2, 1, 1, '', 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 2, 1, 1, 0, 'hex')).rejects.toThrow();
+  await expect(() => hash('', '', 2, 1, 1, 16, 'binaryx')).rejects.toThrow();
+  await expect(() => hash('', '', 2, 1, 1, 16, '')).rejects.toThrow();
+  await expect(() => hash('', 1, 2, 1, 1, 16, 'hex')).rejects.toThrow();
+  await expect(() => hash(1, '', 2, 1, 1, 16, 'hex')).rejects.toThrow();
+
+  await expect(() => (scrypt as any)()).rejects.toThrow();
+  await expect(() => (scrypt as any)([])).rejects.toThrow();
+  await expect(() => (scrypt as any)({})).rejects.toThrow();
+  await expect(() => (scrypt as any)(1)).rejects.toThrow();
 });
