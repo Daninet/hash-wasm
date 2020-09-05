@@ -2,14 +2,14 @@ import { scrypt } from '../lib';
 /* global test, expect */
 
 const hash = async (
-  password, salt, costFactor, blockSizeFactor, parallelizationFactor,
+  password, salt, costFactor, blockSize, parallelism,
   hashLength, outputType,
 ) => scrypt({
   password,
   salt,
   costFactor,
-  blockSizeFactor,
-  parallelizationFactor,
+  blockSize,
+  parallelism,
   hashLength,
   outputType,
 });

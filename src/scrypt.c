@@ -287,11 +287,11 @@ void smix(uint8_t *B, size_t r, uint64_t N, void *_V, void *XY) {
 }
 
 EMSCRIPTEN_KEEPALIVE
-void scrypt(uint32_t blockSizeFactor, uint32_t costFactor, uint32_t parallelizationFactor) {
-  uint8_t *V = &B[128 * blockSizeFactor * parallelizationFactor];
-  uint8_t *XY = &V[128 * blockSizeFactor * costFactor];
+void scrypt(uint32_t blockSize, uint32_t costFactor, uint32_t parallelism) {
+  uint8_t *V = &B[128 * blockSize * parallelism];
+  uint8_t *XY = &V[128 * blockSize * costFactor];
 
-  for (uint32_t i = 0; i < parallelizationFactor; i++) {
-    smix(&B[i * 128 * blockSizeFactor], blockSizeFactor, costFactor, V, XY);
+  for (uint32_t i = 0; i < parallelism; i++) {
+    smix(&B[i * 128 * blockSize], blockSize, costFactor, V, XY);
   }
 }
