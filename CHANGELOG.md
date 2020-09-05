@@ -1,3 +1,10 @@
+## 4.1.0 (September 5, 2020)
+
+* Add scrypt algorithm
+* Improve type signiture of key derivation functions. Now the return type depends on the parameters
+* Update benchmarks, add relative performance
+* Add section to README about string encoding pitfalls
+
 ## 4.0.1 (August 29, 2020)
 
 * ~~**BREAKING CHANGE**: All APIs were converted to **synchronous** functions, so you don't need to use `await` or `.then()` anymore.~~ It turned out that Chrome does not allow synchronous WebAssembly instantiation of binaries larger than 4KB. So this change was reverted.
