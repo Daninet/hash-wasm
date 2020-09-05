@@ -31,7 +31,7 @@ Features
 
 - A lot faster than other JS / WASM implementations (see [benchmarks](#benchmark) below)
 - Compiled from heavily optimized algorithms written in C
-- Supports all modern browsers and Node.js
+- Supports all modern browsers, Node.js and Deno
 - Supports large data streams
 - Supports UTF-8 strings and typed arrays
 - Supports chunked input streams
@@ -210,9 +210,9 @@ Browser support
 
 <br/>
 
-Chrome | Safari | Firefox | Edge | IE            | Node.js
--------|--------|---------|------|---------------|--------
-57+    | 11+    | 53+     | 16+  | Not supported | 8+
+| Chrome | Safari | Firefox | Edge | IE            | Node.js | Deno |
+|--------|--------|---------|------|---------------|---------|------|
+| 57+    | 11+    | 53+     | 16+  | Not supported | 8+      | 1+   |
 
 <br/>
 
@@ -344,7 +344,7 @@ pbkdf2({
   iterations: number, // number of iterations to perform
   hashLength: number, // output size in bytes
   hashFunction: Promise<IHasher>, // the return value of a function like createSHA1()
-  outputType: 'hex' | 'binary', // by default returns hex string
+  outputType?: 'hex' | 'binary', // by default returns hex string
 }): Promise<string | Uint8Array>
 
 interface IArgon2Options {
