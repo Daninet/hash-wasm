@@ -6,6 +6,9 @@ emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s MAXIMUM_MEMORY=2GB -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/argon2.c -o /app/wasm/argon2.wasm
 
 emcc -O3 -s WASM=1 \
+  -flto -s INITIAL_MEMORY=256KB -s MAXIMUM_MEMORY=2GB -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/scrypt.c -o /app/wasm/scrypt.wasm
+
+emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/blake2b.c -o /app/wasm/blake2b.wasm
 
 emcc -O3 -s WASM=1 \
