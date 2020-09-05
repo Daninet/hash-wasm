@@ -27,7 +27,7 @@ async function scryptInternal(options: ScryptOptions): Promise<string | Uint8Arr
     hashLength: 128 * blockSize * parallelism,
     hashFunction: SHA256Hasher,
     outputType: 'binary',
-  }) as Uint8Array;
+  });
 
   const scryptInterface = await WASMInterface(wasmJson, 0);
 
@@ -51,7 +51,7 @@ async function scryptInternal(options: ScryptOptions): Promise<string | Uint8Arr
     hashLength,
     hashFunction: SHA256Hasher,
     outputType: 'binary',
-  }) as Uint8Array;
+  });
 
   if (options.outputType === 'hex') {
     const digestChars = new Uint8Array(hashLength * 2);

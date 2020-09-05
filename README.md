@@ -20,6 +20,7 @@ Supported algorithms
 - MD4, MD5
 - PBKDF2 (with all hash algorithms)
 - RIPEMD-160
+- Scrypt
 - SHA-1
 - SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
 - SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
@@ -378,10 +379,20 @@ createHMAC(hashFunction: Promise<IHasher>, key: IDataType): Promise<IHasher>
 
 pbkdf2({
   password: IDataType, // password (or message) to be hashed
-  salt: IDataType, // salt
+  salt: IDataType, // salt (usually containing random bytes)
   iterations: number, // number of iterations to perform
   hashLength: number, // output size in bytes
   hashFunction: Promise<IHasher>, // the return value of a function like createSHA1()
+  outputType?: 'hex' | 'binary', // by default returns hex string
+}): Promise<string | Uint8Array>
+
+scrypt({
+  password: IDataType, // password (or message) to be hashed
+  salt: IDataType, // salt (usually containing random bytes)
+  costFactor: number, // CPU/memory cost - must be a power of 2 (e.g. 1024)
+  blockSize: number; // block size parameter (8 is commonly used)
+  parallelism: number; // degree of parallelism
+  hashLength: number, // output size in bytes
   outputType?: 'hex' | 'binary', // by default returns hex string
 }): Promise<string | Uint8Array>
 
@@ -404,8 +415,8 @@ argon2id(options: IArgon2Options): Promise<string | Uint8Array>
 Future plans
 =====
 
+- Add more well-known algorithms
 - Write a polyfill which keeps bundle sizes low and enables running binaries containing newer WASM instructions
 - Use WebAssembly Bulk Memory Operations
 - Use WebAssembly SIMD instructions (expecting a 10-20% performance increase)
 - Enable multithreading where it's possible (like at Argon2)
-- Add more algorithms
