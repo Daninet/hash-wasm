@@ -229,67 +229,69 @@ Two scenarios were measured:
 
 Results:
 
-MD5                            | throughput (32 bytes) | throughput (1MB)
--------------------------------|-----------------------|-----------------
-**hash-wasm 3.7.0**            | **29.65 MB/s**        | **611.04 MB/s**
-md5-wasm 0.9.1 (npm library)   | 14.50 MB/s            | 76.66 MB/s
-spark-md5 0.9.1 (npm library)  | 9.46 MB/s             | 19.17 MB/s
-md5 2.2.1 (npm library)        | 7.45 MB/s             | 11.96 MB/s
-node-forge 0.9.1 (npm library) | 5.50 MB/s             | 11.78 MB/s
+| MD5                         | throughput (32 bytes)    | throughput (1MB)          |
+|-----------------------------|--------------------------|---------------------------|
+| **hash-wasm 4.0.1**         | **29.57 MB/s**           | **592.97 MB/s**           |
+| md5-wasm 1.2.0 (from npm)   | 14.94 MB/s (2.0x slower) | 75.88 MB/s (7.8x slower)  |
+| spark-md5 3.0.1 (from npm)  | 9.61 MB/s (3.1x slower)  | 19.31 MB/s (30.7x slower) |
+| node-forge 0.9.1 (from npm) | 5.89 MB/s (5.0x slower)  | 12.36 MB/s (48.0x slower) |
+| md5 2.3.0 (from npm)        | 7.14 MB/s (4.1x slower)  | 12.21 MB/s (48.6x slower) |
 
 #
 
-SHA1                           | throughput (32 bytes) | throughput (1MB)
--------------------------------|-----------------------|-----------------
-**hash-wasm 3.7.0**            | **25.64 MB/s**        | **642.54 MB/s**
-jsSHA 3.1.0 (npm library)      | 5.45 MB/s             | 46.98 MB/s
-crypto-js 4.0.0 (npm library)  | 6.81 MB/s             | 18.56 MB/s
-sha1 1.1.1 (npm library)       | 6.65 MB/s             | 13.37 MB/s
-node-forge 0.9.1 (npm library) | 6.38 MB/s             | 12.29 MB/s
+| SHA1                        | throughput (32 bytes)   | throughput (1MB)          |
+|-----------------------------|-------------------------|---------------------------|
+| **hash-wasm 4.0.1**         | **24.97 MB/s**          | **632.51 MB/s**           |
+| jsSHA 3.1.2 (from npm)      | 5.83 MB/s (4.3x slower) | 44.52 MB/s (14.2x slower) |
+| crypto-js 4.0.0 (from npm)  | 7.00 MB/s (3.6x slower) | 18.48 MB/s (34.2x slower) |
+| sha1 1.1.1 (from npm)       | 6.56 MB/s (3.8x slower) | 12.44 MB/s (50.8x slower) |
+| node-forge 0.9.1 (from npm) | 6.37 MB/s (3.9x slower) | 12.38 MB/s (51.1x slower) |
 
 #
 
-SHA256                          | throughput (32 bytes) | throughput (1MB)
---------------------------------|-----------------------|-----------------
-**hash-wasm 3.7.0**             | **21.63 MB/s**        | **259.93 MB/s**
-sha256-wasm 2.0.3 (npm library) | 5.59 MB/s             | 166.07 MB/s
-jsSHA 3.1.0 (npm library)       | 4.71 MB/s             | 36.44 MB/s
-crypto-js 4.0.0 (npm library)   | 5.90 MB/s             | 18.13 MB/s
-node-forge 0.9.1 (npm library)  | 3.74 MB/s             | 11.37 MB/s
+| SHA256                       | throughput (32 bytes)   | throughput (1MB)          |
+|------------------------------|-------------------------|---------------------------|
+| **hash-wasm 4.0.1**          | **21.73 MB/s**          | **256.90 MB/s**           |
+| sha256-wasm 2.0.3 (from npm) | 5.77 MB/s (3.8x slower) | 165.20 MB/s (1.6x slower) |
+| jsSHA 3.1.2 (from npm)       | 5.20 MB/s (4.2x slower) | 35.04 MB/s (7.3x slower)  |
+| crypto-js 4.0.0 (from npm)   | 6.25 MB/s (3.5x slower) | 18.25 MB/s (14.1x slower) |
+| node-forge 0.9.1 (from npm)  | 4.70 MB/s (4.6x slower) | 12.13 MB/s (21.2x slower) |
 
 #
 
-SHA3-512                  | throughput (32 bytes) | throughput (1MB)
---------------------------|-----------------------|-----------------
-**hash-wasm 3.7.0**       | **16.56 MB/s**        | **179.05 MB/s**
-sha3 2.1.3 (npm library)  | 1.38 MB/s             | 6.61 MB/s
-jsSHA 3.1.0 (npm library) | 0.86 MB/s             | 2.06 MB/s
+| SHA3-512               | throughput (32 bytes)    | throughput (1MB)         |
+|------------------------|--------------------------|--------------------------|
+| **hash-wasm 4.0.1**    | **16.59 MB/s**           | **176.71 MB/s**          |
+| sha3 2.1.3 (from npm)  | 1.42 MB/s (11.7x slower) | 6.59 MB/s (26.8x slower) |
+| jsSHA 3.1.2 (from npm) | 0.86 MB/s (19.3x slower) | 2.01 MB/s (87.9x slower) |
 
 #
 
-XXHash64                        | throughput (32 bytes) | throughput (1MB)
---------------------------------|-----------------------|------------------
-**hash-wasm 3.7.0**             | **27.10 MB/s**        | **11715.15 MB/s**
-xxhash-wasm 0.4.0 (npm library) | 0.09 MB/s             | 56.39 MB/s
-xxhashjs 0.2.2 (npm library)    | 0.36 MB/s             | 18.12 MB/s
+| XXHash64                     | throughput (32 bytes)    | throughput (1MB)         |
+|------------------------------|--------------------------|--------------------------|
+| **hash-wasm 4.0.1**          | **28.07 MB/s**           | **11452.33 MB/s**        |
+| xxhash-wasm 0.4.0 (from npm) | 0.09 MB/s (311x slower)  | 55.57 MB/s (206x slower) |
+| xxhashjs 0.2.2 (from npm)    | 0.38 MB/s (73.9x slower) | 18.43 MB/s (621x slower) |
 
 #
 
-PBKDF2-SHA512 - 1000 iterations   | operations per second (16 bytes)
-----------------------------------|----------------------
-**hash-wasm 3.7.0**               | **208 ops**         
-pbkdf2 3.1.1 (npm library)        | 56 ops              
-crypto-js 4.0.0 (npm library)     | 7 ops              
+| PBKDF2-SHA512 - 1000 iterations | operations per second (16 bytes) |
+|---------------------------------|----------------------------------|
+| **hash-wasm 4.0.1**             | **356 ops**                      |
+| pbkdf2 3.1.1 (from npm)         | 55 ops (6.5x slower)             |
+| crypto-js 4.0.0 (from npm)      | 7 ops (50.9x slower)             |
 
 #
 
-Argon2id (m=512, t=8, p=1)          | operations per second (16 bytes)
-------------------------------------|----------------------
-**hash-wasm 3.7.0**                 | **243 ops**          
-argon2-wasm 0.9.0 (npm library)     | 103 ops              
-argon2-wasm-pro 1.1.0 (npm library) | 102 ops              
+| Argon2id (m=512, t=8, p=1)       | operations per second (16 bytes) |
+|----------------------------------|----------------------------------|
+| **hash-wasm 4.0.1**              | **252 ops**                      |
+| argon2-wasm-pro 1.1.0 (from npm) | 99 ops (2.5x slower)             |
+| argon2-wasm 0.9.0 (from npm)     | 99 ops (2.5x slower)             |
 
-\* These measurements were made with `Chrome v84` on a Kaby Lake desktop CPU.
+<br/>
+
+\* These measurements were made with `Chrome v85` on a Kaby Lake desktop CPU.
 
 API
 =====
