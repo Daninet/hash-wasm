@@ -15,3 +15,4 @@ export * from './xxhash64';
 export * from './ripemd160';
 export * from './hmac';
 export * from './pbkdf2';
+export * from './scrypt';

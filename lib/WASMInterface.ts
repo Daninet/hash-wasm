@@ -36,6 +36,9 @@ export async function WASMInterface(binary: any, hashLength: number) {
     memoryView.set(data, offset);
   };
 
+  const getMemory = () => memoryView;
+  const getExports = () => wasmInstance.exports;
+
   const setMemorySize = (totalSize: number) => {
     wasmInstance.exports.Hash_SetMemorySize(totalSize);
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
@@ -122,6 +125,7 @@ export async function WASMInterface(binary: any, hashLength: number) {
 
   switch (binary.name) {
     case 'argon2.wasm':
+    case 'scrypt.wasm':
       canSimplify = () => true;
       break;
 
@@ -158,7 +162,9 @@ export async function WASMInterface(binary: any, hashLength: number) {
   await setupInterface();
 
   return {
+    getMemory,
     writeMemory,
+    getExports,
     setMemorySize,
     init,
     update,
