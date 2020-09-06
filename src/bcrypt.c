@@ -49,22 +49,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <errno.h>
-#ifndef __set_errno
-#define __set_errno(val) errno = (val)
-#endif
-
-#ifdef __i386__
-#define BF_ASM				1
-#define BF_SCALE			1
-#elif defined(__x86_64__) || defined(__alpha__) || defined(__hppa__)
-#define BF_ASM				0
-#define BF_SCALE			1
-#else
-#define BF_ASM				0
-#define BF_SCALE			0
-#endif
-
 typedef unsigned int BF_word;
 typedef signed int BF_word_signed;
 
@@ -460,11 +444,8 @@ static void BF_encode(char *dst, const BF_word *src, int size)
 
 static void BF_swap(BF_word *x, int count)
 {
-  static int endianness_check = 1;
-  char *is_little_endian = (char *)&endianness_check;
   BF_word tmp;
 
-  if (*is_little_endian)
   do {
     tmp = *x;
     tmp = (tmp << 16) | (tmp >> 16);
@@ -472,8 +453,6 @@ static void BF_swap(BF_word *x, int count)
   } while (--count);
 }
 
-#if BF_SCALE
-/* Architectures which can shift addresses left by 2 bits with no extra cost */
 #define BF_ROUND(L, R, N) \
   tmp1 = L & 0xFF; \
   tmp2 = L >> 8; \
@@ -489,28 +468,6 @@ static void BF_swap(BF_word *x, int count)
   R ^= data.ctx.P[N + 1]; \
   tmp3 += tmp1; \
   R ^= tmp3;
-#else
-/* Architectures with no complicated addressing modes supported */
-#define BF_INDEX(S, i) \
-  (*((BF_word *)(((unsigned char *)S) + (i))))
-#define BF_ROUND(L, R, N) \
-  tmp1 = L & 0xFF; \
-  tmp1 <<= 2; \
-  tmp2 = L >> 6; \
-  tmp2 &= 0x3FC; \
-  tmp3 = L >> 14; \
-  tmp3 &= 0x3FC; \
-  tmp4 = L >> 22; \
-  tmp4 &= 0x3FC; \
-  tmp1 = BF_INDEX(data.ctx.S[3], tmp1); \
-  tmp2 = BF_INDEX(data.ctx.S[2], tmp2); \
-  tmp3 = BF_INDEX(data.ctx.S[1], tmp3); \
-  tmp3 += BF_INDEX(data.ctx.S[0], tmp4); \
-  tmp3 ^= tmp2; \
-  R ^= data.ctx.P[N + 1]; \
-  tmp3 += tmp1; \
-  R ^= tmp3;
-#endif
 
 /*
  * Encrypt one block, BF_N is hardcoded here.
@@ -537,10 +494,6 @@ static void BF_swap(BF_word *x, int count)
   R = L; \
   L = tmp4 ^ data.ctx.P[BF_N + 1];
 
-#if BF_ASM
-#define BF_body() \
-  _BF_body_r(&data.ctx);
-#else
 #define BF_body() \
   L = R = 0; \
   ptr = data.ctx.P; \
@@ -558,7 +511,6 @@ static void BF_swap(BF_word *x, int count)
     *(ptr - 2) = L; \
     *(ptr - 1) = R; \
   } while (ptr < &data.ctx.S[3][0xFF]);
-#endif
 
 static void BF_set_key(const char *key, BF_key expanded, BF_key initial,
     unsigned char flags)
@@ -670,9 +622,6 @@ static char *BF_crypt(const char *key, const char *setting,
   char *output, int size,
   BF_word min)
 {
-#if BF_ASM
-  extern void _BF_body_r(BF_ctx *ctx);
-#endif
   struct {
     BF_ctx ctx;
     BF_key expanded_key;
@@ -687,27 +636,8 @@ static char *BF_crypt(const char *key, const char *setting,
   BF_word count;
   int i;
 
-  if (size < 7 + 22 + 31 + 1) {
-    __set_errno(ERANGE);
-    return NULL;
-  }
-
-  if (setting[0] != '$' ||
-      setting[1] != '2' ||
-      setting[2] < 'a' || setting[2] > 'z' ||
-      !flags_by_subtype[(unsigned int)(unsigned char)setting[2] - 'a'] ||
-      setting[3] != '$' ||
-      setting[4] < '0' || setting[4] > '3' ||
-      setting[5] < '0' || setting[5] > '9' ||
-      (setting[4] == '3' && setting[5] > '1') ||
-      setting[6] != '$') {
-    __set_errno(EINVAL);
-    return NULL;
-  }
-
   count = (BF_word)1 << ((setting[4] - '0') * 10 + (setting[5] - '0'));
   if (count < min || BF_decode(data.binary.salt, &setting[7], 16)) {
-    __set_errno(EINVAL);
     return NULL;
   }
   BF_swap(data.binary.salt, 4);
@@ -715,7 +645,10 @@ static char *BF_crypt(const char *key, const char *setting,
   BF_set_key(key, data.expanded_key, data.ctx.P,
       flags_by_subtype[(unsigned int)(unsigned char)setting[2] - 'a']);
 
-  memcpy(data.ctx.S, BF_init_state.S, sizeof(data.ctx.S));
+  // memcpy(data.ctx.S, BF_init_state.S, sizeof(data.ctx.S));
+  for (int z = 0; z < 512; z++) {
+    ((uint64_t*)data.ctx.S)[z] = ((uint64_t*)BF_init_state.S)[z];
+  }
 
   L = R = 0;
   for (i = 0; i < BF_N + 2; i += 2) {
@@ -785,7 +718,11 @@ static char *BF_crypt(const char *key, const char *setting,
     data.binary.output[i + 1] = R;
   }
 
-  memcpy(output, setting, 7 + 22 - 1);
+  // memcpy(output, setting, 7 + 22 - 1);
+  for (uint32_t z = 0; z < 7 + 22 - 1; z++) {
+    output[z] = setting[z];
+  }
+
   output[7 + 22 - 1] = BF_itoa64[(int)
     BF_atoi64[(int)setting[7 + 22 - 1] - 0x20] & 0x30];
 
@@ -836,67 +773,8 @@ int _crypt_output_magic(const char *setting, char *output, int size)
 char *_crypt_blowfish_rn(const char *key, const char *setting,
   char *output, int size)
 {
-  // const char *test_key = "8b \xd0\xc1\xd2\xcf\xcc\xd8";
-  // const char *test_setting = "$2a$00$abcdefghijklmnopqrstuu";
-  // static const char * const test_hashes[2] =
-  //   {"i1D709vfamulimlGcq0qq3UvuUasvEa\0\x55", /* 'a', 'b', 'y' */
-  //   "VUrPmXD6q/nVSSp7pNDhCR9071IfIRe\0\x55"}; /* 'x' */
-  // const char *test_hash = test_hashes[0];
-  char *retval;
-  const char *p;
-  int save_errno, ok;
-  // struct {
-  //   char s[7 + 22 + 1];
-  //   char o[7 + 22 + 31 + 1 + 1 + 1];
-  // } buf;
-
-/* Hash the supplied password */
-  _crypt_output_magic(setting, output, size);
-  retval = BF_crypt(key, setting, output, size, 16);
-  save_errno = errno;
-  return retval;
-
-/*
- * Do a quick self-test.  It is important that we make both calls to BF_crypt()
- * from the same scope such that they likely use the same stack locations,
- * which makes the second call overwrite the first call's sensitive data on the
- * stack and makes it more likely that any alignment related issues would be
- * detected by the self-test.
- */
-//   my_memcpy(buf.s, test_setting, sizeof(buf.s));
-//   if (retval) {
-//     unsigned int flags = flags_by_subtype[
-//         (unsigned int)(unsigned char)setting[2] - 'a'];
-//     test_hash = test_hashes[flags & 1];
-//     buf.s[2] = setting[2];
-//   }
-//   my_memset(buf.o, 0x55, sizeof(buf.o));
-//   buf.o[sizeof(buf.o) - 1] = 0;
-//   p = BF_crypt(test_key, buf.s, buf.o, sizeof(buf.o) - (1 + 1), 1);
-
-//   ok = (p == buf.o &&
-//       !memcmp(p, buf.s, 7 + 22) &&
-//       !memcmp(p + (7 + 22), test_hash, 31 + 1 + 1 + 1));
-
-//   {
-//     const char *k = "\xff\xa3" "34" "\xff\xff\xff\xa3" "345";
-//     BF_key ae, ai, ye, yi;
-//     BF_set_key(k, ae, ai, 2); /* $2a$ */
-//     BF_set_key(k, ye, yi, 4); /* $2y$ */
-//     ai[0] ^= 0x10000; /* undo the safety (for comparison) */
-//     ok = ok && ai[0] == 0xdb9c59bc && ye[17] == 0x33343500 &&
-//         !memcmp(ae, ye, sizeof(ae)) &&
-//         !memcmp(ai, yi, sizeof(ai));
-//   }
-
-//   __set_errno(save_errno);
-//   if (ok)
-//     return retval;
-
-// /* Should not happen */
-//   _crypt_output_magic(setting, output, size);
-//   __set_errno(EINVAL); /* pretend we don't support this hash type */
-//   return NULL;
+	_crypt_output_magic(setting, output, size);
+	return BF_crypt(key, setting, output, size, 16);
 }
 
 char *_crypt_gensalt_blowfish_rn(const char *prefix, unsigned long count,
@@ -907,7 +785,6 @@ char *_crypt_gensalt_blowfish_rn(const char *prefix, unsigned long count,
       prefix[0] != '$' || prefix[1] != '2' ||
       (prefix[2] != 'a' && prefix[2] != 'b' && prefix[2] != 'y')) {
     if (output_size > 0) output[0] = '\0';
-    __set_errno((output_size < 7 + 22 + 1) ? ERANGE : EINVAL);
     return NULL;
   }
 
@@ -936,10 +813,14 @@ void bcrypt(uint32_t passwordLength, uint32_t costFactor) {
   uint8_t setting[32];
   _crypt_gensalt_blowfish_rn("$2a", costFactor, (char*)salt, 16, (char*)setting, 30);
 
-  uint8_t output[1024];
-  _crypt_blowfish_rn((char*)key, (char*)setting, (char*)output, 128);
+  uint8_t output[64];
+  for (uint8_t i = 0; i < 64; i++) {
+    output[i] = 0;
+  }
 
-  for (uint8_t i = 0; i < 128; i++) {
+  _crypt_blowfish_rn((char*)key, (char*)setting, (char*)output, 64);
+
+  for (uint8_t i = 0; i < 64; i++) {
     array[i] = output[i];
   }
 }

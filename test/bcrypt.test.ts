@@ -12,11 +12,11 @@ const hash = async (
 });
 
 test('bcrypt', async () => {
-  // expect(
-  //   await hash('a', '1234567890123456', 6, 'hex'),
-  // ).toBe('fa76e020d54d9e8aa24023c6baecdd46');
+  expect(
+    await hash('a', '1234567890123456', 6, 'encoded'),
+  ).toBe('$2a$06$KRGxLBS0Lxe3KBCwKxOzLeUQ0eaAQoaT9eYD/M6ixOkZwzuuCPPwO');
 
   expect(
-    await hash([...new Array(72)].fill('a').join(''), '1234567890123456', 6, 'hex'),
-  ).toBe('fa76e020d54d9e8aa24023c6baecdd46');
+    await hash([...new Array(72)].fill('a').join(''), '1234567890123456', 6, 'encoded'),
+  ).toBe('$2a$06$KRGxLBS0Lxe3KBCwKxOzLe.4hc7YvwS6eP.S.wxQssxSXlL.HBbCK');
 });

@@ -23,7 +23,11 @@ async function bcryptInternal(options: BcryptOptions): Promise<string | Uint8Arr
     .getMemory()
     .subarray(0, 60);
 
-  console.log(Buffer.from(outputData).toString());
+  // console.log(Buffer.from(outputData).toString());
+
+  if (options.outputType === 'encoded') {
+    return Buffer.from(outputData).toString();
+  }
 
   if (options.outputType === 'hex') {
     const digestChars = new Uint8Array(24 * 2);
@@ -37,6 +41,10 @@ async function bcryptInternal(options: BcryptOptions): Promise<string | Uint8Arr
 const validateOptions = (options: BcryptOptions) => {
   if (!options || typeof options !== 'object') {
     throw new Error('Invalid options parameter. It requires an object.');
+  }
+
+  if (options.version === undefined) {
+    throw new Error('Version number has to be specified');
   }
 
   if (options.version !== '2a') {
