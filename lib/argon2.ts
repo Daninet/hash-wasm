@@ -214,16 +214,11 @@ const validateOptions = (options: IArgon2Options) => {
   }
 };
 
-interface IArgon2OptionsHex {
-  outputType: 'hex';
-}
-
 interface IArgon2OptionsBinary {
   outputType: 'binary';
 }
 
 type Argon2ReturnType<T> =
-  T extends IArgon2OptionsHex ? string :
   T extends IArgon2OptionsBinary ? Uint8Array :
   string;
 

@@ -99,16 +99,11 @@ const validateOptions = (options: ScryptOptions) => {
   }
 };
 
-interface IScryptOptionsHex {
-  outputType: 'hex';
-}
-
 interface IScryptOptionsBinary {
   outputType: 'binary';
 }
 
 type ScryptReturnType<T> =
-  T extends IScryptOptionsHex ? string :
   T extends IScryptOptionsBinary ? Uint8Array :
   string;
 

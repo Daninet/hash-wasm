@@ -87,16 +87,11 @@ const validateOptions = (options: IPBKDF2Options) => {
   }
 };
 
-interface IPBKDF2OptionsHex {
-  outputType: 'hex';
-}
-
 interface IPBKDF2OptionsBinary {
   outputType: 'binary';
 }
 
 type PBKDF2ReturnType<T> =
-  T extends IPBKDF2OptionsHex ? string :
   T extends IPBKDF2OptionsBinary ? Uint8Array :
   string;
 
