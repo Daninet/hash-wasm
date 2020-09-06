@@ -365,18 +365,6 @@ uint8_t *Hash_GetBuffer() {
   return array;
 }
 
-volatile void my_memcpy(void *dst, const char *src, int len) {
-  for (int i = 0; i < len; i++) {
-    ((uint8_t*)dst)[i] = ((uint8_t*)src)[i];
-  }
-}
-
-volatile void my_memset(void *dst, char value, int len) {
-  for (int i = 0; i < len; i++) {
-    ((uint8_t*)dst)[i] = value;
-  }
-}
-
 #define BF_safe_atoi64(dst, src) \
 { \
   tmp = (unsigned char)(src); \
@@ -454,16 +442,10 @@ static void BF_swap(BF_word *x, int count)
 }
 
 #define BF_ROUND(L, R, N) \
-  tmp1 = L & 0xFF; \
-  tmp2 = L >> 8; \
-  tmp2 &= 0xFF; \
-  tmp3 = L >> 16; \
-  tmp3 &= 0xFF; \
-  tmp4 = L >> 24; \
-  tmp1 = data.ctx.S[3][tmp1]; \
-  tmp2 = data.ctx.S[2][tmp2]; \
-  tmp3 = data.ctx.S[1][tmp3]; \
-  tmp3 += data.ctx.S[0][tmp4]; \
+  tmp1 = data.ctx.S[3][L & 0xFF]; \
+  tmp2 = data.ctx.S[2][(L >> 8) & 0xFF]; \
+  tmp3 = data.ctx.S[1][(L >> 16) & 0xFF]; \
+  tmp3 += data.ctx.S[0][L >> 24]; \
   tmp3 ^= tmp2; \
   R ^= data.ctx.P[N + 1]; \
   tmp3 += tmp1; \
@@ -684,24 +666,19 @@ static char *BF_crypt(const char *key, const char *setting,
     }
 
     done = 0;
+    uint64_t tmp1x = ((uint64_t*)data.binary.salt)[0];
+    uint64_t tmp3x = ((uint64_t*)data.binary.salt)[1];
     do {
       BF_body();
       if (done)
         break;
       done = 1;
 
-      tmp1 = data.binary.salt[0];
-      tmp2 = data.binary.salt[1];
-      tmp3 = data.binary.salt[2];
-      tmp4 = data.binary.salt[3];
       for (i = 0; i < BF_N; i += 4) {
-        data.ctx.P[i] ^= tmp1;
-        data.ctx.P[i + 1] ^= tmp2;
-        data.ctx.P[i + 2] ^= tmp3;
-        data.ctx.P[i + 3] ^= tmp4;
+        *(uint64_t*)(&data.ctx.P[i]) ^= tmp1x;
+        *(uint64_t*)(&data.ctx.P[i + 2]) ^= tmp3x;
       }
-      data.ctx.P[16] ^= tmp1;
-      data.ctx.P[17] ^= tmp2;
+      *(uint64_t*)(&data.ctx.P[16]) ^= tmp1x;
     } while (1);
   } while (--count);
 
@@ -750,26 +727,6 @@ int _crypt_output_magic(const char *setting, char *output, int size)
   return 0;
 }
 
-/*
- * Please preserve the runtime self-test.  It serves two purposes at once:
- *
- * 1. We really can't afford the risk of producing incompatible hashes e.g.
- * when there's something like gcc bug 26587 again, whereas an application or
- * library integrating this code might not also integrate our external tests or
- * it might not run them after every build.  Even if it does, the miscompile
- * might only occur on the production build, but not on a testing build (such
- * as because of different optimization settings).  It is painful to recover
- * from incorrectly-computed hashes - merely fixing whatever broke is not
- * enough.  Thus, a proactive measure like this self-test is needed.
- *
- * 2. We don't want to leave sensitive data from our actual password hash
- * computation on the stack or in registers.  Previous revisions of the code
- * would do explicit cleanups, but simply running the self-test after hash
- * computation is more reliable.
- *
- * The performance cost of this quick self-test is around 0.6% at the "$2a$08"
- * setting.
- */
 char *_crypt_blowfish_rn(const char *key, const char *setting,
   char *output, int size)
 {
