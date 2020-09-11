@@ -9,6 +9,9 @@ emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s MAXIMUM_MEMORY=2GB -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/scrypt.c -o /app/wasm/scrypt.wasm
 
 emcc -O3 -s WASM=1 \
+  -fno-strict-aliasing -flto -s TOTAL_MEMORY=1024KB -s TOTAL_STACK=512KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/bcrypt.c -o /app/wasm/bcrypt.wasm
+
+emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/blake2b.c -o /app/wasm/blake2b.wasm
 
 emcc -O3 -s WASM=1 \

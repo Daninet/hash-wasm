@@ -74,7 +74,7 @@ static BF_word BF_magic_w[6] = {
 /*
  * P-box and S-box tables initialized with digits of Pi.
  */
-static BF_ctx BF_init_state = {
+BF_ctx ctx = {
   {
     {
       0xd1310ba6, 0x98dfb5ac, 0x2ffd72db, 0xd01adfb7,
@@ -358,12 +358,21 @@ static unsigned char BF_atoi64[0x60] = {
   43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 64, 64, 64, 64, 64
 };
 
+union {
+  BF_word LR[2];
+  uint64_t LR64;
+} block;
+
 uint8_t array[16 * 1024];
 
 EMSCRIPTEN_KEEPALIVE
 uint8_t *Hash_GetBuffer() {
   return array;
 }
+
+EM_JS(void, print_memory, (uint32_t offset, uint32_t len), {
+  console.log(x);
+});
 
 #define BF_safe_atoi64(dst, src) \
 { \
@@ -442,12 +451,12 @@ static void BF_swap(BF_word *x, int count)
 }
 
 #define BF_ROUND(L, R, N) \
-  tmp1 = data.ctx.S[3][L & 0xFF]; \
-  tmp2 = data.ctx.S[2][(L >> 8) & 0xFF]; \
-  tmp3 = data.ctx.S[1][(L >> 16) & 0xFF]; \
-  tmp3 += data.ctx.S[0][L >> 24]; \
+  tmp1 = ctx.S[3][L & 0xFF]; \
+  tmp2 = ctx.S[2][(L >> 8) & 0xFF]; \
+  tmp3 = ctx.S[1][(L >> 16) & 0xFF]; \
+  tmp3 += ctx.S[0][L >> 24]; \
   tmp3 ^= tmp2; \
-  R ^= data.ctx.P[N + 1]; \
+  R ^= ctx.P[N + 1]; \
   tmp3 += tmp1; \
   R ^= tmp3;
 
@@ -455,44 +464,44 @@ static void BF_swap(BF_word *x, int count)
  * Encrypt one block, BF_N is hardcoded here.
  */
 #define BF_ENCRYPT \
-  L ^= data.ctx.P[0]; \
-  BF_ROUND(L, R, 0); \
-  BF_ROUND(R, L, 1); \
-  BF_ROUND(L, R, 2); \
-  BF_ROUND(R, L, 3); \
-  BF_ROUND(L, R, 4); \
-  BF_ROUND(R, L, 5); \
-  BF_ROUND(L, R, 6); \
-  BF_ROUND(R, L, 7); \
-  BF_ROUND(L, R, 8); \
-  BF_ROUND(R, L, 9); \
-  BF_ROUND(L, R, 10); \
-  BF_ROUND(R, L, 11); \
-  BF_ROUND(L, R, 12); \
-  BF_ROUND(R, L, 13); \
-  BF_ROUND(L, R, 14); \
-  BF_ROUND(R, L, 15); \
-  tmp4 = R; \
-  R = L; \
-  L = tmp4 ^ data.ctx.P[BF_N + 1];
+  block.LR[0] ^= ctx.P[0]; \
+  BF_ROUND(block.LR[0], block.LR[1], 0); \
+  BF_ROUND(block.LR[1], block.LR[0], 1); \
+  BF_ROUND(block.LR[0], block.LR[1], 2); \
+  BF_ROUND(block.LR[1], block.LR[0], 3); \
+  BF_ROUND(block.LR[0], block.LR[1], 4); \
+  BF_ROUND(block.LR[1], block.LR[0], 5); \
+  BF_ROUND(block.LR[0], block.LR[1], 6); \
+  BF_ROUND(block.LR[1], block.LR[0], 7); \
+  BF_ROUND(block.LR[0], block.LR[1], 8); \
+  BF_ROUND(block.LR[1], block.LR[0], 9); \
+  BF_ROUND(block.LR[0], block.LR[1], 10); \
+  BF_ROUND(block.LR[1], block.LR[0], 11); \
+  BF_ROUND(block.LR[0], block.LR[1], 12); \
+  BF_ROUND(block.LR[1], block.LR[0], 13); \
+  BF_ROUND(block.LR[0], block.LR[1], 14); \
+  BF_ROUND(block.LR[1], block.LR[0], 15); \
+  tmp4 = block.LR[1]; \
+  block.LR[1] = block.LR[0]; \
+  block.LR[0] = tmp4 ^ ctx.P[BF_N + 1];
 
 #define BF_body() \
-  L = R = 0; \
-  ptr = data.ctx.P; \
+  block.LR64 = 0; \
+  ptr = ctx.P; \
   do { \
     ptr += 2; \
     BF_ENCRYPT; \
-    *(ptr - 2) = L; \
-    *(ptr - 1) = R; \
-  } while (ptr < &data.ctx.P[BF_N + 2]); \
+    *(ptr - 2) = block.LR[0]; \
+    *(ptr - 1) = block.LR[1]; \
+  } while (ptr < &ctx.P[BF_N + 2]); \
 \
-  ptr = data.ctx.S[0]; \
+  ptr = ctx.S[0]; \
   do { \
     ptr += 2; \
     BF_ENCRYPT; \
-    *(ptr - 2) = L; \
-    *(ptr - 1) = R; \
-  } while (ptr < &data.ctx.S[3][0xFF]);
+    *(ptr - 2) = block.LR[0]; \
+    *(ptr - 1) = block.LR[1]; \
+  } while (ptr < &ctx.S[3][0xFF]);
 
 static void BF_set_key(const char *key, BF_key expanded, BF_key initial,
     unsigned char flags)
@@ -564,7 +573,7 @@ static void BF_set_key(const char *key, BF_key expanded, BF_key initial,
     diff |= tmp[0] ^ tmp[1]; /* Non-zero on any differences */
 
     expanded[i] = tmp[bug];
-    initial[i] = BF_init_state.P[i] ^ tmp[bug];
+    initial[i] = ctx.P[i] ^ tmp[bug];
   }
 
 /*
@@ -602,72 +611,64 @@ static const unsigned char flags_by_subtype[26] =
 
 static char *BF_crypt(const char *key, const char *setting,
   char *output, int size,
-  BF_word min)
+  BF_word min, int should_encode)
 {
-  struct {
-    BF_ctx ctx;
-    BF_key expanded_key;
-    union {
-      BF_word salt[4];
-      BF_word output[6];
-    } binary;
-  } data;
-  BF_word L, R;
+  BF_key expanded_key;
+  union {
+    BF_word salt[4];
+    BF_word output[6];
+  } binary;
   BF_word tmp1, tmp2, tmp3, tmp4;
   BF_word *ptr;
+  uint64_t *ptr64;
   BF_word count;
   int i;
 
   count = (BF_word)1 << ((setting[4] - '0') * 10 + (setting[5] - '0'));
-  if (count < min || BF_decode(data.binary.salt, &setting[7], 16)) {
+  if (count < min || BF_decode(binary.salt, &setting[7], 16)) {
     return NULL;
   }
-  BF_swap(data.binary.salt, 4);
+  BF_swap(binary.salt, 4);
 
-  BF_set_key(key, data.expanded_key, data.ctx.P,
+  // print_memory(key, 2);
+
+  BF_set_key(key, expanded_key, ctx.P,
       flags_by_subtype[(unsigned int)(unsigned char)setting[2] - 'a']);
 
-  // memcpy(data.ctx.S, BF_init_state.S, sizeof(data.ctx.S));
-  for (int z = 0; z < 512; z++) {
-    ((uint64_t*)data.ctx.S)[z] = ((uint64_t*)BF_init_state.S)[z];
-  }
-
-  L = R = 0;
+  block.LR64 = 0;
   for (i = 0; i < BF_N + 2; i += 2) {
-    L ^= data.binary.salt[i & 2];
-    R ^= data.binary.salt[(i & 2) + 1];
+    block.LR64 ^= *(uint64_t*)&binary.salt[i & 2];
     BF_ENCRYPT;
-    data.ctx.P[i] = L;
-    data.ctx.P[i + 1] = R;
+    *(uint64_t*)&ctx.P[i] = block.LR64;
   }
 
-  ptr = data.ctx.S[0];
+  ptr = ctx.S[0];
   do {
     ptr += 4;
-    L ^= data.binary.salt[(BF_N + 2) & 3];
-    R ^= data.binary.salt[(BF_N + 3) & 3];
+    block.LR[0] ^= binary.salt[(BF_N + 2) & 3];
+    block.LR[1] ^= binary.salt[(BF_N + 3) & 3];
     BF_ENCRYPT;
-    *(ptr - 4) = L;
-    *(ptr - 3) = R;
+    *(ptr - 4) = block.LR[0];
+    *(ptr - 3) = block.LR[1];
 
-    L ^= data.binary.salt[(BF_N + 4) & 3];
-    R ^= data.binary.salt[(BF_N + 5) & 3];
+    block.LR[0] ^= binary.salt[(BF_N + 4) & 3];
+    block.LR[1] ^= binary.salt[(BF_N + 5) & 3];
     BF_ENCRYPT;
-    *(ptr - 2) = L;
-    *(ptr - 1) = R;
-  } while (ptr < &data.ctx.S[3][0xFF]);
+    *(ptr - 2) = block.LR[0];
+    *(ptr - 1) = block.LR[1];
+  } while (ptr < &ctx.S[3][0xFF]);
 
   do {
     int done;
 
     for (i = 0; i < BF_N + 2; i += 2) {
-      data.ctx.P[i] ^= data.expanded_key[i];
-      data.ctx.P[i + 1] ^= data.expanded_key[i + 1];
+      ctx.P[i] ^= expanded_key[i];
+      ctx.P[i + 1] ^= expanded_key[i + 1];
     }
 
     done = 0;
-    uint64_t tmp1x = ((uint64_t*)data.binary.salt)[0];
-    uint64_t tmp3x = ((uint64_t*)data.binary.salt)[1];
+    uint64_t tmp1x = ((uint64_t*)binary.salt)[0];
+    uint64_t tmp3x = ((uint64_t*)binary.salt)[1];
     do {
       BF_body();
       if (done)
@@ -675,38 +676,44 @@ static char *BF_crypt(const char *key, const char *setting,
       done = 1;
 
       for (i = 0; i < BF_N; i += 4) {
-        *(uint64_t*)(&data.ctx.P[i]) ^= tmp1x;
-        *(uint64_t*)(&data.ctx.P[i + 2]) ^= tmp3x;
+        *(uint64_t*)(&ctx.P[i]) ^= tmp1x;
+        *(uint64_t*)(&ctx.P[i + 2]) ^= tmp3x;
       }
-      *(uint64_t*)(&data.ctx.P[16]) ^= tmp1x;
+      *(uint64_t*)(&ctx.P[16]) ^= tmp1x;
     } while (1);
   } while (--count);
 
   for (i = 0; i < 6; i += 2) {
-    L = BF_magic_w[i];
-    R = BF_magic_w[i + 1];
+    block.LR64 = *(uint64_t*)&BF_magic_w[i];
 
     count = 64;
     do {
       BF_ENCRYPT;
     } while (--count);
 
-    data.binary.output[i] = L;
-    data.binary.output[i + 1] = R;
+    *(uint64_t*)&(binary.output[i]) = block.LR64;
   }
 
   // memcpy(output, setting, 7 + 22 - 1);
-  for (uint32_t z = 0; z < 7 + 22 - 1; z++) {
-    output[z] = setting[z];
+  for (uint8_t z = 0; z < 7; z++) {
+    ((uint32_t*)output)[z] = ((uint32_t*)setting)[z];
   }
 
-  output[7 + 22 - 1] = BF_itoa64[(int)
-    BF_atoi64[(int)setting[7 + 22 - 1] - 0x20] & 0x30];
+  output[28] = BF_itoa64[(int)
+    BF_atoi64[(int)setting[28] - 0x20] & 0x30];
 
 /* This has to be bug-compatible with the original implementation, so
  * only encode 23 of the 24 bytes. :-) */
-  BF_swap(data.binary.output, 6);
-  BF_encode(&output[7 + 22], data.binary.output, 23);
+  BF_swap(binary.output, 6);
+
+  if (should_encode) {
+    BF_encode(&output[7 + 22], binary.output, 23);
+  } else {
+    uint8_t *source = (uint8_t*)binary.output;
+    for (uint8_t z = 0; z < 3; z++) {
+      ((uint64_t*)output)[z] = ((uint64_t*)source)[z];
+    }
+  }
   output[7 + 22 + 31] = '\0';
 
   return output;
@@ -728,25 +735,15 @@ int _crypt_output_magic(const char *setting, char *output, int size)
 }
 
 char *_crypt_blowfish_rn(const char *key, const char *setting,
-  char *output, int size)
+  char *output, int size, int should_encode)
 {
 	_crypt_output_magic(setting, output, size);
-	return BF_crypt(key, setting, output, size, 16);
+	return BF_crypt(key, setting, output, size, 16, should_encode);
 }
 
 char *_crypt_gensalt_blowfish_rn(const char *prefix, unsigned long count,
-  const char *input, int size, char *output, int output_size)
+  const char *input, char *output)
 {
-  if (size < 16 || output_size < 7 + 22 + 1 ||
-      (count && (count < 4 || count > 31)) ||
-      prefix[0] != '$' || prefix[1] != '2' ||
-      (prefix[2] != 'a' && prefix[2] != 'b' && prefix[2] != 'y')) {
-    if (output_size > 0) output[0] = '\0';
-    return NULL;
-  }
-
-  if (!count) count = 5;
-
   output[0] = '$';
   output[1] = '2';
   output[2] = prefix[2];
@@ -762,22 +759,39 @@ char *_crypt_gensalt_blowfish_rn(const char *prefix, unsigned long count,
 }
 
 EMSCRIPTEN_KEEPALIVE
-void bcrypt(uint32_t passwordLength, uint32_t costFactor) {
+void bcrypt(uint32_t password_length, uint32_t cost_factor, uint32_t should_encode) {
   uint8_t *salt = &array[0];
   uint8_t *key = &array[16];
-  key[passwordLength] = 0;
+  key[password_length] = 0;
 
-  uint8_t setting[32];
-  _crypt_gensalt_blowfish_rn("$2a", costFactor, (char*)salt, 16, (char*)setting, 30);
+  uint8_t setting[30];
+  _crypt_gensalt_blowfish_rn("$2a", cost_factor, (char*)salt, (char*)setting);
 
-  uint8_t output[64];
-  for (uint8_t i = 0; i < 64; i++) {
-    output[i] = 0;
-  }
+  uint8_t output[60];
+  _crypt_blowfish_rn((char*)key, (char*)setting, (char*)output, 60, should_encode);
 
-  _crypt_blowfish_rn((char*)key, (char*)setting, (char*)output, 64);
-
-  for (uint8_t i = 0; i < 64; i++) {
+  for (uint8_t i = 0; i < 60; i++) {
     array[i] = output[i];
   }
+}
+
+EMSCRIPTEN_KEEPALIVE
+uint32_t bcrypt_verify(uint32_t passwordLength) {
+  uint8_t *hash = &array[0];
+  uint8_t *key = &array[60];
+  key[passwordLength] = 0;
+
+  uint8_t output[60];
+  _crypt_blowfish_rn((char*)key, (char*)array, (char*)output, 60, 1);
+
+  // 0-28 => setting
+  // 29-59 => hash
+  
+  uint8_t res = 0;
+  uint64_t *out64 = (uint64_t*)&output[28];
+  uint64_t *hash64 = (uint64_t*)&hash[28];
+  for (uint8_t i = 0; i < 4; i++) {
+    res += out64[i] != hash64[i];
+  }
+  return res == 0;
 }
