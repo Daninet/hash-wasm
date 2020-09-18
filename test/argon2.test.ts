@@ -1,4 +1,4 @@
-import { argon2d, argon2i, argon2id } from '../lib';
+import { argon2d, argon2i, argon2id, argon2Verify } from '../lib';
 /* global test, expect */
 
 const hash = async (
@@ -251,6 +251,34 @@ test('encoded output', async () => {
   ]);
 });
 
+test('verifies encoded output', async () => {
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd' })).toBe(false);
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2d$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$n0d48WIOdVwgz0nmNCEd' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2d$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$n0d48WIOdVwgz0nmNCEd' })).toBe(false);
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2id$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$g+mKY4wmjTKtrsQ6Cahc' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2id$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$g+mKY4wmjTKtrsQ6Cahc' })).toBe(false);
+
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$OjqEjKhIhkBJiOzuxF0' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$OjqEjKhIhkBJiOzuxF0' })).toBe(false);
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2d$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$1X4UBqWUQ7jTkDk0TJ0' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2d$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$1X4UBqWUQ7jTkDk0TJ0' })).toBe(false);
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2id$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$JGdE2OSkkRVj11OyKTY' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2id$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM0$JGdE2OSkkRVj11OyKTY' })).toBe(false);
+
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2i$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$swV4i6hngm7sH6eJ+w' })).toBe(true);
+  expect(await argon2Verify({ password: 'q', hash: '$argon2i$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$swV4i6hngm7sH6eJ+w' })).toBe(false);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2d$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$1JFQBXLo5kulbgktjA' })).toBe(true);
+  expect(await argon2Verify({ password: 'q', hash: '$argon2d$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$1JFQBXLo5kulbgktjA' })).toBe(false);
+  expect(await argon2Verify({ password: 'qwer', hash: '$argon2id$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$1+hSMJUXYUFO9jVUnQ' })).toBe(true);
+  expect(await argon2Verify({ password: 'q', hash: '$argon2id$v=19$m=15,t=3,p=1$c29tZXNhbHQxMjM0NQ$1+hSMJUXYUFO9jVUnQ' })).toBe(false);
+
+  // parameter order is not important
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2i$v=19$t=7,p=5,m=139$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2i$v=19$t=7,m=139,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd' })).toBe(true);
+  expect(await argon2Verify({ password: 'qwe', hash: '$argon2i$v=19$m=139,p=5,t=7$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd' })).toBe(true);
+});
+
 test('binary output', async () => {
   expect(
     ArrayBuffer.isView(
@@ -369,4 +397,54 @@ test('Invalid parameters', async () => {
     await expect(fn({ ...options, outputType: 'x' as any })).rejects.toThrow();
     await expect(fn({ ...options, outputType: 'idx' as any })).rejects.toThrow();
   }
+});
+
+test('Invalid verify parameters', async () => {
+  await expect(argon2Verify('' as any)).rejects.toThrow();
+  await expect(argon2Verify([] as any)).rejects.toThrow();
+  await expect((argon2Verify as any)()).rejects.toThrow();
+  const options: Parameters<typeof argon2Verify>[0] = {
+    password: 'qwe',
+    hash: '$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd',
+  };
+
+  await expect(argon2Verify(options)).resolves.not.toThrow();
+
+  await expect(argon2Verify({ ...options, password: undefined })).rejects.toThrow();
+  await expect(argon2Verify({ ...options, password: null })).rejects.toThrow();
+  await expect(argon2Verify({ ...options, password: 1 as any })).rejects.toThrow();
+  await expect(argon2Verify({ ...options, password: [] as any })).rejects.toThrow();
+  await expect(argon2Verify({ ...options, password: Buffer.from([]) })).rejects.toThrow();
+  await expect(argon2Verify({ ...options, password: '' })).rejects.toThrow();
+
+  const testHash = async (hashStr: string) => {
+    await expect(argon2Verify({ ...options, hash: hashStr })).rejects.toThrow();
+  };
+
+  await testHash(undefined);
+  await testHash(null);
+  await testHash('');
+  await testHash('123456789012345');
+  await testHash('$$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$brgon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon3i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2x$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2idx$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=18$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=0$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=0.23$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2iv=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,m=139,m=139$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=01,t=01,p=01$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=1,t=1,p=1$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,x=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,t=7,p=0.0$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,t=7,p=5c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,t=7,p=5$c%29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM7w2btZkTO1qudwcoh/Dd');
+  await testHash('$argon2i$v=19$m=139,t=7,p=5$c29tZXNhbHQxMjM$7w2btZkTO1qudwcoh/Dd%');
 });

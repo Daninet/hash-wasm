@@ -1,5 +1,7 @@
 import {
+  decodeBase64,
   encodeBase64,
+  getDecodeBase64Length,
   getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
 } from './util';
 import { createBLAKE2b } from './blake2b';
@@ -247,4 +249,59 @@ export async function argon2d<T extends IArgon2Options>(options: T): Promise<Arg
     ...options,
     hashType: 'd',
   }) as any;
+}
+
+export interface Argon2VerifyOptions {
+  password: IDataType;
+  hash: string;
+}
+
+const getHashParameters = (password: IDataType, encoded: string): IArgon2OptionsExtended => {
+  const regex = /^\$argon2(id|i|d)\$v=([0-9]+)\$((?:[mtp]=[0-9]+,){2}[mtp]=[0-9]+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
+  const match = encoded.match(regex);
+  if (!match) {
+    throw new Error('Invalid hash');
+  }
+
+  const [, hashType, version, parameters, salt, hash] = match;
+  if (version !== '19') {
+    throw new Error(`Unsupported version: ${version}`);
+  }
+
+  const parsedParameters: Partial<IArgon2Options> = {};
+  const paramMap = { m: 'memorySize', p: 'parallelism', t: 'iterations' };
+  parameters.split(',').forEach((x) => {
+    const [n, v] = x.split('=');
+    parsedParameters[paramMap[n]] = parseInt(v, 10);
+  });
+
+  return {
+    ...parsedParameters,
+    password,
+    hashType: hashType as IArgon2OptionsExtended['hashType'],
+    salt: decodeBase64(salt),
+    hashLength: getDecodeBase64Length(hash),
+    outputType: 'encoded',
+  } as IArgon2OptionsExtended;
+};
+
+const validateVerifyOptions = (options: Argon2VerifyOptions) => {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Invalid options parameter. It requires an object.');
+  }
+
+  if (options.hash === undefined || typeof options.hash !== 'string') {
+    throw new Error('Hash should be specified');
+  }
+};
+
+export async function argon2Verify(options: Argon2VerifyOptions): Promise<boolean> {
+  validateVerifyOptions(options);
+
+  const params = getHashParameters(options.password, options.hash);
+  validateOptions(params);
+
+  const hashStart = options.hash.lastIndexOf('$') + 1;
+  const result = await argon2Internal(params) as string;
+  return result.substring(hashStart) === options.hash.substring(hashStart);
 }
