@@ -125,8 +125,8 @@ export function encodeBase64(data: Uint8Array, pad = true): string {
   return parts.join('');
 }
 
-export function decodeBase64(data: string): Uint8Array {
-  let bufferLength = data.length * 0.75;
+export function getDecodeBase64Length(data: string): number {
+  let bufferLength = Math.floor(data.length * 0.75);
   const len = data.length;
 
   if (data[len - 1] === '=') {
@@ -135,6 +135,13 @@ export function decodeBase64(data: string): Uint8Array {
       bufferLength -= 1;
     }
   }
+
+  return bufferLength;
+}
+
+export function decodeBase64(data: string): Uint8Array {
+  const bufferLength = getDecodeBase64Length(data);
+  const len = data.length;
 
   const bytes = new Uint8Array(bufferLength);
 
