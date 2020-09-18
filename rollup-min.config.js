@@ -1,0 +1,31 @@
+import typescript from '@rollup/plugin-typescript';
+import json from '@rollup/plugin-json';
+import { terser } from 'rollup-plugin-terser';
+
+const algorithms = [
+  'argon2', 'bcrypt', 'blake2b', 'crc32', 'hmac', 'keccak', 'md4', 'md5',
+  'pbkdf2', 'ripemd160', 'scrypt', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512',
+  'xxhash32', 'xxhash64',
+];
+
+const configs = algorithms.map((algo) => ({
+  input: `lib/${algo}.ts`,
+  output: [
+    {
+      file: `dist/${algo}.umd.min.js`,
+      name: 'hashwasm',
+      format: 'umd',
+    },
+  ],
+  plugins: [
+    json(),
+    typescript(),
+    terser({
+      output: {
+        comments: false,
+      },
+    }),
+  ],
+}));
+
+export default configs;
