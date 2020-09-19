@@ -16,6 +16,10 @@ const textEncoder = globalObject.TextEncoder ? new globalObject.TextEncoder() : 
 export type ITypedArray = Uint8Array | Uint16Array | Uint32Array;
 export type IDataType = string | Buffer | ITypedArray;
 
+export function intArrayToString(arr: Uint8Array, len: number): string {
+  return String.fromCharCode(...arr.subarray(0, len));
+}
+
 function hexCharCodesToInt(a: number, b: number): number {
   return (
     ((a & 0xF) + ((a >> 6) | ((a >> 3) & 0x8))) << 4

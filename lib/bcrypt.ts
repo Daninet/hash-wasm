@@ -1,4 +1,4 @@
-import { getDigestHex, getUInt8Buffer, IDataType } from './util';
+import { getDigestHex, getUInt8Buffer, IDataType, intArrayToString } from './util';
 import { WASMInterface } from './WASMInterface';
 import wasmJson from '../wasm/bcrypt.wasm.json';
 
@@ -18,24 +18,20 @@ async function bcryptInternal(options: BcryptOptions): Promise<string | Uint8Arr
   bcryptInterface.writeMemory(passwordBuffer, 16);
   const shouldEncode = options.outputType === 'encoded' ? 1 : 0;
   bcryptInterface.getExports().bcrypt(passwordBuffer.length, costFactor, shouldEncode);
-
-  const outputData = bcryptInterface
-    .getMemory()
-    .subarray(0, 60);
-
-  // console.log(Buffer.from(outputData).toString());
+  const memory = bcryptInterface.getMemory();
 
   if (options.outputType === 'encoded') {
-    return Buffer.from(outputData).toString();
+    return intArrayToString(memory, 60);
   }
 
   if (options.outputType === 'hex') {
     const digestChars = new Uint8Array(24 * 2);
-    return getDigestHex(digestChars, outputData, 24);
+    return getDigestHex(digestChars, memory, 24);
   }
 
   // return binary format
-  return outputData;
+  // the data is copied to allow GC of the original memory buffer
+  return memory.slice(0, 24);
 }
 
 const validateOptions = (options: BcryptOptions) => {

@@ -13,12 +13,38 @@ const hash = async (
 
 test('bcrypt', async () => {
   expect(
+    await hash('a', '1234567890123456', 6, undefined),
+  ).toBe('$2a$06$KRGxLBS0Lxe3KBCwKxOzLeUQ0eaAQoaT9eYD/M6ixOkZwzuuCPPwO');
+
+  expect(
     await hash('a', '1234567890123456', 6, 'encoded'),
   ).toBe('$2a$06$KRGxLBS0Lxe3KBCwKxOzLeUQ0eaAQoaT9eYD/M6ixOkZwzuuCPPwO');
 
   expect(
+    await hash('a', '1234567890123456', 6, 'binary'),
+  ).toMatchObject(new Uint8Array([
+    89, 45, 160, 112, 36, 170, 113, 95, 224, 104, 80, 78,
+    242, 76, 208, 153, 188, 181, 195, 1, 17, 71, 36, 103,
+  ]));
+
+  expect(
+    await hash('a', '1234567890123456', 6, 'hex'),
+  ).toBe('592da07024aa715fe068504ef24cd099bcb5c30111472467');
+
+  expect(
     await hash([...new Array(72)].fill('a').join(''), '1234567890123456', 6, 'encoded'),
   ).toBe('$2a$06$KRGxLBS0Lxe3KBCwKxOzLe.4hc7YvwS6eP.S.wxQssxSXlL.HBbCK');
+
+  expect(
+    await hash([...new Array(72)].fill('a').join(''), '1234567890123456', 6, 'binary'),
+  ).toMatchObject(new Uint8Array([
+    3, 168, 222, 245, 172, 114, 83, 200, 17, 1, 64, 50,
+    205, 43, 174, 205, 70, 103, 52, 2, 67, 116, 67, 172,
+  ]));
+
+  expect(
+    await hash([...new Array(72)].fill('a').join(''), '1234567890123456', 6, 'hex'),
+  ).toBe('03a8def5ac7253c811014032cd2baecd46673402437443ac');
 });
 
 test('bcrypt self-test', async () => {
