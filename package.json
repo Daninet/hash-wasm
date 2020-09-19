@@ -1,7 +1,7 @@
 {
   "name": "hash-wasm",
   "version": "4.1.0",
-  "description": "Fast hash functions compiled to WebAssembly (MD4, MD5, SHA-1, SHA-2, SHA-3, Keccak, BLAKE2, PBKDF2, Argon2, scrypt, CRC32, RIPEMD-160, HMAC, xxHash)",
+  "description": "Lightning fast hash functions using hand-tuned WebAssembly binaries (MD4, MD5, SHA-1, SHA-2, SHA-3, Keccak, BLAKE2, PBKDF2, Argon2, bcrypt, scrypt, CRC32, RIPEMD-160, HMAC, xxHash)",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
   "types": "dist/lib/index.d.ts",
@@ -59,7 +59,8 @@
     "argon2i",
     "argon2d",
     "argon2id",
-    "scrypt"
+    "scrypt",
+    "bcrypt"
   ],
   "bugs": {
     "url": "https://github.com/Daninet/hash-wasm/issues"
