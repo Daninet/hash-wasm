@@ -1,4 +1,4 @@
-import { bcrypt, bcryptVerfiy } from '../lib';
+import { bcrypt, bcryptVerify } from '../lib';
 /* global test, expect */
 
 const hash = async (
@@ -135,137 +135,137 @@ test('bcrypt bundled tests', async () => {
 });
 
 test('bcrypt verify bundled tests', async () => {
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW',
     password: 'U*U',
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$CCCCCCCCCCCCCCCCCCCCC.VGOzA784oUp/Z0DY336zx7pLYAy0lwK',
     password: 'U*U*',
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$XXXXXXXXXXXXXXXXXXXXXOAcXxm9kjPGEMsLznoKqmqw7tc8WCx4a',
     password: 'U*U*U',
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$abcdefghijklmnopqrstuu5s2v8.iXieOjg/.AySBTTZIIVFJeBui',
     password: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$/OK.fbVrR/bpIqNJ5ianF.CE5elHaaO4EbggVDjb8P19RukzXSM3e',
     password: Buffer.from(['0xa3']),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$/OK.fbVrR/bpIqNJ5ianF.CE5elHaaO4EbggVDjb8P19RukzXSM3e',
     password: Buffer.from([0xff, 0xff, 0xa3]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2y$05$/OK.fbVrR/bpIqNJ5ianF.CE5elHaaO4EbggVDjb8P19RukzXSM3e',
     password: Buffer.from([0xff, 0xff, 0xa3]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.nqd1wy.pTMdcvrRWxyiGL2eMz.2a85.',
     password: Buffer.from([0xff, 0xff, 0xa3]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2b$05$/OK.fbVrR/bpIqNJ5ianF.CE5elHaaO4EbggVDjb8P19RukzXSM3e',
     password: Buffer.from([0xff, 0xff, 0xa3]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2y$05$/OK.fbVrR/bpIqNJ5ianF.Sa7shbm4.OzKpvFnX1pQLmQW96oUlCq',
     password: Buffer.from([0xa3]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.Sa7shbm4.OzKpvFnX1pQLmQW96oUlCq',
     password: Buffer.from([0xa3]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2b$05$/OK.fbVrR/bpIqNJ5ianF.Sa7shbm4.OzKpvFnX1pQLmQW96oUlCq',
     password: Buffer.from([0xa3]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$/OK.fbVrR/bpIqNJ5ianF.o./n25XVfn6oAPaUvHe.Csk4zRfsYPi',
     password: Buffer.from([0x31, 0xa3, 0x33, 0x34, 0x35]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$/OK.fbVrR/bpIqNJ5ianF.o./n25XVfn6oAPaUvHe.Csk4zRfsYPi',
     password: Buffer.from([0xff, 0xa3, 0x33, 0x34, 0x35]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$/OK.fbVrR/bpIqNJ5ianF.o./n25XVfn6oAPaUvHe.Csk4zRfsYPi',
     password: Buffer.from([0xff, 0xa3, 0x33, 0x34, 0xff, 0xff, 0xff, 0xa3, 0x33, 0x34, 0x35]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2y$05$/OK.fbVrR/bpIqNJ5ianF.o./n25XVfn6oAPaUvHe.Csk4zRfsYPi',
     password: Buffer.from([0xff, 0xa3, 0x33, 0x34, 0xff, 0xff, 0xff, 0xa3, 0x33, 0x34, 0x35]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.ZC1JEJ8Z4gPfpe1JOr/oyPXTWl9EFd.',
     password: Buffer.from([0xff, 0xa3, 0x33, 0x34, 0xff, 0xff, 0xff, 0xa3, 0x33, 0x34, 0x35]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2y$05$/OK.fbVrR/bpIqNJ5ianF.nRht2l/HRhr6zmCp9vYUvvsqynflf9e',
     password: Buffer.from([0xff, 0xa3, 0x33, 0x34, 0x35]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.nRht2l/HRhr6zmCp9vYUvvsqynflf9e',
     password: Buffer.from([0xff, 0xa3, 0x33, 0x34, 0x35]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.6IflQkJytoRVc1yuaNtHfiuq.FRlSIS',
     password: Buffer.from([0xa3, 0x61, 0x62]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$/OK.fbVrR/bpIqNJ5ianF.6IflQkJytoRVc1yuaNtHfiuq.FRlSIS',
     password: Buffer.from([0xa3, 0x61, 0x62]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2y$05$/OK.fbVrR/bpIqNJ5ianF.6IflQkJytoRVc1yuaNtHfiuq.FRlSIS',
     password: Buffer.from([0xa3, 0x61, 0x62]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$6bNw2HLQYeqHYyBfLMsv/OiwqTymGIGzFsA4hOTWebfehXHNprcAS',
     password: Buffer.from([0xd1, 0x91]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2x$05$6bNw2HLQYeqHYyBfLMsv/O9LIGgn8OMzuDoHfof8AQimSGfcSWxnS',
     password: Buffer.from([0xd0, 0xc1, 0xd2, 0xcf, 0xcc, 0xd8]),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.swQOIzjOiJ9GHEPuhEkvqrUyvWhEMx6',
     password: Buffer.alloc(72, 0xaa),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.R9xrDjiycxMbQE2bp.vgqlYpW5wx2yy',
     password: Buffer.alloc(72, Buffer.from([0xaa, 0x55])),
   })).toBe(true);
 
-  expect(await bcryptVerfiy({
+  expect(await bcryptVerify({
     hash: '$2a$05$/OK.fbVrR/bpIqNJ5ianF.9tQZzcJfm3uj2NvJ/n5xkhpqLrMpWCe',
     password: Buffer.alloc(72, Buffer.from([0x55, 0xaa, 0xff])),
   })).toBe(true);
@@ -275,7 +275,7 @@ test('bcrypt verify bundled tests', async () => {
   const original = '$2a$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW';
   for (let i = 7; i < 60; i++) {
     const newHash = `${original.substring(0, i)}a${original.substring(i + 1)}`;
-    expect(await bcryptVerfiy({
+    expect(await bcryptVerify({
       hash: newHash,
       password: 'U*U',
     })).toBe(false);
@@ -326,27 +326,27 @@ test('Invalid bcrypt parameters', async () => {
 });
 
 test('Invalid bcrypt verify parameters', async () => {
-  await expect(bcryptVerfiy('' as any)).rejects.toThrow();
-  await expect(bcryptVerfiy([] as any)).rejects.toThrow();
-  await expect((bcryptVerfiy as any)()).rejects.toThrow();
-  const options: Parameters<typeof bcryptVerfiy>[0] = {
+  await expect(bcryptVerify('' as any)).rejects.toThrow();
+  await expect(bcryptVerify([] as any)).rejects.toThrow();
+  await expect((bcryptVerify as any)()).rejects.toThrow();
+  const options: Parameters<typeof bcryptVerify>[0] = {
     password: 'a',
     hash: '$2a$06$KRGxLBS0Lxe3KBCwKxOzLeUQ0eaAQoaT9eYD/M6ixOkZwzuuCPPwO',
   };
 
-  await expect(bcryptVerfiy(options)).resolves.not.toThrow();
+  await expect(bcryptVerify(options)).resolves.not.toThrow();
 
-  await expect(bcryptVerfiy({ ...options, password: undefined })).rejects.toThrow();
-  await expect(bcryptVerfiy({ ...options, password: null })).rejects.toThrow();
-  await expect(bcryptVerfiy({ ...options, password: 1 as any })).rejects.toThrow();
-  await expect(bcryptVerfiy({ ...options, password: [] as any })).rejects.toThrow();
-  await expect(bcryptVerfiy({ ...options, password: Buffer.from([]) })).rejects.toThrow();
-  await expect(bcryptVerfiy({ ...options, password: '' })).rejects.toThrow();
-  await expect(bcryptVerfiy({ ...options, password: Buffer.alloc(73) })).rejects.toThrow();
-  await expect(bcryptVerfiy({ ...options, password: [...Array(73)].fill('a').join('').toString() })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: undefined })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: null })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: 1 as any })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: [] as any })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: Buffer.from([]) })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: '' })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: Buffer.alloc(73) })).rejects.toThrow();
+  await expect(bcryptVerify({ ...options, password: [...Array(73)].fill('a').join('').toString() })).rejects.toThrow();
 
   const testHash = async (hashStr: string) => {
-    await expect(bcryptVerfiy({ ...options, hash: hashStr })).rejects.toThrow();
+    await expect(bcryptVerify({ ...options, hash: hashStr })).rejects.toThrow();
   };
 
   await testHash(undefined);

@@ -463,7 +463,7 @@ bcrypt({
   outputType?: 'hex' | 'binary' | 'encoded', // by default returns encoded string
 }): Promise<string | Uint8Array>
 
-bcryptVerfiy({
+bcryptVerify({
   password: IDataType, // password
   hash: string, // encoded hash
 }): Promise<boolean>

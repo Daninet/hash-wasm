@@ -130,7 +130,7 @@ const validateVerifyOptions = (options: BcryptVerifyOptions) => {
   }
 };
 
-export async function bcryptVerfiy(options: BcryptVerifyOptions): Promise<boolean> {
+export async function bcryptVerify(options: BcryptVerifyOptions): Promise<boolean> {
   validateVerifyOptions(options);
 
   const { hash, password } = options;
