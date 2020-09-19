@@ -1,3 +1,8 @@
+## 4.2.0 (September 19, 2020)
+
+* Add bcrypt algorithm
+* Add argon2Validate() function
+
 ## 4.1.0 (September 5, 2020)
 
 * Add scrypt algorithm
