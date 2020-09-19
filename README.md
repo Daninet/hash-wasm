@@ -14,11 +14,12 @@ Supported algorithms
 =======
 
 - Argon2: Argon2d, Argon2i, Argon2id (v1.3)
+- bcrypt
 - BLAKE2b
 - CRC32
-- HMAC (with all hash algorithms)
+- HMAC
 - MD4, MD5
-- PBKDF2 (with all hash algorithms)
+- PBKDF2
 - RIPEMD-160
 - scrypt
 - SHA-1
@@ -124,12 +125,12 @@ run();
 
 *\*\* See [API reference](#api)*
 
-### Calculating Argon2
+### Hashing passwords with Argon2
 
 The recommended process for choosing the parameters can be found here: https://tools.ietf.org/html/draft-irtf-cfrg-argon2-04#section-4
 
 ```javascript
-import { argon2id } from 'hash-wasm';
+import { argon2id, argon2Verify } from 'hash-wasm';
 
 async function run() {
   const salt = new Uint8Array(16);
@@ -146,6 +147,46 @@ async function run() {
   });
 
   console.log('Derived key:', key);
+
+  const isValid = await argon2Verify({
+    password: 'pass',
+    hash: key,
+  });
+
+  console.log(isValid ? 'Valid password' : 'Invalid password');
+}
+
+run();
+```
+
+*\* See [String encoding pitfalls](#string-encoding-pitfalls)*
+
+*\*\* See [API reference](#api)*
+
+### Hashing passwords with bcrypt
+
+```javascript
+import { bcrypt, bcryptVerify } from 'hash-wasm';
+
+async function run() {
+  const salt = new Uint8Array(16);
+  window.crypto.getRandomValues(salt);
+
+  const key = await bcrypt({
+    password: 'pass',
+    salt, // salt is a buffer containing 16 random bytes
+    costFactor: 11,
+    outputType: 'encoded', // return standard encoded string containing parameters needed to verify the key
+  });
+
+  console.log('Derived key:', key);
+
+  const isValid = await bcryptVerify({
+    password: 'pass',
+    hash: key,
+  });
+
+  console.log(isValid ? 'Valid password' : 'Invalid password');
 }
 
 run();
@@ -390,8 +431,8 @@ scrypt({
   password: IDataType, // password (or message) to be hashed
   salt: IDataType, // salt (usually containing random bytes)
   costFactor: number, // CPU/memory cost - must be a power of 2 (e.g. 1024)
-  blockSize: number; // block size parameter (8 is commonly used)
-  parallelism: number; // degree of parallelism
+  blockSize: number, // block size parameter (8 is commonly used)
+  parallelism: number, // degree of parallelism
   hashLength: number, // output size in bytes
   outputType?: 'hex' | 'binary', // by default returns hex string
 }): Promise<string | Uint8Array>
@@ -409,6 +450,23 @@ interface IArgon2Options {
 argon2i(options: IArgon2Options): Promise<string | Uint8Array>
 argon2d(options: IArgon2Options): Promise<string | Uint8Array>
 argon2id(options: IArgon2Options): Promise<string | Uint8Array>
+
+argon2Verify({
+  password: IDataType, // password
+  hash: string, // encoded hash
+}): Promise<boolean>
+
+bcrypt({
+  password: IDataType, // password
+  salt: IDataType, // salt (16 bytes long - usually containing random bytes)
+  costFactor: number, // number of iterations to perform (4 - 31)
+  outputType?: 'hex' | 'binary' | 'encoded', // by default returns encoded string
+})
+
+bcryptVerfiy({
+  password: IDataType, // password
+  hash: string, // encoded hash
+}): Promise<boolean>
 
 ```
 
