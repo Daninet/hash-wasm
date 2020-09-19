@@ -55,10 +55,22 @@ export async function WASMInterface(binary: any, hashLength: number) {
     }
 
     const module = await wasmModuleCache.get(binary.name);
-    wasmInstance = await WebAssembly.instantiate(module);
+    wasmInstance = await WebAssembly.instantiate(module, {
+      // env: {
+      //   emscripten_memcpy_big: (dest, src, num) => {
+      //     const memoryBuffer = wasmInstance.exports.memory.buffer;
+      //     const memView = new Uint8Array(memoryBuffer, 0);
+      //     memView.set(memView.subarray(src, src + num), dest);
+      //   },
+      //   print_memory: (offset, len) => {
+      //     const memoryBuffer = wasmInstance.exports.memory.buffer;
+      //     const memView = new Uint8Array(memoryBuffer, 0);
+      //     console.log('print_int32', memView.subarray(offset, offset + len));
+      //   },
+      // },
+    });
 
-    // eslint-disable-next-line no-underscore-dangle
-    wasmInstance.exports._start();
+    // wasmInstance.exports._start();
   });
 
   const setupInterface = async () => {
@@ -105,6 +117,7 @@ export async function WASMInterface(binary: any, hashLength: number) {
     wasmInstance.exports.Hash_Final(padding);
 
     if (outputType === 'binary') {
+      // the data is copied to allow GC of the original memory object
       return memoryView.slice(0, hashLength);
     }
 
