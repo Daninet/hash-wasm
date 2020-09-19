@@ -461,7 +461,7 @@ bcrypt({
   salt: IDataType, // salt (16 bytes long - usually containing random bytes)
   costFactor: number, // number of iterations to perform (4 - 31)
   outputType?: 'hex' | 'binary' | 'encoded', // by default returns encoded string
-})
+}): Promise<string | Uint8Array>
 
 bcryptVerfiy({
   password: IDataType, // password
