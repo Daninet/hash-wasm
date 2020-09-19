@@ -1,4 +1,6 @@
-import { getDigestHex, getUInt8Buffer, IDataType, intArrayToString } from './util';
+import {
+  getDigestHex, getUInt8Buffer, IDataType, intArrayToString,
+} from './util';
 import { WASMInterface } from './WASMInterface';
 import wasmJson from '../wasm/bcrypt.wasm.json';
 

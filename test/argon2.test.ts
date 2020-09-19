@@ -1,4 +1,6 @@
-import { argon2d, argon2i, argon2id, argon2Verify } from '../lib';
+import {
+  argon2d, argon2i, argon2id, argon2Verify,
+} from '../lib';
 /* global test, expect */
 
 const hash = async (

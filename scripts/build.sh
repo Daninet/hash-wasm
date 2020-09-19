@@ -15,6 +15,6 @@ docker run \
 # node scripts/optimize
 node scripts/make_json
 npx rollup -c
-npx tsc ./lib/index --outDir ./dist --emitDeclarationOnly --declaration --resolveJsonModule --allowSyntheticDefaultImports
+npx tsc ./lib/index --outDir ./dist --downlevelIteration --emitDeclarationOnly --declaration --resolveJsonModule --allowSyntheticDefaultImports
 
 #-s ASSERTIONS=1 \
