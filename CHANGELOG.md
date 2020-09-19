@@ -1,8 +1,4 @@
-## 4.2.1 (September 19, 2020)
-
-* Fix typo in bcryptVerify() function
-
-## 4.2.0 (September 19, 2020)
+## 4.2.2 (September 19, 2020)
 
 * Add bcrypt algorithm
 * Add argon2Validate() function
