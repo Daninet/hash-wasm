@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
+# -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
 
 emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s MAXIMUM_MEMORY=2GB -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/argon2.c -o /app/wasm/argon2.wasm
