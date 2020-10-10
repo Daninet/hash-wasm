@@ -10,7 +10,8 @@
     "build": "sh -c ./scripts/build.sh",
     "eslint": "eslint lib/**/*.ts test/**/*.ts",
     "prepublishOnly": "sh -c ./scripts/build.sh",
-    "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage"
+    "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage",
+    "webpack": "node webpack/webpack.js"
   },
   "repository": {
     "type": "git",
@@ -78,6 +79,8 @@
     "@types/node": "^14.6.2",
     "@typescript-eslint/eslint-plugin": "^3.10.1",
     "@typescript-eslint/parser": "^3.10.1",
+    "binaryen": "^96.0.0",
+    "compression-webpack-plugin": "^6.0.3",
     "eslint": "^7.7.0",
     "eslint-config-airbnb": "^18.2.0",
     "eslint-config-standard": "^14.1.1",
@@ -94,6 +97,6 @@
     "ts-node": "^9.0.0",
     "tslib": "^2.0.1",
     "typescript": "^4.0.2",
-    "binaryen": "^96.0.0"
+    "webpack": "^4.44.2"
   }
 }
