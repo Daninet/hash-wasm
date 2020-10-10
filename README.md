@@ -20,10 +20,10 @@ Supported algorithms
 | BLAKE2b                                        | 7.33 kB               |
 | BLAKE2s                                        | 6.87 kB               |
 | CRC32                                          | 11.57 kB              |
-| HMAC                                           | Depends on algorithm  |
+| HMAC                                           | -                     |
 | MD4                                            | 4.13 kB               |
 | MD5                                            | 4.69 kB               |
-| PBKDF2                                         | Depends on algorithm  |
+| PBKDF2                                         | -                     |
 | RIPEMD-160                                     | 5.99 kB               |
 | scrypt                                         | 10.64 kB              |
 | SHA-1                                          | 5.47 kB               |
