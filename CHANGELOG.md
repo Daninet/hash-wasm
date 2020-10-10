@@ -1,3 +1,8 @@
+## 4.3.0 (October 10, 2020)
+
+* Add blake2s algorithm
+* Add bundle sizes to README
+
 ## 4.2.2 (September 19, 2020)
 
 * Add bcrypt algorithm
