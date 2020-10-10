@@ -33,8 +33,6 @@ Supported algorithms
 | xxHash32                                       | 3.62 kB               |
 | xxHash64                                       | 3.92 kB               |
 
-<br>
-
 Features
 =======
 
