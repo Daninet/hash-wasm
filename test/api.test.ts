@@ -5,7 +5,7 @@ import { IHasher } from '../lib/WASMInterface';
 
 test('IHasherApi', async () => {
   const keys = Object.keys(api).filter((key) => key.startsWith('create'));
-  expect(keys.length).toBe(15);
+  expect(keys.length).toBe(16);
 
   const functions: IHasher[] = await Promise.all(
     keys.map(
