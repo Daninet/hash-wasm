@@ -13,20 +13,27 @@ It is using hand-tuned WebAssembly binaries to calculate the hash faster than ot
 Supported algorithms
 =======
 
-- Argon2: Argon2d, Argon2i, Argon2id (v1.3)
-- bcrypt
-- BLAKE2b, BLAKE2s
-- CRC32
-- HMAC
-- MD4, MD5
-- PBKDF2
-- RIPEMD-160
-- scrypt
-- SHA-1
-- SHA-2: SHA-224, SHA-256, SHA-384, SHA-512
-- SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512
-- Keccak: Keccak-224, Keccak-256, Keccak-384, Keccak-512
-- xxHash: xxHash32, xxHash64
+| Name                                           | Bundle size (gzipped) |
+|------------------------------------------------|-----------------------|
+| Argon2: Argon2d, Argon2i, Argon2id (v1.3)      | 12.25 kB              |
+| bcrypt                                         | 11.45 kB              |
+| BLAKE2b                                        | 7.33 kB               |
+| BLAKE2s                                        | 6.87 kB               |
+| CRC32                                          | 11.57 kB              |
+| HMAC                                           | Depends on algorithm  |
+| MD4                                            | 4.13 kB               |
+| MD5                                            | 4.69 kB               |
+| PBKDF2                                         | Depends on algorithm  |
+| RIPEMD-160                                     | 5.99 kB               |
+| scrypt                                         | 10.64 kB              |
+| SHA-1                                          | 5.47 kB               |
+| SHA-2: SHA-224, SHA-256, SHA-384, SHA-512      | 6.94 kB - 8.30 kB     |
+| SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512  | 4.57 kB               |
+| Keccak-224, Keccak-256, Keccak-384, Keccak-512 | 4.57 kB               |
+| xxHash32                                       | 3.62 kB               |
+| xxHash64                                       | 3.92 kB               |
+
+<br>
 
 Features
 =======
