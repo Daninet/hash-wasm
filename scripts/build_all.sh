@@ -16,6 +16,9 @@ emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/blake2b.c -o /app/wasm/blake2b.wasm
 
 emcc -O3 -s WASM=1 \
+  -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/blake2s.c -o /app/wasm/blake2s.wasm
+
+emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/ripemd160.c -o /app/wasm/ripemd160.wasm
 
 emcc -O3 -s WASM=1 \

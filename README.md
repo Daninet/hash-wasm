@@ -15,7 +15,7 @@ Supported algorithms
 
 - Argon2: Argon2d, Argon2i, Argon2id (v1.3)
 - bcrypt
-- BLAKE2b
+- BLAKE2b, BLAKE2s
 - CRC32
 - HMAC
 - MD4, MD5
@@ -379,6 +379,7 @@ type IDataType = string | Buffer | Uint8Array | Uint16Array | Uint32Array;
 
 // all functions return hash in hex format
 blake2b(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 512 bits
+blake2s(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 256 bits
 crc32(data: IDataType): Promise<string>
 keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 md4(data: IDataType): Promise<string>
@@ -402,6 +403,7 @@ interface IHasher {
 }
 
 createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 512 bits
+createBLAKE2s(bits?: number, key?: IDataType): Promise<IHasher> // default is 256 bits
 createCRC32(): Promise<IHasher>
 createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createMD4(): Promise<IHasher>

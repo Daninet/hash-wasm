@@ -9,6 +9,7 @@ test('invalid parameters', async () => {
   await expect(blake2b('', 127 as any)).rejects.toThrow();
   await expect(blake2b('', 513 as any)).rejects.toThrow();
   await expect(blake2b('', null as any)).rejects.toThrow();
+  await expect(blake2b('', 1024 as any)).rejects.toThrow();
 
   await expect(createBLAKE2b(-1 as any)).rejects.toThrow();
   await expect(createBLAKE2b('a' as any)).rejects.toThrow();
@@ -17,6 +18,7 @@ test('invalid parameters', async () => {
   await expect(createBLAKE2b(127 as any)).rejects.toThrow();
   await expect(createBLAKE2b(513 as any)).rejects.toThrow();
   await expect(createBLAKE2b(null as any)).rejects.toThrow();
+  await expect(createBLAKE2b(1024 as any)).rejects.toThrow();
 });
 
 test('default value for create constructor', async () => {
