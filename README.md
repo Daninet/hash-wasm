@@ -7,7 +7,7 @@
 [![Build status](https://github.com/Daninet/hash-wasm/workflows/Build%20&%20publish/badge.svg?branch=master)](https://github.com/Daninet/hash-wasm/actions)
 [![JSDelivr downloads](https://data.jsdelivr.com/v1/package/npm/hash-wasm/badge)](https://www.jsdelivr.com/package/npm/hash-wasm)
 
-Hash-WASM is a ⚡lightning fast⚡ and portable hash function library.
+Hash-WASM is a ⚡lightning fast⚡ hash function library for browsers and Node.js.
 It is using hand-tuned WebAssembly binaries to calculate the hash faster than other libraries.
 
 Supported algorithms
@@ -39,15 +39,16 @@ Features
 =======
 
 - A lot faster than other JS / WASM implementations (see [benchmarks](#benchmark) below)
+- It's lightweight. See the table above
 - Compiled from heavily optimized algorithms written in C
 - Supports all modern browsers, Node.js and Deno
 - Supports large data streams
 - Supports UTF-8 strings and typed arrays
 - Supports chunked input streams
-- Works without Webpack or other bundlers
+- Modular architecture (the algorithms are compiled into individual WASM binaries)
 - WASM modules are bundled as base64 strings (no problems with linking)
-- Supports tree shaking (it only bundles the hash algorithms you need)
-- It's lightweight. Including a single algorithm increases the bundle size with only 10-20KB
+- Supports tree shaking (Webpack only bundles the hash algorithms you use)
+- Works without Webpack or other bundlers
 - Includes TypeScript type definitions
 - Works in Web Workers
 - Zero dependencies
