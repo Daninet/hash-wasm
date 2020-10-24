@@ -47,3 +47,6 @@ emcc -O3 -s WASM=1 \
 
 emcc -O3 -s WASM=1 \
   -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/xxhash64.c -o /app/wasm/xxhash64.wasm
+
+emcc -O3 -s WASM=1 \
+  -flto -s INITIAL_MEMORY=256KB -s TOTAL_STACK=128KB -s MODULARIZE=1 -s STANDALONE_WASM=1 /app/src/whirlpool.c -o /app/wasm/whirlpool.wasm
