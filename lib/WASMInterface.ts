@@ -17,8 +17,8 @@ export type IHasher = {
     (outputType: 'binary'): Uint8Array;
     (outputType?: 'hex'): string;
   };
-  blockSize: number;
-  digestSize: number;
+  blockSize: number; // in bytes
+  digestSize: number; // in bytes
 }
 
 const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();

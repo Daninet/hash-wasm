@@ -98,7 +98,7 @@ export function createBLAKE2b(
         },
       update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
-      blockSize: 1024,
+      blockSize: 128,
       digestSize: outputSize,
     };
     return obj;

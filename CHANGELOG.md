@@ -1,3 +1,8 @@
+## 4.4.0 (October 24, 2020)
+
+* Add Whirlpool algorithm
+* Fix block size at blake algorithms
+
 ## 4.3.0 (October 10, 2020)
 
 * Add blake2s algorithm
