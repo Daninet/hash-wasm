@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { md4, createMD4 } from '../lib';
+import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -68,6 +69,20 @@ test('chunked', async () => {
   }
   hash.update(Buffer.alloc(1000).fill(0xDF));
   expect(hash.digest()).toBe('c85d05258be1a9accac6723b300b2618');
+});
+
+test('chunked increasing length', async () => {
+  const hash = await createMD4();
+  const test = async (maxLen: number) => {
+    const chunks = getVariableLengthChunks(maxLen);
+    const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
+    const hashRef = await md4(new Uint8Array(flatchunks));
+    hash.init();
+    chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+    expect(hash.digest('hex')).toBe(hashRef);
+  };
+  const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
+  await Promise.all(maxLens.map((length) => test(length)));
 });
 
 test('interlaced shorthand', async () => {

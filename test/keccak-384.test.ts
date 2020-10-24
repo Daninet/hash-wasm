@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { keccak, createKeccak } from '../lib';
+import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -68,6 +69,20 @@ test('chunked', async () => {
   }
   hash.update(Buffer.alloc(1000).fill(0xDF));
   expect(hash.digest()).toBe('10c6bf791a765398288627f3b360c9e2f34790e9e7c7fff8ecfa82ca95f67bed0ca9627295665747f4000eda29a5b99b');
+});
+
+test('chunked increasing length', async () => {
+  const hash = await createKeccak(384);
+  const test = async (maxLen: number) => {
+    const chunks = getVariableLengthChunks(maxLen);
+    const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
+    const hashRef = await keccak(new Uint8Array(flatchunks), 384);
+    hash.init();
+    chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+    expect(hash.digest('hex')).toBe(hashRef);
+  };
+  const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
+  await Promise.all(maxLens.map((length) => test(length)));
 });
 
 test('interlaced shorthand', async () => {

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { xxhash64 as origXXHash64, createXXHash64 } from '../lib';
 import { IDataType } from '../lib/util';
+import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
 const xxhash64 = async (
@@ -94,6 +95,20 @@ test('chunked', async () => {
   }
   hash.update(Buffer.alloc(1000).fill(0xDF));
   expect(hash.digest()).toBe('19a8929a29c34fe8');
+});
+
+test('chunked increasing length', async () => {
+  const hash = await createXXHash64();
+  const test = async (maxLen: number) => {
+    const chunks = getVariableLengthChunks(maxLen);
+    const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
+    const hashRef = await xxhash64(new Uint8Array(flatchunks));
+    hash.init();
+    chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+    expect(hash.digest('hex')).toBe(hashRef);
+  };
+  const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
+  await Promise.all(maxLens.map((length) => test(length)));
 });
 
 test('interlaced shorthand', async () => {

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { sha3, createSHA3 } from '../lib';
+import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -68,6 +69,20 @@ test('chunked', async () => {
   }
   hash.update(Buffer.alloc(1000).fill(0xDF));
   expect(hash.digest()).toBe('b14e2bbae9edc09f503f9bf7e835a4a215567514b9d8e25a1fddba8ca045e2aa69d2ab576435cafedb5bf0a19433c1c6');
+});
+
+test('chunked increasing length', async () => {
+  const hash = await createSHA3(384);
+  const test = async (maxLen: number) => {
+    const chunks = getVariableLengthChunks(maxLen);
+    const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
+    const hashRef = await sha3(new Uint8Array(flatchunks), 384);
+    hash.init();
+    chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+    expect(hash.digest('hex')).toBe(hashRef);
+  };
+  const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
+  await Promise.all(maxLens.map((length) => test(length)));
 });
 
 test('interlaced shorthand', async () => {

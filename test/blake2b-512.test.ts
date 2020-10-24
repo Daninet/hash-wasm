@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { blake2b, createBLAKE2b } from '../lib';
+import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -68,6 +69,20 @@ test('chunked', async () => {
   }
   hash.update(Buffer.alloc(1000).fill(0xDF));
   expect(hash.digest()).toBe('8ade43a7d80893ad08d81d238b23b7be4600ee110215c400d6ef6ded68175ca40e075b12eea10e4ae190468c46795d136b3ce987a49505503a108567d57860a8');
+});
+
+test('chunked increasing length', async () => {
+  const hash = await createBLAKE2b(512);
+  const test = async (maxLen: number) => {
+    const chunks = getVariableLengthChunks(maxLen);
+    const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
+    const hashRef = await blake2b(new Uint8Array(flatchunks), 512);
+    hash.init();
+    chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+    expect(hash.digest('hex')).toBe(hashRef);
+  };
+  const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
+  await Promise.all(maxLens.map((length) => test(length)));
 });
 
 test('interlaced shorthand', async () => {
