@@ -23,19 +23,16 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <emscripten.h>
 #include <stdint.h>
+#define WASM_EXPORT __attribute__((visibility("default")))
 
 #define BLOCK_LEN 64 // In bytes
 #define STATE_LEN 64 // In bytes
 
-typedef struct WHIRLPOOLstruct
-{
-  uint8_t buffer[BLOCK_LEN]; /* buffer of data to hash */
-  uint8_t hash[STATE_LEN];   /* the hashing state */
-  uint8_t rem;
-  uint64_t totalBytes;
-} WHIRLPOOLstruct;
+uint8_t buffer[BLOCK_LEN]; /* buffer of data to hash */
+uint8_t hash[STATE_LEN];   /* the hashing state */
+uint32_t rem;
+uint64_t totalBytes;
 
 static void whirlpool_round(uint64_t block[static 8], const uint64_t key[static 8]);
 
@@ -50,11 +47,13 @@ static uint64_t ROUND_CONSTANTS[32] = {
   UINT64_C(0x6C9D0BDC53C1BB2A), UINT64_C(0xE11489AC46F67431), UINT64_C(0xEDD0B67009693A16), UINT64_C(0x86F85C28A49842CC),
 };
 
+uint64_t tempState[8];
+uint64_t tempBlock[8];
+uint64_t rcon[8] = {0};
+
 void whirlpool_compress(uint8_t state[static 64], const uint8_t block[static 64]) {
   const int NUM_ROUNDS = 10;  // Any number from 0 to 32 is allowed
-  uint64_t tempState[8];
-  uint64_t tempBlock[8];
-  
+
   // Initialization
   #pragma clang loop unroll(full)
   for (int i = 0; i < 8; i++) {
@@ -66,7 +65,6 @@ void whirlpool_compress(uint8_t state[static 64], const uint8_t block[static 64]
   }
   
   // Hashing rounds
-  uint64_t rcon[8] = {0};
   #pragma clang loop unroll(full)
   for (int i = 0; i < NUM_ROUNDS; i++) {
     rcon[0] = ROUND_CONSTANTS[i];
@@ -76,11 +74,10 @@ void whirlpool_compress(uint8_t state[static 64], const uint8_t block[static 64]
   
   // Final combining
   #pragma clang loop unroll(full)
-  for (uint8_t i = 0; i < 64; i++) {
-    state[i] ^= block[i] ^ (uint8_t)(tempBlock[i >> 3] >> ((i & 7) << 3));
+  for (uint8_t i = 0; i < 8; i++) {
+    ((uint64_t*)state)[i] ^= ((uint64_t*)block)[i] ^ tempBlock[i];
   }
 }
-
 
 // The combined effect of gamma (SubBytes) and theta (MixRows)
 static uint64_t MAGIC_TABLE[256] = {
@@ -152,18 +149,17 @@ static void whirlpool_round(uint64_t block[static 8], const uint64_t key[static 
 }
 
 uint8_t array[16 * 1024];
-WHIRLPOOLstruct ctx;
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init() {
   for (uint32_t i = 0; i < 64; i+=8) {
-    *(uint64_t*)(ctx.hash + i) = 0;
+    *(uint64_t*)(hash + i) = 0;
   }
-  ctx.totalBytes = 0;
-  ctx.rem = 0;
+  totalBytes = 0;
+  rem = 0;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 uint8_t *Hash_GetBuffer() {
   return array;
 }
@@ -173,67 +169,67 @@ inline uint32_t min(uint32_t a, uint32_t b) {
   return b;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t len) {
-  ctx.totalBytes += len;
+  totalBytes += len;
   uint32_t read = 0;
-  if (ctx.rem > 0) {
-    uint32_t end = min(64, ctx.rem + len);
-    for (uint8_t z = ctx.rem; z < end; z++) {
-      ctx.buffer[z] = array[read++];
+  if (rem > 0) {
+    uint32_t end = min(64, rem + len);
+    for (uint8_t z = rem; z < end; z++) {
+      buffer[z] = array[read++];
     }
     if (end == 64) {
-      whirlpool_compress(ctx.hash, ctx.buffer);
-      ctx.rem = 0;
+      whirlpool_compress(hash, buffer);
+      rem = 0;
     } else {
-      ctx.rem = end;
+      rem = end;
     }
   }
 
   while (len - read >= 64) {
-    whirlpool_compress(ctx.hash, &array[read]);
+    whirlpool_compress(hash, &array[read]);
     read += 64;
   }
 
   if (len - read > 0) {
-    ctx.rem = len - read;
-    for (uint8_t z = 0; z < ctx.rem; z++) {
-      ctx.buffer[z] = array[read + z];
+    rem = len - read;
+    for (uint8_t z = 0; z < rem; z++) {
+      buffer[z] = array[read + z];
     }
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
-  #define LENGTH_SIZE 32  // In bytes
+  const int LENGTH_SIZE = 32;
 
   uint8_t temp[64] = {0};
-  for (uint8_t i = 0; i < ctx.rem; i++) {
-    temp[i] = ctx.buffer[i];
+  for (uint8_t i = 0; i < rem; i++) {
+    temp[i] = buffer[i];
   }
-  temp[ctx.rem] = 0x80;
-  ctx.rem++;
+  temp[rem] = 0x80;
+  rem++;
 
-  if (BLOCK_LEN - ctx.rem < LENGTH_SIZE) {
-    whirlpool_compress(ctx.hash, temp);
-    for (uint32_t i = 0; i < 64; i+=8) {
+  if (BLOCK_LEN - rem < LENGTH_SIZE) {
+    whirlpool_compress(hash, temp);
+    for (uint32_t i = 0; i < 32; i+=8) {
       *(uint64_t*)(temp + i) = 0;
     }
   }
 
-  temp[BLOCK_LEN - 1] = (uint8_t)((ctx.totalBytes & 0x1FU) << 3);
-  ctx.totalBytes >>= 5;
-  for (int i = 1; i < LENGTH_SIZE; i++, ctx.totalBytes >>= 8) {
-    temp[BLOCK_LEN - 1 - i] = (uint8_t)(ctx.totalBytes & 0xFFU);
+  temp[BLOCK_LEN - 1] = (uint8_t)((totalBytes & 0x1FU) << 3);
+  totalBytes >>= 5;
+  for (int i = 1; i < LENGTH_SIZE; i++, totalBytes >>= 8) {
+    temp[BLOCK_LEN - 1 - i] = (uint8_t)(totalBytes & 0xFFU);
   }
-  whirlpool_compress(ctx.hash, temp);
+  whirlpool_compress(hash, temp);
 
   for (uint32_t i = 0; i < 64; i+=8) {
-    *(uint64_t*)(array + i) = *(uint64_t*)(ctx.hash + i);
+    *(uint64_t*)(array + i) = *(uint64_t*)(hash + i);
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);
