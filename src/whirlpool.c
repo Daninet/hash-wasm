@@ -23,8 +23,8 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <stdint.h>
-#define WASM_EXPORT __attribute__((visibility("default")))
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 #define BLOCK_LEN 64 // In bytes
 #define STATE_LEN 64 // In bytes
@@ -148,8 +148,6 @@ static void whirlpool_round(uint64_t block[static 8], const uint64_t key[static 
   DOROW(7, h, g, f, e, d, c, b, a)
 }
 
-uint8_t array[16 * 1024];
-
 WASM_EXPORT
 void Hash_Init() {
   for (uint32_t i = 0; i < 64; i+=8) {
@@ -157,11 +155,6 @@ void Hash_Init() {
   }
   totalBytes = 0;
   rem = 0;
-}
-
-WASM_EXPORT
-uint8_t *Hash_GetBuffer() {
-  return array;
 }
 
 inline uint32_t min(uint32_t a, uint32_t b) {
@@ -176,7 +169,7 @@ void Hash_Update(uint32_t len) {
   if (rem > 0) {
     uint32_t end = min(64, rem + len);
     for (uint8_t z = rem; z < end; z++) {
-      buffer[z] = array[read++];
+      buffer[z] = main_buffer[read++];
     }
     if (end == 64) {
       whirlpool_compress(hash, buffer);
@@ -187,14 +180,14 @@ void Hash_Update(uint32_t len) {
   }
 
   while (len - read >= 64) {
-    whirlpool_compress(hash, &array[read]);
+    whirlpool_compress(hash, &main_buffer[read]);
     read += 64;
   }
 
   if (len - read > 0) {
     rem = len - read;
     for (uint8_t z = 0; z < rem; z++) {
-      buffer[z] = array[read + z];
+      buffer[z] = main_buffer[read + z];
     }
   }
 }
@@ -225,7 +218,7 @@ void Hash_Final() {
   whirlpool_compress(hash, temp);
 
   for (uint32_t i = 0; i < 64; i+=8) {
-    *(uint64_t*)(array + i) = *(uint64_t*)(hash + i);
+    *(uint64_t*)(main_buffer + i) = *(uint64_t*)(hash + i);
   }
 }
 
