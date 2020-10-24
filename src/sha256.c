@@ -17,9 +17,8 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <emscripten.h>
-#include <string.h>
-#include <sys/types.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 #define sha256_block_size 64
 #define sha256_hash_size 32
@@ -36,12 +35,6 @@ struct sha256_ctx {
 
 struct sha256_ctx sctx;
 struct sha256_ctx* ctx = &sctx;
-uint8_t array[16 * 1024];
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer() {
-  return array;
-}
 
 /* SHA-224 and SHA-256 constants for 64 rounds. These words represent
  * the first 32 bits of the fractional parts of the cube
@@ -133,7 +126,7 @@ void sha224_init() {
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init(uint32_t bits) {
   if (bits == 224) {
     sha224_init();
@@ -205,9 +198,9 @@ static void sha256_process_block(uint32_t hash[8], uint32_t block[16]) {
  *
  * @param size length of the message chunk
  */
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t size) {
-  const uint8_t* msg = array;
+  const uint8_t* msg = main_buffer;
   uint32_t index = (uint32_t)ctx->length & 63;
   ctx->length += size;
 
@@ -247,7 +240,7 @@ void Hash_Update(uint32_t size) {
  * Store calculated hash into the given array.
  *
  */
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
   uint32_t index = ((uint32_t)ctx->length & 63) >> 2;
   uint32_t shift = ((uint32_t)ctx->length & 3) * 8;
@@ -282,11 +275,11 @@ void Hash_Final() {
   }
 
   for (uint8_t i = 0; i < ctx->digest_length; i++) {
-    array[i] = *(((uint8_t*)ctx->hash) + i);
+    main_buffer[i] = *(((uint8_t*)ctx->hash) + i);
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam) {
   Hash_Init(initParam);
   Hash_Update(length);

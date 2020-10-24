@@ -6,10 +6,8 @@ By Steve Reid <steve@edmweb.com>
 Modified for hash-wasm by Dani Biró
 */
 
-#include <emscripten.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
@@ -34,12 +32,6 @@ struct SHA1_CTX {
 
 struct SHA1_CTX sctx;
 struct SHA1_CTX* context = &sctx;
-uint8_t array[16 * 1024];
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer() {
-  return array;
-}
 
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
 #define R0(v, w, x, y, z, i)                                   \
@@ -112,7 +104,7 @@ void SHA1Transform(uint32_t state[5], const uint8_t buffer[64]) {
 }
 
 /* SHA1Init - Initialize new context */
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init() {
   context->state[0] = 0x67452301;
   context->state[1] = 0xEFCDAB89;
@@ -152,15 +144,15 @@ void SHA1Update(const uint8_t* data, uint32_t len) {
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t len) {
-  SHA1Update(array, len);
+  SHA1Update(main_buffer, len);
 }
 
 /* Add padding and return the message digest. */
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
-  uint8_t* result = array;
+  uint8_t* result = main_buffer;
   uint8_t finalcount[8];
   uint8_t c;
 
@@ -184,7 +176,7 @@ void Hash_Final() {
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);

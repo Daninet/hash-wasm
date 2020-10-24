@@ -2,6 +2,7 @@
 
 #ifdef _MSC_VER
 #define WASM_EXPORT
+#define __inline__
 #else
 #define WASM_EXPORT __attribute__((visibility("default")))
 #endif
@@ -18,3 +19,23 @@ uint8_t *Hash_GetBuffer() {
 }
 
 #endif
+
+// Sometimes LLVM emits these functions during the optimization step
+// even with -nostdlib -fno-builtin flags
+void* memcpy(void* dst, const void* src, uint32_t cnt) {
+  uint8_t *destination = dst;
+  const uint8_t *source = src;
+  while (cnt) {
+    *(destination++)= *(source++);
+    --cnt;
+  }
+  return dst;
+}
+
+void* memset(void* dst, const uint8_t value, uint32_t cnt) {
+  uint8_t *p = dst;
+  while(cnt--) {
+    *p++ = value;
+  }
+  return dst;
+}

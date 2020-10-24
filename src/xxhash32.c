@@ -9,9 +9,8 @@
 // Modified for hash-wasm by Dani Biró
 //
 
-#include <emscripten.h>
-#include <stdbool.h>
-#include <stdint.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 static const uint32_t Prime1 = 2654435761U;
 static const uint32_t Prime2 = 2246822519U;
@@ -27,13 +26,6 @@ uint32_t state[4];  // state[2] == seed if totalLength < MaxBufferSize
 unsigned char buffer[MaxBufferSize];
 unsigned int bufferSize;
 uint64_t totalLength;
-
-uint8_t array[16 * 1024];
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer() {
-  return array;
-}
 
 // rotate bits, should compile to a single CPU instruction (ROL)
 static inline uint32_t rotateLeft(uint32_t x, unsigned char bits) {
@@ -56,7 +48,7 @@ static inline void process(
 // create new XXHash (32 bit)
 /** @param seed your seed value, even zero is a valid seed and e.g. used by LZ4
  * **/
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init(uint32_t seed) {
   state[0] = seed + Prime1 + Prime2;
   state[1] = seed + Prime2;
@@ -70,12 +62,12 @@ void Hash_Init(uint32_t seed) {
 /** @param  length number of bytes
     @return false if parameters are invalid / zero **/
 
-EMSCRIPTEN_KEEPALIVE
-bool Hash_Update(uint32_t length) {
-  const void* input = array;
+WASM_EXPORT
+void Hash_Update(uint32_t length) {
+  const void* input = main_buffer;
 
   // no data ?
-  if (!input || length == 0) return false;
+  if (!input || length == 0) return;
 
   totalLength += length;
   // byte-wise access
@@ -87,7 +79,7 @@ bool Hash_Update(uint32_t length) {
     while (length-- > 0) {
       buffer[bufferSize++] = *data++;
     }
-    return true;
+    return;
   }
 
   // point beyond last byte
@@ -124,14 +116,11 @@ bool Hash_Update(uint32_t length) {
   for (unsigned int i = 0; i < bufferSize; i++) {
     buffer[i] = data[i];
   }
-
-  // done
-  return true;
 }
 
 // get current hash
 /** @return 32 bit XXHash **/
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
   uint32_t result = (uint32_t)totalLength;
 
@@ -169,13 +158,13 @@ void Hash_Final() {
   result *= Prime3;
   result ^= result >> 16;
 
-  array[0] = result >> 24;
-  array[1] = (result & 0x00ff0000) >> 16;
-  array[2] = (result & 0x0000ff00) >> 8;
-  array[3] = result & 0x000000ff;
+  main_buffer[0] = result >> 24;
+  main_buffer[1] = (result & 0x00ff0000) >> 16;
+  main_buffer[2] = (result & 0x0000ff00) >> 8;
+  main_buffer[3] = result & 0x000000ff;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam) {
   Hash_Init(initParam);
   Hash_Update(length);

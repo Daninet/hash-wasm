@@ -13,19 +13,10 @@
   Modified for hash-wasm by Dani Biró
 */
 
-#include <emscripten.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 #define BLAKE2_PACKED(x) x __attribute__((packed))
-
-uint8_t array[16 * 1024];
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t *Hash_GetBuffer() {
-  return array;
-}
 
 enum blake2s_constant {
   BLAKE2S_BLOCKBYTES = 64,
@@ -40,8 +31,8 @@ typedef struct blake2s_state__ {
   uint32_t t[2];
   uint32_t f[2];
   uint8_t buf[BLAKE2S_BLOCKBYTES];
-  size_t buflen;
-  size_t outlen;
+  int buflen;
+  int outlen;
   uint8_t last_node;
 } blake2s_state;
 
@@ -139,11 +130,11 @@ static void blake2s_compress(const uint8_t block[BLAKE2S_BLOCKBYTES]) {
   uint32_t m[16];
   uint32_t v[16];
 
-  for (size_t i = 0; i < 16; ++i) {
+  for (int i = 0; i < 16; ++i) {
     m[i] = load32(block + i * sizeof(m[i]));
   }
 
-  for (size_t i = 0; i < 8; ++i) {
+  for (int i = 0; i < 8; ++i) {
     v[i] = S->h[i];
   }
 
@@ -167,7 +158,7 @@ static void blake2s_compress(const uint8_t block[BLAKE2S_BLOCKBYTES]) {
   ROUND(8);
   ROUND(9);
 
-  for (size_t i = 0; i < 8; ++i) {
+  for (int i = 0; i < 8; ++i) {
     S->h[i] = S->h[i] ^ v[i] ^ v[i + 8];
   }
 }
@@ -175,11 +166,11 @@ static void blake2s_compress(const uint8_t block[BLAKE2S_BLOCKBYTES]) {
 #undef G
 #undef ROUND
 
-void blake2s_update(const void *pin, size_t inlen) {
+void blake2s_update(const void *pin, int inlen) {
   const unsigned char *in = (const unsigned char *)pin;
   if (inlen > 0) {
-    size_t left = S->buflen;
-    size_t fill = BLAKE2S_BLOCKBYTES - left;
+    int left = S->buflen;
+    int fill = BLAKE2S_BLOCKBYTES - left;
     if (inlen > fill) {
       S->buflen = 0;
       /* Fill buffer */
@@ -204,9 +195,9 @@ void blake2s_update(const void *pin, size_t inlen) {
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
-  size_t outlen = S->outlen;
+  int outlen = S->outlen;
   uint8_t buffer[BLAKE2S_OUTBYTES] = {0};
 
   if (blake2s_is_lastblock()) {
@@ -215,24 +206,27 @@ void Hash_Final() {
 
   blake2s_increment_counter(S->buflen);
   blake2s_set_lastblock();
-  memset(S->buf + S->buflen, 0, BLAKE2S_BLOCKBYTES - S->buflen); /* Padding */
+  for (int i = 0; i < BLAKE2S_BLOCKBYTES - S->buflen; i++) { /* Padding */
+    (S->buf + S->buflen)[i] = 0;
+  }
   blake2s_compress(S->buf);
 
-  for (size_t i = 0; i < 8; ++i) {
+  for (int i = 0; i < 8; ++i) {
     /* Output full hash to temp buffer */
     store32(buffer + sizeof(S->h[i]) * i, S->h[i]);
   }
 
   for (uint8_t i = 0; i < S->outlen; i++) {
-    array[i] = buffer[i];
+    main_buffer[i] = buffer[i];
   }
 }
 
 static void blake2s_init0() {
-  size_t i;
-  memset(S, 0, sizeof(blake2s_state));
+  for (int i = 0; i < sizeof(blake2s_state); i++) {
+    ((uint8_t*)S)[i] = 0;
+  }
 
-  for (i = 0; i < 8; ++i) {
+  for (int i = 0; i < 8; ++i) {
     S->h[i] = blake2s_IV[i];
   }
 }
@@ -240,19 +234,18 @@ static void blake2s_init0() {
 /* init xors IV with input parameter block */
 void blake2s_init_param() {
   const uint8_t *p = (const uint8_t *)(P);
-  size_t i;
 
   blake2s_init0();
 
   /* IV XOR ParamBlock */
-  for (i = 0; i < 8; ++i) {
+  for (int i = 0; i < 8; ++i) {
     S->h[i] ^= load32(p + sizeof(S->h[i]) * i);
   }
 
   S->outlen = P->digest_length;
 }
 
-void blake2s_init_key(size_t outlen, const uint8_t *key, size_t keylen) {
+void blake2s_init_key(int outlen, const uint8_t *key, int keylen) {
   P->digest_length = (uint8_t)outlen;
   P->key_length = (uint8_t)keylen;
   P->fanout = 1;
@@ -269,8 +262,7 @@ void blake2s_init_key(size_t outlen, const uint8_t *key, size_t keylen) {
   blake2s_init_param();
 
   if (keylen > 0) {
-    uint8_t block[BLAKE2S_BLOCKBYTES];
-    memset(block, 0, BLAKE2S_BLOCKBYTES);
+    uint8_t block[BLAKE2S_BLOCKBYTES] = { 0 };
     for (uint8_t i = 0; i < keylen; i++) {
       block[i] = key[i];
     }
@@ -278,19 +270,19 @@ void blake2s_init_key(size_t outlen, const uint8_t *key, size_t keylen) {
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init(uint32_t bits) {
-  size_t outlen = bits & 0xFFFF;
-  size_t keylen = bits >> 16;
-  blake2s_init_key(outlen / 8, array, keylen);
+  int outlen = bits & 0xFFFF;
+  int keylen = bits >> 16;
+  blake2s_init_key(outlen / 8, main_buffer, keylen);
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t size) {
-  blake2s_update(array, size);
+  blake2s_update(main_buffer, size);
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam) {
   Hash_Init(initParam);
   Hash_Update(length);

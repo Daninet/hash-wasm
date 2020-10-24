@@ -19,9 +19,8 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <emscripten.h>
-#include <string.h>
-#include <sys/types.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 #define NumberOfRounds 24
 #define sha3_max_permutation_size 25
@@ -43,12 +42,6 @@ struct SHA3_CTX {
 
 struct SHA3_CTX sctx;
 struct SHA3_CTX* ctx = &sctx;
-uint8_t array[16 * 1024];
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer() {
-  return array;
-}
 
 /* SHA3 (Keccak) constants for 24 rounds */
 static uint64_t keccak_round_constants[NumberOfRounds] = {
@@ -61,12 +54,20 @@ static uint64_t keccak_round_constants[NumberOfRounds] = {
 };
 
 /* Initializing a sha3 context for given number of output bits */
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init(uint32_t bits) {
   /* NB: The Keccak capacity parameter = bits * 2 */
   uint32_t rate = 1600 - bits * 2;
 
-  memset(ctx, 0, sizeof(struct SHA3_CTX));
+  for(int i = 0; i < sha3_max_permutation_size; i++) {
+    ctx->hash[i] = 0;
+  }
+
+  for(int i = 0; i < sha3_max_rate_in_qwords; i++) {
+    ctx->message[i] = 0;
+  }
+
+  ctx->rest = 0;
   ctx->block_size = rate / 8;
 }
 
@@ -244,9 +245,9 @@ static void sha3_process_block(
  * @param msg message chunk
  * @param size length of the message chunk
  */
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t size) {
-  const uint8_t* msg = array;
+  const uint8_t* msg = main_buffer;
   uint32_t index = (uint32_t)ctx->rest;
   uint32_t block_size = (uint32_t)ctx->block_size;
 
@@ -289,14 +290,17 @@ void Hash_Update(uint32_t size) {
 /**
  * Store calculated hash into the given array.
  */
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final(uint8_t padding) {
   uint32_t digest_length = 100 - ctx->block_size / 2;
   const uint32_t block_size = ctx->block_size;
 
   if (!(ctx->rest & SHA3_FINALIZED)) {
     /* clear the rest of the data queue */
-    memset((int8_t*)ctx->message + ctx->rest, 0, block_size - ctx->rest);
+    int8_t* start = (int8_t*)ctx->message + ctx->rest;
+    for (int i = 0; i < block_size - ctx->rest; i++) {
+      start[i] = 0;
+    }
     ((int8_t*)ctx->message)[ctx->rest] |= padding;
     ((int8_t*)ctx->message)[block_size - 1] |= 0x80;
 
@@ -305,14 +309,14 @@ void Hash_Final(uint8_t padding) {
     ctx->rest = SHA3_FINALIZED; /* mark context as finalized */
   }
 
-  uint32_t* array32 = (uint32_t*)array;
+  uint32_t* array32 = (uint32_t*)main_buffer;
   uint32_t* hash32 = (uint32_t*)ctx->hash;
   for (uint32_t i = 0; i < digest_length / 4; i++) {
     array32[i] = hash32[i];
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam, uint8_t finalParam) {
   Hash_Init(initParam);
   Hash_Update(length);

@@ -8,9 +8,8 @@
 // Modified for hash-wasm by Dani Biró
 //
 
-#include <emscripten.h>
-#include <stdint.h>
-#include <string.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 #define bswap_32(x) __builtin_bswap32(x)
 
@@ -281,21 +280,15 @@ const uint32_t Crc32Lookup[8][256] = {
 };
 
 uint32_t previousCrc32 = 0;
-uint8_t array[16 * 1024];
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init() {
   previousCrc32 = 0;
 }
 
-EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer() {
-  return array;
-}
-
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t length) {
-  const uint8_t* data = array;
+  const uint8_t* data = main_buffer;
 
   uint32_t crc = ~previousCrc32; // same as previousCrc32 ^ 0xFFFFFFFF
   const uint32_t* current = (const uint32_t*)data;
@@ -326,15 +319,12 @@ void Hash_Update(uint32_t length) {
   previousCrc32 = ~crc; // same as crc ^ 0xFFFFFFFF
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
-  array[0] = (previousCrc32 >> 24) & 0xFF;
-  array[1] = (previousCrc32 >> 16) & 0xFF;
-  array[2] = (previousCrc32 >> 8) & 0xFF;
-  array[3] = previousCrc32 & 0xFF;
+  ((uint32_t*)main_buffer)[0] = bswap_32(previousCrc32);
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);

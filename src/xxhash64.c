@@ -9,9 +9,8 @@
 // Modified for hash-wasm by Dani Biró
 //
 
-#include <emscripten.h>
-#include <stdbool.h>
-#include <stdint.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 const uint64_t Prime1 = 11400714785074694791ULL;
 const uint64_t Prime2 = 14029467366897019727ULL;
@@ -26,13 +25,6 @@ uint64_t state[4];
 unsigned char buffer[MaxBufferSize];
 unsigned int bufferSize;
 uint64_t totalLength;
-
-uint8_t array[16 * 1024];
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer() {
-  return array;
-}
 
 // rotate bits, should compile to a single CPU instruction (ROL)
 static inline uint64_t rotateLeft(uint64_t x, unsigned char bits) {
@@ -57,10 +49,10 @@ static inline void process(
   *state3 = processSingle(*state3, block[3]);
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init() {
   // seed is at the memory object
-  uint64_t seed = *((uint64_t*)array);
+  uint64_t seed = *((uint64_t*)main_buffer);
 
   state[0] = seed + Prime1 + Prime2;
   state[1] = seed + Prime2;
@@ -74,9 +66,9 @@ void Hash_Init() {
 /** @param  length number of bytes
     @return false if parameters are invalid / zero **/
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t length) {
-  const void* input = array;
+  const void* input = main_buffer;
 
   // no data ?
   if (length == 0) return;
@@ -134,7 +126,7 @@ void Hash_Update(uint32_t length) {
 }
 
 /// get current hash
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
   // fold 256 bit state into one single 64 bit value
   uint64_t result;
@@ -185,19 +177,19 @@ void Hash_Final() {
   result ^= result >> 32;
 
   uint32_t hi = result >> 32;
-  array[0] = hi >> 24;
-  array[1] = (hi & 0x00ff0000) >> 16;
-  array[2] = (hi & 0x0000ff00) >> 8;
-  array[3] = hi & 0x000000ff;
+  main_buffer[0] = hi >> 24;
+  main_buffer[1] = (hi & 0x00ff0000) >> 16;
+  main_buffer[2] = (hi & 0x0000ff00) >> 8;
+  main_buffer[3] = hi & 0x000000ff;
 
   uint32_t lo = result & 0xffffffff;
-  array[4] = lo >> 24;
-  array[5] = (lo & 0x00ff0000) >> 16;
-  array[6] = (lo & 0x0000ff00) >> 8;
-  array[7] = lo & 0x000000ff;
+  main_buffer[4] = lo >> 24;
+  main_buffer[5] = (lo & 0x00ff0000) >> 16;
+  main_buffer[6] = (lo & 0x0000ff00) >> 8;
+  main_buffer[7] = lo & 0x000000ff;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate() {
   return;
 }
