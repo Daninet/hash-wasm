@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { whirlpool, createWhirlpool } from '../lib';
+import { getVariableLengthChunks } from './util';
 /* global test, expect */
 
 test('simple strings', async () => {
@@ -68,6 +69,20 @@ test('chunked', async () => {
   }
   hash.update(Buffer.alloc(1000).fill(0xDF));
   expect(hash.digest()).toBe('5950c2014b819639adba5a3fe56168679d16a7c5a5dda57325780b9a2739ee4314a96a31346e64dfe50b15bfcb809015ef4137b58d9bb4f5460032d6248b72b6');
+});
+
+test('chunked increasing length', async () => {
+  const hash = await createWhirlpool();
+  const test = async (maxLen: number) => {
+    const chunks = getVariableLengthChunks(maxLen);
+    const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
+    const hashRef = await whirlpool(new Uint8Array(flatchunks));
+    hash.init();
+    chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+    expect(hash.digest('hex')).toBe(hashRef);
+  };
+  const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
+  await Promise.all(maxLens.map((length) => test(length)));
 });
 
 test('interlaced shorthand', async () => {
