@@ -18,3 +18,4 @@ export * from './hmac';
 export * from './pbkdf2';
 export * from './scrypt';
 export * from './bcrypt';
+export * from './whirlpool';
