@@ -27,9 +27,8 @@
  * http://ehash.iaik.tugraz.at/wiki/RIPEMD-160
  */
 
-#include <emscripten.h>
-#include <stdint.h>
-#include <string.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 #define RIPEMD160_BLOCK_LENGTH 64
 #define RIPEMD160_DIGEST_LENGTH 20
@@ -42,34 +41,9 @@ struct RIPEMD160_CTX {
 
 struct RIPEMD160_CTX sctx;
 struct RIPEMD160_CTX* ctx = &sctx;
-uint8_t array[16 * 1024];
 
-#ifndef GET_UINT32_LE
-#define GET_UINT32_LE(n,b,i)             \
-{                                        \
-  (n) = ((uint32_t) (b)[(i)    ]      )  \
-      | ((uint32_t) (b)[(i) + 1] <<  8)  \
-      | ((uint32_t) (b)[(i) + 2] << 16)  \
-      | ((uint32_t) (b)[(i) + 3] << 24); \
-}
-#endif
 
-#ifndef PUT_UINT32_LE
-#define PUT_UINT32_LE(n,b,i)                     \
-{                                                \
-  (b)[(i)    ] = (uint8_t) (((n)      ) & 0xFF); \
-  (b)[(i) + 1] = (uint8_t) (((n) >>  8) & 0xFF); \
-  (b)[(i) + 2] = (uint8_t) (((n) >> 16) & 0xFF); \
-  (b)[(i) + 3] = (uint8_t) (((n) >> 24) & 0xFF); \
-}
-#endif
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t* Hash_GetBuffer() {
-  return array;
-}
-
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init() {
   ctx->total[0] = 0;
   ctx->total[1] = 0;
@@ -83,22 +57,10 @@ void Hash_Init() {
 void ripemd160_process(const uint8_t data[RIPEMD160_BLOCK_LENGTH]) {
   uint32_t A, B, C, D, E, Ap, Bp, Cp, Dp, Ep, X[16];
 
-  GET_UINT32_LE(X[0], data, 0);
-  GET_UINT32_LE(X[1], data, 4);
-  GET_UINT32_LE(X[2], data, 8);
-  GET_UINT32_LE(X[3], data, 12);
-  GET_UINT32_LE(X[4], data, 16);
-  GET_UINT32_LE(X[5], data, 20);
-  GET_UINT32_LE(X[6], data, 24);
-  GET_UINT32_LE(X[7], data, 28);
-  GET_UINT32_LE(X[8], data, 32);
-  GET_UINT32_LE(X[9], data, 36);
-  GET_UINT32_LE(X[10], data, 40);
-  GET_UINT32_LE(X[11], data, 44);
-  GET_UINT32_LE(X[12], data, 48);
-  GET_UINT32_LE(X[13], data, 52);
-  GET_UINT32_LE(X[14], data, 56);
-  GET_UINT32_LE(X[15], data, 60);
+  #pragma clang loop unroll(full)
+  for (uint8_t i = 0; i < 16; i++) {
+    X[i] = ((uint32_t*)data)[i];
+  }
 
   A = Ap = ctx->state[0];
   B = Bp = ctx->state[1];
@@ -255,7 +217,7 @@ void ripemd160_process(const uint8_t data[RIPEMD160_BLOCK_LENGTH]) {
   ctx->state[0] = C;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void ripemd160_update(const uint8_t* input, uint32_t ilen) {
   uint32_t fill;
   uint32_t left;
@@ -297,9 +259,9 @@ void ripemd160_update(const uint8_t* input, uint32_t ilen) {
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t ilen) {
-  ripemd160_update(array, ilen);
+  ripemd160_update(main_buffer, ilen);
 }
 
 static const uint8_t ripemd160_padding[RIPEMD160_BLOCK_LENGTH] = {
@@ -309,18 +271,14 @@ static const uint8_t ripemd160_padding[RIPEMD160_BLOCK_LENGTH] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
-  uint8_t* result = array;
+  uint8_t* result = main_buffer;
   uint32_t last, padn;
-  uint32_t high, low;
   uint8_t msglen[8];
 
-  high = (ctx->total[0] >> 29) | (ctx->total[1] << 3);
-  low = (ctx->total[0] << 3);
-
-  PUT_UINT32_LE(low, msglen, 0);
-  PUT_UINT32_LE(high, msglen, 4);
+  ((uint32_t*)msglen)[0] = (ctx->total[0] << 3);
+  ((uint32_t*)msglen)[1] = (ctx->total[0] >> 29) | (ctx->total[1] << 3);
 
   last = ctx->total[0] & 0x3F;
   padn = (last < 56) ? (56 - last) : (120 - last);
@@ -328,14 +286,13 @@ void Hash_Final() {
   ripemd160_update(ripemd160_padding, padn);
   ripemd160_update(msglen, 8);
 
-  PUT_UINT32_LE(ctx->state[0], result, 0);
-  PUT_UINT32_LE(ctx->state[1], result, 4);
-  PUT_UINT32_LE(ctx->state[2], result, 8);
-  PUT_UINT32_LE(ctx->state[3], result, 12);
-  PUT_UINT32_LE(ctx->state[4], result, 16);
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 5; i++) {
+    ((uint32_t*)result)[i] = ctx->state[i];
+  }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);

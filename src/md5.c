@@ -37,9 +37,8 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <emscripten.h>
-#include <stdint.h>
-#include <string.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 struct MD5_CTX {
   uint32_t lo, hi;
@@ -50,7 +49,6 @@ struct MD5_CTX {
 
 struct MD5_CTX sctx;
 struct MD5_CTX *ctx = &sctx;
-uint8_t array[16 * 1024];
 
 /*
  * The basic MD5 functions.
@@ -202,7 +200,7 @@ static const void *body(const void *data, uint32_t size) {
   return ptr;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Init() {
   ctx->a = 0x67452301;
   ctx->b = 0xefcdab89;
@@ -213,14 +211,9 @@ void Hash_Init() {
   ctx->hi = 0;
 }
 
-EMSCRIPTEN_KEEPALIVE
-uint8_t *Hash_GetBuffer() {
-  return array;
-}
-
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Update(uint32_t size) {
-  const uint8_t *data = array;
+  const uint8_t *data = main_buffer;
   uint32_t saved_lo;
   uint32_t used, available;
 
@@ -266,9 +259,9 @@ void Hash_Update(uint32_t size) {
   (dst)[2] = (uint8_t)((src) >> 16); \
   (dst)[3] = (uint8_t)((src) >> 24);
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Final() {
-  uint8_t *result = array;
+  uint8_t *result = main_buffer;
   uint32_t used, available;
 
   used = ctx->lo & 0x3f;
@@ -278,13 +271,17 @@ void Hash_Final() {
   available = 64 - used;
 
   if (available < 8) {
-    memset(&ctx->buffer[used], 0, available);
+    for (int i = 0; i < available; i++) {
+      ctx->buffer[used + i] = 0;
+    }
     body(ctx->buffer, 64);
     used = 0;
     available = 64;
   }
 
-  memset(&ctx->buffer[used], 0, available - 8);
+  for (int i = available - 9; i >= 0; i--) {
+    ctx->buffer[used + i] = 0;
+  }
 
   ctx->lo <<= 3;
   OUT(&ctx->buffer[56], ctx->lo)
@@ -298,7 +295,7 @@ void Hash_Final() {
   OUT(&result[12], ctx->d)
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length) {
   Hash_Init();
   Hash_Update(length);
