@@ -29,17 +29,14 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <emscripten.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include "hash-wasm.h"
 
 #define BYTES_PER_PAGE 65536
 
 uint8_t *B = NULL;
 uint64_t B_size = 0;
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 int8_t Hash_SetMemorySize(uint32_t total_bytes) {
   uint32_t bytes_required = total_bytes - B_size;
 
@@ -59,7 +56,7 @@ int8_t Hash_SetMemorySize(uint32_t total_bytes) {
   return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 uint8_t *Hash_GetBuffer() {
   if (B == NULL) {
     // start of new memory
@@ -152,7 +149,7 @@ static void salsa20_8(uint32_t B[16]) {
  * bytes in length; the output Bout must also be the same size.  The
  * temporary space X must be 64 bytes.
  */
-static void blockmix_salsa8(const uint32_t *Bin, uint32_t *Bout, uint32_t *X, size_t r) {
+static void blockmix_salsa8(const uint32_t *Bin, uint32_t *Bout, uint32_t *X, int r) {
   /* 1: X <-- B_{2r - 1} */
   #pragma clang loop unroll(full)
   for (uint8_t i = 0; i < 8; i++) {
@@ -195,7 +192,7 @@ static void blockmix_salsa8(const uint32_t *Bin, uint32_t *Bout, uint32_t *X, si
  * integerify(B, r):
  * Return the result of parsing B_{2r-1} as a little-endian integer.
  */
-static inline uint64_t integerify(const void *B, size_t r) {
+static inline uint64_t integerify(const void *B, int r) {
   const uint32_t *X = (const void *)((uintptr_t)(B) + (2 * r - 1) * 64);
 
   return (((uint64_t)(X[1]) << 32) + X[0]);
@@ -209,7 +206,7 @@ static inline uint64_t integerify(const void *B, size_t r) {
  * power of 2 greater than 1.  The arrays B, V, and XY must be aligned to a
  * multiple of 64 bytes.
  */
-void smix(uint8_t *B, size_t r, uint64_t N, void *_V, void *XY) {
+void smix(uint8_t *B, int r, uint64_t N, void *_V, void *XY) {
   uint32_t *X = XY;
   uint32_t *Y = (void *)((uint8_t *)(XY) + 128 * r);
   uint32_t *Z = (void *)((uint8_t *)(XY) + 256 * r);
@@ -286,7 +283,7 @@ void smix(uint8_t *B, size_t r, uint64_t N, void *_V, void *XY) {
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void scrypt(uint32_t blockSize, uint32_t costFactor, uint32_t parallelism) {
   uint8_t *V = &B[128 * blockSize * parallelism];
   uint8_t *XY = &V[128 * blockSize * costFactor];

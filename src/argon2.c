@@ -4,17 +4,14 @@
   Written for hash-wasm by Dani Biró
 */
 
-#include <emscripten.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include "hash-wasm.h"
 
 #define BYTES_PER_PAGE 65536
 
 uint8_t *B = NULL;
 uint64_t B_size = 0;
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 int8_t Hash_SetMemorySize(uint32_t total_bytes) {
   uint32_t bytes_required = total_bytes - B_size;
 
@@ -34,7 +31,7 @@ int8_t Hash_SetMemorySize(uint32_t total_bytes) {
   return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 uint8_t *Hash_GetBuffer() {
   if (B == NULL) {
     // start of new memory
@@ -156,7 +153,7 @@ uint64_t addresses[128];
 uint64_t zero[128];
 uint64_t in[128];
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t memorySize) {
   uint32_t *initVector = (uint32_t *)(B + 1024 * memorySize);
   uint32_t parallelism = initVector[0];

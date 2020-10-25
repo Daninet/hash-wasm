@@ -28,4 +28,4 @@ dist
 wasm
 .bench
 
-benchmark.js
+benchmark*.js

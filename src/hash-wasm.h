@@ -1,12 +1,13 @@
 #include <stdint.h>
 
+#define NULL 0
+
 #ifdef _MSC_VER
 #define WASM_EXPORT
 #define __inline__
 #else
 #define WASM_EXPORT __attribute__((visibility("default")))
 #endif
-
 
 #ifdef WITH_BUFFER
 

@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
-# -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
-
 set -e
 
 clang --version
@@ -10,6 +7,17 @@ wasm-ld --version
 
 CFLAGS="-flto -O3 -nostdlib -fno-builtin --target=wasm32"
 LDFLAGS="-Wl,--strip-all -Wl,--initial-memory=262144 -Wl,--max-memory=262144 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic"
+
+# -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
+# -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
+
+clang ${CFLAGS} ${LDFLAGS} -Wl,--max-memory=2147483648 -o /app/wasm/argon2.wasm /app/src/argon2.c
+sha1sum /app/wasm/argon2.wasm
+stat -c "%n size: %s bytes" /app/wasm/argon2.wasm
+
+clang ${CFLAGS} ${LDFLAGS} -fno-strict-aliasing -o /app/wasm/bcrypt.wasm /app/src/bcrypt.c
+sha1sum /app/wasm/bcrypt.wasm
+stat -c "%n size: %s bytes" /app/wasm/bcrypt.wasm
 
 clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/blake2b.wasm /app/src/blake2b.c
 sha1sum /app/wasm/blake2b.wasm
@@ -34,6 +42,10 @@ stat -c "%n size: %s bytes" /app/wasm/md5.wasm
 clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/ripemd160.wasm /app/src/ripemd160.c
 sha1sum /app/wasm/ripemd160.wasm
 stat -c "%n size: %s bytes" /app/wasm/ripemd160.wasm
+
+clang ${CFLAGS} ${LDFLAGS} -Wl,--max-memory=2147483648 -o /app/wasm/scrypt.wasm /app/src/scrypt.c
+sha1sum /app/wasm/scrypt.wasm
+stat -c "%n size: %s bytes" /app/wasm/scrypt.wasm
 
 clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/sha1.wasm /app/src/sha1.c
 sha1sum /app/wasm/sha1.wasm

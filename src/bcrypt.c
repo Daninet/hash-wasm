@@ -45,9 +45,8 @@
  * Modified for hash-wasm by Dani Biró
  */
 
-#include <emscripten.h>
-#include <stdint.h>
-#include <string.h>
+#define WITH_BUFFER
+#include "hash-wasm.h"
 
 typedef unsigned int BF_word;
 typedef signed int BF_word_signed;
@@ -363,16 +362,9 @@ union {
   uint64_t LR64;
 } block;
 
-uint8_t array[16 * 1024];
-
-EMSCRIPTEN_KEEPALIVE
-uint8_t *Hash_GetBuffer() {
-  return array;
-}
-
-EM_JS(void, print_memory, (uint32_t offset, uint32_t len), {
-  console.log(x);
-});
+// EM_JS(void, print_memory, (uint32_t offset, uint32_t len), {
+//   console.log(x);
+// });
 
 #define BF_safe_atoi64(dst, src) \
 { \
@@ -630,8 +622,6 @@ static char *BF_crypt(const char *key, const char *setting,
   }
   BF_swap(binary.salt, 4);
 
-  // print_memory(key, 2);
-
   BF_set_key(key, expanded_key, ctx.P,
       flags_by_subtype[(unsigned int)(unsigned char)setting[2] - 'a']);
 
@@ -758,10 +748,10 @@ char *_crypt_gensalt_blowfish_rn(const char *prefix, unsigned long count,
   return output;
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 void bcrypt(uint32_t password_length, uint32_t cost_factor, uint32_t should_encode) {
-  uint8_t *salt = &array[0];
-  uint8_t *key = &array[16];
+  uint8_t *salt = &main_buffer[0];
+  uint8_t *key = &main_buffer[16];
   key[password_length] = 0;
 
   uint8_t setting[30];
@@ -771,18 +761,18 @@ void bcrypt(uint32_t password_length, uint32_t cost_factor, uint32_t should_enco
   _crypt_blowfish_rn((char*)key, (char*)setting, (char*)output, 60, should_encode);
 
   for (uint8_t i = 0; i < 60; i++) {
-    array[i] = output[i];
+    main_buffer[i] = output[i];
   }
 }
 
-EMSCRIPTEN_KEEPALIVE
+WASM_EXPORT
 uint32_t bcrypt_verify(uint32_t passwordLength) {
-  uint8_t *hash = &array[0];
-  uint8_t *key = &array[60];
+  uint8_t *hash = &main_buffer[0];
+  uint8_t *key = &main_buffer[60];
   key[passwordLength] = 0;
 
   uint8_t output[60];
-  _crypt_blowfish_rn((char*)key, (char*)array, (char*)output, 60, 1);
+  _crypt_blowfish_rn((char*)key, (char*)main_buffer, (char*)output, 60, 1);
 
   // 0-28 => setting
   // 29-59 => hash
