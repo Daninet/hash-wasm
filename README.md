@@ -397,6 +397,8 @@ sha256(data: IDataType): Promise<string>
 sha3(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 sha384(data: IDataType): Promise<string>
 sha512(data: IDataType): Promise<string>
+sm3(data: IDataType): Promise<string>
+whirlpool(data: IDataType): Promise<string>
 xxhash32(data: IDataType, seed?: number): Promise<string>
 xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
 
@@ -421,6 +423,8 @@ createSHA256(): Promise<IHasher>
 createSHA3(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createSHA384(): Promise<IHasher>
 createSHA512(): Promise<IHasher>
+createSM3(): Promise<IHasher>
+createWhirlpool(): Promise<IHasher>
 createXXHash32(seed: number): Promise<IHasher>
 createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
 

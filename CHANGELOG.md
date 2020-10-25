@@ -1,7 +1,8 @@
 ## 4.4.0 (October 24, 2020)
 
-* Add Whirlpool algorithm
+* Add Whirlpool and SM3 algorithms
 * Fix block size at blake algorithms
+* Switch compiler to clang
 
 ## 4.3.0 (October 10, 2020)
 
