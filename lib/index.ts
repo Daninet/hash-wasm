@@ -19,3 +19,4 @@ export * from './pbkdf2';
 export * from './scrypt';
 export * from './bcrypt';
 export * from './whirlpool';
+export * from './sm3';

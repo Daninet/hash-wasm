@@ -41,6 +41,9 @@ sha1sum /app/wasm/sha512.wasm
 clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/sha3.wasm /app/src/sha3.c
 sha1sum /app/wasm/sha3.wasm
 
+clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/sm3.wasm /app/src/sm3.c
+sha1sum /app/wasm/sm3.wasm
+
 clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/whirlpool.wasm /app/src/whirlpool.c
 sha1sum /app/wasm/whirlpool.wasm
 
