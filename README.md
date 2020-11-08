@@ -15,23 +15,27 @@ Supported algorithms
 
 | Name                                           | Bundle size (gzipped) |
 |------------------------------------------------|-----------------------|
-| Argon2: Argon2d, Argon2i, Argon2id (v1.3)      | 12.25 kB              |
-| bcrypt                                         | 11.45 kB              |
-| BLAKE2b                                        | 7.33 kB               |
-| BLAKE2s                                        | 6.87 kB               |
-| CRC32                                          | 11.57 kB              |
+| Argon2: Argon2d, Argon2i, Argon2id (v1.3)      | 12 kB                 |
+| bcrypt                                         | 11 kB                 |
+| BLAKE2b                                        | 7 kB                  |
+| BLAKE2s                                        | 6 kB                  |
+| CRC32                                          | 11 kB                 |
 | HMAC                                           | -                     |
-| MD4                                            | 4.13 kB               |
-| MD5                                            | 4.69 kB               |
+| MD4                                            | 4 kB                  |
+| MD5                                            | 4 kB                  |
 | PBKDF2                                         | -                     |
-| RIPEMD-160                                     | 5.99 kB               |
-| scrypt                                         | 10.64 kB              |
-| SHA-1                                          | 5.47 kB               |
-| SHA-2: SHA-224, SHA-256, SHA-384, SHA-512      | 6.94 kB - 8.30 kB     |
-| SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512  | 4.57 kB               |
-| Keccak-224, Keccak-256, Keccak-384, Keccak-512 | 4.57 kB               |
-| xxHash32                                       | 3.62 kB               |
-| xxHash64                                       | 3.92 kB               |
+| RIPEMD-160                                     | 6 kB                  |
+| scrypt                                         | 10 kB                 |
+| SHA-1                                          | 5 kB                  |
+| SHA-2: SHA-224, SHA-256                        | 7 kB                  |
+| SHA-2: SHA-384, SHA-512                        | 8 kB                  |
+| SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512  | 4 kB                  |
+| Keccak-224, Keccak-256, Keccak-384, Keccak-512 | 4 kB                  |
+| Keccak-224, Keccak-256, Keccak-384, Keccak-512 | 4 kB                  |
+| SM3                                            | 4 kB                  |
+| Whirlpool                                      | 6 kB                  |
+| xxHash32                                       | 3 kB                  |
+| xxHash64                                       | 4 kB                  |
 
 Features
 =======
