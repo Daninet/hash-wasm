@@ -1,8 +1,11 @@
-## 4.4.0 (October 24, 2020)
+## 4.4.0 (November 8, 2020)
 
 * Add Whirlpool and SM3 algorithms
 * Fix block size at blake algorithms
-* Switch compiler to clang
+* Switch compiler from Emscripten to Clang
+* Fix cached seed invalidation at xxhash64
+* Added wasm binary hashes to build log
+* Create minified bundles from each algorithm
 
 ## 4.3.0 (October 10, 2020)
 
