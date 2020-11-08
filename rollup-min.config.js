@@ -15,6 +15,7 @@ const configs = algorithms.map((algo) => ({
       file: `dist/${algo}.umd.min.js`,
       name: 'hashwasm',
       format: 'umd',
+      extend: true,
     },
   ],
   plugins: [
