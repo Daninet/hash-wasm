@@ -66,7 +66,7 @@ Installation
 npm i hash-wasm
 ```
 
-It can also be used directly from HTML (via [jsDelivr](https://www.jsdelivr.com/package/npm/hash-wasm))
+It can also be used directly from HTML (via [jsDelivr](https://www.jsdelivr.com/package/npm/hash-wasm)):
 
 ```html
 <!-- load all algortihms into the global `hashwasm` variable -->
