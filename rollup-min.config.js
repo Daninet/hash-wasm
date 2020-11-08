@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import { terser } from 'rollup-plugin-terser';
+import gzipPlugin from 'rollup-plugin-gzip'
 
 const algorithms = [
   'argon2', 'bcrypt', 'blake2b', 'blake2s', 'crc32', 'hmac', 'keccak', 'md4', 'md5',
@@ -26,6 +27,7 @@ const configs = algorithms.map((algo) => ({
         comments: false,
       },
     }),
+    gzipPlugin(),
   ],
 }));
 
