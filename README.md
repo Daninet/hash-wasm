@@ -66,11 +66,15 @@ Installation
 npm i hash-wasm
 ```
 
-or it can be inserted directly into HTML (via [jsDelivr](https://www.jsdelivr.com/package/npm/hash-wasm))
+It can also be used directly from HTML (via [jsDelivr](https://www.jsdelivr.com/package/npm/hash-wasm))
 
 ```html
+<!-- load all algortihms into the global `hashwasm` variable -->
 <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4"></script>
-<!-- defines the global `hashwasm` variable -->
+
+<!-- load individual algortihms into the global `hashwasm` variable -->
+<script src="https://cdn.jsdelivr.net/npm/hash-wasm@4/dist/md5.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hash-wasm@4/dist/hmac.umd.min.js"></script>
 ```
 
 Examples
