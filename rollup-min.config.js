@@ -3,9 +3,9 @@ import json from '@rollup/plugin-json';
 import { terser } from 'rollup-plugin-terser';
 
 const algorithms = [
-  'argon2', 'bcrypt', 'blake2b', 'crc32', 'hmac', 'keccak', 'md4', 'md5',
-  'pbkdf2', 'ripemd160', 'scrypt', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512',
-  'xxhash32', 'xxhash64',
+  'argon2', 'bcrypt', 'blake2b', 'blake2s', 'crc32', 'hmac', 'keccak', 'md4', 'md5',
+  'pbkdf2', 'ripemd160', 'scrypt', 'sha1', 'sha3', 'sha224', 'sha256', 'sha384', 'sha512',
+  'sm3', 'whirlpool', 'xxhash32', 'xxhash64',
 ];
 
 const configs = algorithms.map((algo) => ({
