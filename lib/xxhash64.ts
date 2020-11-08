@@ -15,9 +15,9 @@ function validateSeed(seed: number) {
   return null;
 }
 
-function writeSeed(low: number, high: number) {
+function writeSeed(arr: ArrayBuffer, low: number, high: number) {
   // write in little-endian format
-  const buffer = new DataView(seedBuffer);
+  const buffer = new DataView(arr);
   buffer.setUint32(0, low, true);
   buffer.setUint32(4, high, true);
 }
@@ -37,14 +37,14 @@ export function xxhash64(
     return lockedCreate(mutex, wasmJson, 8)
       .then((wasm) => {
         wasmCache = wasm;
-        writeSeed(seedLow, seedHigh);
+        writeSeed(seedBuffer, seedLow, seedHigh);
         wasmCache.writeMemory(new Uint8Array(seedBuffer));
         return wasmCache.calculate(data);
       });
   }
 
   try {
-    writeSeed(seedLow, seedHigh);
+    writeSeed(seedBuffer, seedLow, seedHigh);
     wasmCache.writeMemory(new Uint8Array(seedBuffer));
     const hash = wasmCache.calculate(data);
     return Promise.resolve(hash);
@@ -63,12 +63,13 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
   }
 
   return WASMInterface(wasmJson, 8).then((wasm) => {
-    writeSeed(seedLow, seedHigh);
-    wasm.writeMemory(new Uint8Array(seedBuffer));
+    const instanceBuffer = new ArrayBuffer(8);
+    writeSeed(instanceBuffer, seedLow, seedHigh);
+    wasm.writeMemory(new Uint8Array(instanceBuffer));
     wasm.init();
     const obj: IHasher = {
       init: () => {
-        wasm.writeMemory(new Uint8Array(seedBuffer));
+        wasm.writeMemory(new Uint8Array(instanceBuffer));
         wasm.init();
         return obj;
       },

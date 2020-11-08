@@ -86,7 +86,7 @@ test('chunked', async () => {
 });
 
 test('chunked increasing length', async () => {
-  const hash = await createXXHash32();
+  const hash = await createXXHash32(0x6789ABCD);
   const test = async (maxLen: number) => {
     const chunks = getVariableLengthChunks(maxLen);
     const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);

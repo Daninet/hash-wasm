@@ -28,6 +28,19 @@ test('simple strings with ABCD seed', async () => {
   expect(await origXXHash64('1234567890', 0xABCD)).toBe('66c87a8ecb91fc42');
 });
 
+test('different seeds give different response', async () => {
+  expect(await origXXHash64('', 0xAB)).not.toBe(await origXXHash64('', 0xAC));
+  expect(await origXXHash64('', 0xAB)).not.toBe(await origXXHash64('', 0xAB, 0x0C));
+  expect(await origXXHash64('', 0xAB, 0x0D)).not.toBe(await origXXHash64('', 0xAB, 0x0C));
+  expect(await origXXHash64('', 0, 0x0D)).not.toBe(await origXXHash64('', 0, 0x0C));
+  expect(await origXXHash64('', 0, 0)).not.toBe(await origXXHash64('', 1, 0));
+  expect(await origXXHash64('', 0, 0)).not.toBe(await origXXHash64('', 0, 1));
+  expect((await createXXHash64(1, 2)).init().update('').digest()).toBe(await origXXHash64('', 1, 2));
+  expect((await createXXHash64(1, 2)).init().update('').digest()).not.toBe(await origXXHash64('', 1, 3));
+  expect((await createXXHash64(0, 2)).init().update('').digest()).not.toBe(await origXXHash64('', 0, 1));
+  expect((await createXXHash64(1, 0)).init().update('').digest()).not.toBe(await origXXHash64('', 0, 0));
+});
+
 test('simple strings', async () => {
   expect(await xxhash64('')).toBe('7cc8df76db892f66');
   expect(await xxhash64('a')).toBe('a2edf0ddf102dc7c');
@@ -98,7 +111,7 @@ test('chunked', async () => {
 });
 
 test('chunked increasing length', async () => {
-  const hash = await createXXHash64();
+  const hash = await createXXHash64(0x76543210, 0xFEDCBA98);
   const test = async (maxLen: number) => {
     const chunks = getVariableLengthChunks(maxLen);
     const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
