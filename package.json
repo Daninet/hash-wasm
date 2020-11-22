@@ -11,7 +11,8 @@
     "eslint": "eslint lib/**/*.ts test/**/*.ts",
     "prepublishOnly": "sh -c ./scripts/build.sh",
     "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage",
-    "webpack": "node webpack/webpack.js"
+    "webpack": "node webpack/webpack.js",
+    "typedoc": "typedoc --excludeNotExported --excludeProtected --excludePrivate --excludeExternals"
   },
   "repository": {
     "type": "git",
@@ -94,12 +95,13 @@
     "jest": "^26.6.3",
     "rollup": "^2.33.1",
     "rollup-plugin-gzip": "^2.5.0",
+    "rollup-plugin-license": "^2.2.0",
     "rollup-plugin-terser": "^7.0.2",
     "ts-jest": "^26.4.3",
     "ts-loader": "^8.0.10",
     "ts-node": "^9.0.0",
     "tslib": "^2.0.3",
-    "typescript": "^4.0.5",
-    "rollup-plugin-license": "^2.2.0"
+    "typedoc": "^0.19.2",
+    "typescript": "^4.0.5"
   }
 }
