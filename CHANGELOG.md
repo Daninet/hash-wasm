@@ -1,3 +1,6 @@
+## 4.4.1 (November 22, 2020)
+* Add JSDoc annotations
+
 ## 4.4.0 (November 8, 2020)
 
 * Add Whirlpool and SM3 algorithms
