@@ -30,7 +30,6 @@ Supported algorithms
 | SHA-2: SHA-384, SHA-512                        | 8 kB                  |
 | SHA-3: SHA3-224, SHA3-256, SHA3-384, SHA3-512  | 4 kB                  |
 | Keccak-224, Keccak-256, Keccak-384, Keccak-512 | 4 kB                  |
-| Keccak-224, Keccak-256, Keccak-384, Keccak-512 | 4 kB                  |
 | SM3                                            | 4 kB                  |
 | Whirlpool                                      | 6 kB                  |
 | xxHash32                                       | 3 kB                  |
