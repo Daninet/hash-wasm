@@ -7,6 +7,11 @@ import { IDataType } from './util';
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
+/**
+ * Calculates Whirlpool hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @returns Computed hash as a hexadecimal string
+ */
 export function whirlpool(data: IDataType): Promise<string> {
   if (wasmCache === null) {
     return lockedCreate(mutex, wasmJson, 64)
@@ -24,6 +29,9 @@ export function whirlpool(data: IDataType): Promise<string> {
   }
 }
 
+/**
+ * Creates a new Whirlpool hash instance
+ */
 export function createWhirlpool(): Promise<IHasher> {
   return WASMInterface(wasmJson, 64).then((wasm) => {
     wasm.init();

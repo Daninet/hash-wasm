@@ -22,6 +22,15 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
   buffer.setUint32(4, high, true);
 }
 
+/**
+ * Calculates xxHash64 hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @param seedLow Lower 32 bits of the number used to
+ *  initialize the internal state of the algorithm (defaults to 0)
+ * @param seedHigh Higher 32 bits of the number used to
+ *  initialize the internal state of the algorithm (defaults to 0)
+ * @returns Computed hash as a hexadecimal string
+ */
 export function xxhash64(
   data: IDataType, seedLow = 0, seedHigh = 0,
 ): Promise<string> {
@@ -53,6 +62,13 @@ export function xxhash64(
   }
 }
 
+/**
+ * Creates a new xxHash64 hash instance
+ * @param seedLow Lower 32 bits of the number used to
+ *  initialize the internal state of the algorithm (defaults to 0)
+ * @param seedHigh Higher 32 bits of the number used to
+ *  initialize the internal state of the algorithm (defaults to 0)
+ */
 export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
   if (validateSeed(seedLow)) {
     return Promise.reject(validateSeed(seedLow));

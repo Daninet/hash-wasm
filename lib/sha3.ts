@@ -15,6 +15,12 @@ function validateBits(bits: IValidBits) {
   return null;
 }
 
+/**
+ * Calculates SHA-3 hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @param bits Number of output bits. Valid values: 224, 256, 384, 512
+ * @returns Computed hash as a hexadecimal string
+ */
 export function sha3(
   data: IDataType, bits: IValidBits = 512,
 ): Promise<string> {
@@ -40,6 +46,10 @@ export function sha3(
   }
 }
 
+/**
+ * Creates a new SHA-3 hash instance
+ * @param bits Number of output bits. Valid values: 224, 256, 384, 512
+ */
 export function createSHA3(bits: IValidBits = 512): Promise<IHasher> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));

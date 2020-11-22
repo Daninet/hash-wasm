@@ -19,6 +19,14 @@ function getInitParam(outputBits, keyBits) {
   return outputBits | (keyBits << 16);
 }
 
+/**
+ * Calculates BLAKE2s hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @param bits Number of output bits, which has to be a number
+ *             divisible by 8, between 8 and 256. Defaults to 256.
+ * @param key Optional key (string, Buffer or TypedArray). Maximum length is 32 bytes.
+ * @returns Computed hash as a hexadecimal string
+ */
 export function blake2s(
   data: IDataType, bits = 256, key: IDataType = null,
 ): Promise<string> {
@@ -60,6 +68,12 @@ export function blake2s(
   }
 }
 
+/**
+ * Creates a new BLAKE2s hash instance
+ * @param bits Number of output bits, which has to be a number
+ *             divisible by 8, between 8 and 256. Defaults to 256.
+ * @param key Optional key (string, Buffer or TypedArray). Maximum length is 32 bytes.
+ */
 export function createBLAKE2s(
   bits = 256, key: IDataType = null,
 ): Promise<IHasher> {

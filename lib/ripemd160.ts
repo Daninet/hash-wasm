@@ -7,6 +7,11 @@ import { IDataType } from './util';
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
+/**
+ * Calculates RIPEMD-160 hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @returns Computed hash as a hexadecimal string
+ */
 export function ripemd160(data: IDataType): Promise<string> {
   if (wasmCache === null) {
     return lockedCreate(mutex, wasmJson, 20)
@@ -24,6 +29,9 @@ export function ripemd160(data: IDataType): Promise<string> {
   }
 }
 
+/**
+ * Creates a new RIPEMD-160 hash instance
+ */
 export function createRIPEMD160(): Promise<IHasher> {
   return WASMInterface(wasmJson, 20).then((wasm) => {
     wasm.init();

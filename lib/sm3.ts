@@ -7,6 +7,11 @@ import { IDataType } from './util';
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
+/**
+ * Calculates SM3 hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @returns Computed hash as a hexadecimal string
+ */
 export function sm3(data: IDataType): Promise<string> {
   if (wasmCache === null) {
     return lockedCreate(mutex, wasmJson, 32)
@@ -24,6 +29,9 @@ export function sm3(data: IDataType): Promise<string> {
   }
 }
 
+/**
+ * Creates a new SM3 hash instance
+ */
 export function createSM3(): Promise<IHasher> {
   return WASMInterface(wasmJson, 32).then((wasm) => {
     wasm.init();

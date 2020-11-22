@@ -11,14 +11,32 @@ type ThenArg<T> = T extends Promise<infer U> ? U :
   T;
 
 export type IHasher = {
+  /**
+   * Initializes hash state to default value
+   */
   init: () => IHasher;
+  /**
+   * Updates the hash content with the given data
+   */
   update: (data: IDataType) => IHasher;
+  /**
+   * Calculates the hash of all of the data passed to be hashed with hash.update().
+   * Defaults to hexadecimal string
+   * @param outputType If outputType is "binary", it returns Uint8Array. Otherwise it
+   *                   returns hexadecimal string
+   */
   digest: {
     (outputType: 'binary'): Uint8Array;
     (outputType?: 'hex'): string;
   };
-  blockSize: number; // in bytes
-  digestSize: number; // in bytes
+  /**
+   * Block size in bytes
+   */
+  blockSize: number;
+  /**
+   * Digest size in bytes
+   */
+  digestSize: number;
 }
 
 const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();

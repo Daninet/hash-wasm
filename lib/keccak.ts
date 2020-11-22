@@ -16,6 +16,12 @@ function validateBits(bits: IValidBits) {
   return null;
 }
 
+/**
+ * Calculates Keccak hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @param bits Number of output bits. Valid values: 224, 256, 384, 512
+ * @returns Computed hash as a hexadecimal string
+ */
 export function keccak(
   data: IDataType, bits: IValidBits = 512,
 ): Promise<string> {
@@ -41,6 +47,10 @@ export function keccak(
   }
 }
 
+/**
+ * Creates a new Keccak hash instance
+ * @param bits Number of output bits. Valid values: 224, 256, 384, 512
+ */
 export function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));

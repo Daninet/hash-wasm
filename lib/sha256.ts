@@ -7,6 +7,11 @@ import { IDataType } from './util';
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
+/**
+ * Calculates SHA-2 (SHA-256) hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @returns Computed hash as a hexadecimal string
+ */
 export function sha256(data: IDataType): Promise<string> {
   if (wasmCache === null) {
     return lockedCreate(mutex, wasmJson, 32)
@@ -24,6 +29,9 @@ export function sha256(data: IDataType): Promise<string> {
   }
 }
 
+/**
+ * Creates a new SHA-2 (SHA-256) hash instance
+ */
 export function createSHA256(): Promise<IHasher> {
   return WASMInterface(wasmJson, 32).then((wasm) => {
     wasm.init(256);

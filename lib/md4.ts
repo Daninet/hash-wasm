@@ -7,6 +7,11 @@ import { IDataType } from './util';
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
+/**
+ * Calculates MD4 hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @returns Computed hash as a hexadecimal string
+ */
 export function md4(data: IDataType): Promise<string> {
   if (wasmCache === null) {
     return lockedCreate(mutex, wasmJson, 16)
@@ -24,6 +29,9 @@ export function md4(data: IDataType): Promise<string> {
   }
 }
 
+/**
+ * Creates a new MD4 hash instance
+ */
 export function createMD4(): Promise<IHasher> {
   return WASMInterface(wasmJson, 16).then((wasm) => {
     wasm.init();

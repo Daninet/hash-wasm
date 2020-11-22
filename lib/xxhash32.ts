@@ -13,7 +13,12 @@ function validateSeed(seed: number) {
   }
   return null;
 }
-
+/**
+ * Calculates xxHash32 hash
+ * @param data Input data (string, Buffer or TypedArray)
+ * @param seed Number used to initialize the internal state of the algorithm (defaults to 0)
+ * @returns Computed hash as a hexadecimal string
+ */
 export function xxhash32(
   data: IDataType, seed = 0,
 ): Promise<string> {
@@ -37,6 +42,11 @@ export function xxhash32(
   }
 }
 
+/**
+ * Creates a new xxHash32 hash instance
+ * @param data Input data (string, Buffer or TypedArray)
+ * @param seed Number used to initialize the internal state of the algorithm (defaults to 0)
+ */
 export function createXXHash32(seed = 0): Promise<IHasher> {
   if (validateSeed(seed)) {
     return Promise.reject(validateSeed(seed));
