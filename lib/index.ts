@@ -1,6 +1,7 @@
 export * from './argon2';
 export * from './blake2b';
 export * from './blake2s';
+export * from './blake3';
 export * from './crc32';
 export * from './md4';
 export * from './md5';

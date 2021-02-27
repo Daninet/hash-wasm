@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 /* global test, expect */
 import {
-  blake2b, crc32, md4, md5, sha1, sha256, sha384, sha3,
+  blake2b, blake3, crc32, md4, md5, sha1, sha256, sha384, sha3,
   xxhash32, xxhash64, createMD4, keccak, ripemd160,
 } from '../lib';
 import { MAX_HEAP } from '../lib/WASMInterface';
@@ -9,6 +9,7 @@ import { MAX_HEAP } from '../lib/WASMInterface';
 test('Sync cycle multiple algorithms', async () => {
   for (let i = 0; i < 100; i++) {
     expect(await blake2b('a')).toBe('333fcb4ee1aa7c115355ec66ceac917c8bfd815bf7587d325aec1864edd24e34d5abe2c6b1b5ee3face62fed78dbef802f2a85cb91d455a8f5249d330853cb3c');
+    expect(await blake3('a')).toBe('17762fddd969a453925d65717ac3eea21320b66b54342fde15128d6caf21215f');
     expect(await crc32('a')).toBe('e8b7be43');
     expect(await md4('a')).toBe('bde52cb31de33e46245e05fbdbd6fb24');
     expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');

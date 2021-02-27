@@ -162,8 +162,13 @@ export async function WASMInterface(binary: any, hashLength: number) {
 
     case 'blake2b.wasm':
     case 'blake2s.wasm':
-      // if there is a key at blake2b then cannot simplify
+      // if there is a key at blake2 then cannot simplify
       canSimplify = (data, initParam) => initParam <= 512 && isDataShort(data);
+      break;
+
+    case 'blake3.wasm':
+      // if there is a key at blake3 then cannot simplify
+      canSimplify = (data, initParam) => initParam === 0 && isDataShort(data);
       break;
 
     case 'xxhash64.wasm': // cannot simplify
