@@ -1,3 +1,8 @@
+## 4.5.0 (March 3, 2021)
+* Add BLAKE3 algorithm
+* Performance improvements at BLAKE2
+* Update dependencies
+
 ## 4.4.1 (November 22, 2020)
 * Add JSDoc annotations
 

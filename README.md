@@ -14,16 +14,17 @@ Supported algorithms
 
 | Name                                           | Bundle size (gzipped) |
 |------------------------------------------------|-----------------------|
-| Argon2: Argon2d, Argon2i, Argon2id (v1.3)      | 12 kB                 |
+| Argon2: Argon2d, Argon2i, Argon2id (v1.3)      | 11 kB                 |
 | bcrypt                                         | 11 kB                 |
-| BLAKE2b                                        | 7 kB                  |
-| BLAKE2s                                        | 6 kB                  |
+| BLAKE2b                                        | 6 kB                  |
+| BLAKE2s                                        | 5 kB                  |
+| BLAKE3                                         | 9 kB                  |
 | CRC32                                          | 11 kB                 |
 | HMAC                                           | -                     |
 | MD4                                            | 4 kB                  |
 | MD5                                            | 4 kB                  |
 | PBKDF2                                         | -                     |
-| RIPEMD-160                                     | 6 kB                  |
+| RIPEMD-160                                     | 5 kB                  |
 | scrypt                                         | 10 kB                 |
 | SHA-1                                          | 5 kB                  |
 | SHA-2: SHA-224, SHA-256                        | 7 kB                  |
@@ -392,6 +393,7 @@ type IDataType = string | Buffer | Uint8Array | Uint16Array | Uint32Array;
 // all functions return hash in hex format
 blake2b(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 512 bits
 blake2s(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 256 bits
+blake3(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 256 bits
 crc32(data: IDataType): Promise<string>
 keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 md4(data: IDataType): Promise<string>
@@ -418,6 +420,7 @@ interface IHasher {
 
 createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 512 bits
 createBLAKE2s(bits?: number, key?: IDataType): Promise<IHasher> // default is 256 bits
+createBLAKE3(bits?: number, key?: IDataType): Promise<IHasher> // default is 256 bits
 createCRC32(): Promise<IHasher>
 createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createMD4(): Promise<IHasher>
