@@ -30,3 +30,5 @@ wasm
 
 docs
 benchmark*.js
+
+test.html

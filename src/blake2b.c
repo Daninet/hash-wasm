@@ -119,26 +119,27 @@ static __inline__ void blake2b_increment_counter(const uint64_t inc) {
     b = rotr64(b ^ c, 63);                      \
   } while (0)
 
-#define ROUND(r)                       \
-  do {                                 \
-    G(r, 0, v[0], v[4], v[8], v[12]);  \
-    G(r, 1, v[1], v[5], v[9], v[13]);  \
-    G(r, 2, v[2], v[6], v[10], v[14]); \
-    G(r, 3, v[3], v[7], v[11], v[15]); \
-    G(r, 4, v[0], v[5], v[10], v[15]); \
-    G(r, 5, v[1], v[6], v[11], v[12]); \
-    G(r, 6, v[2], v[7], v[8], v[13]);  \
-    G(r, 7, v[3], v[4], v[9], v[14]);  \
-  } while (0)
+static void round(uint32_t r, uint64_t m[16], uint64_t v[16]) {
+  G(r, 0, v[0], v[4], v[8], v[12]); 
+  G(r, 1, v[1], v[5], v[9], v[13]); 
+  G(r, 2, v[2], v[6], v[10], v[14]);
+  G(r, 3, v[3], v[7], v[11], v[15]);
+  G(r, 4, v[0], v[5], v[10], v[15]);
+  G(r, 5, v[1], v[6], v[11], v[12]);
+  G(r, 6, v[2], v[7], v[8], v[13]); 
+  G(r, 7, v[3], v[4], v[9], v[14]); 
+};
 
 static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES]) {
   uint64_t m[16];
   uint64_t v[16];
 
+  #pragma clang loop unroll(full)
   for (int i = 0; i < 16; ++i) {
     m[i] = load64(block + i * sizeof(m[i]));
   }
 
+  #pragma clang loop unroll(full)
   for (int i = 0; i < 8; ++i) {
     v[i] = S->h[i];
   }
@@ -152,26 +153,18 @@ static void blake2b_compress(const uint8_t block[BLAKE2B_BLOCKBYTES]) {
   v[14] = blake2b_IV[6] ^ S->f[0];
   v[15] = blake2b_IV[7] ^ S->f[1];
 
-  ROUND(0);
-  ROUND(1);
-  ROUND(2);
-  ROUND(3);
-  ROUND(4);
-  ROUND(5);
-  ROUND(6);
-  ROUND(7);
-  ROUND(8);
-  ROUND(9);
-  ROUND(10);
-  ROUND(11);
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 12; ++i) {
+    round(i, m, v);
+  }
 
+  #pragma clang loop unroll(full)
   for (int i = 0; i < 8; ++i) {
     S->h[i] = S->h[i] ^ v[i] ^ v[i + 8];
   }
 }
 
 #undef G
-#undef ROUND
 
 void blake2b_update(const void *pin, int inlen) {
   const unsigned char *in = (const unsigned char *)pin;
@@ -229,9 +222,7 @@ void Hash_Final() {
 }
 
 static void blake2b_init0() {
-  for (int i = 0; i < sizeof(blake2b_state); i++) {
-    ((uint8_t*)S)[i] = 0;
-  }
+  memset(S, 0, sizeof(blake2b_state));
 
   for (int i = 0; i < 8; ++i) {
     S->h[i] = blake2b_IV[i];
@@ -270,7 +261,8 @@ void blake2b_init_key(int outlen, const uint8_t *key, int keylen) {
   blake2b_init_param();
 
   if (keylen > 0) {
-    uint8_t block[BLAKE2B_BLOCKBYTES] = { 0 };
+    uint8_t block[BLAKE2B_BLOCKBYTES];
+    memset128(block, 0);
     for (uint8_t i = 0; i < keylen; i++) {
       block[i] = key[i];
     }

@@ -114,57 +114,47 @@ static __inline__ void blake2s_increment_counter(const uint32_t inc) {
     b = rotr32(b ^ c, 7);                       \
   } while (0)
 
-#define ROUND(r)                       \
-  do {                                 \
-    G(r, 0, v[0], v[4], v[8], v[12]);  \
-    G(r, 1, v[1], v[5], v[9], v[13]);  \
-    G(r, 2, v[2], v[6], v[10], v[14]); \
-    G(r, 3, v[3], v[7], v[11], v[15]); \
-    G(r, 4, v[0], v[5], v[10], v[15]); \
-    G(r, 5, v[1], v[6], v[11], v[12]); \
-    G(r, 6, v[2], v[7], v[8], v[13]);  \
-    G(r, 7, v[3], v[4], v[9], v[14]);  \
-  } while (0)
+static void round(uint32_t r, uint32_t m[16], uint32_t v[16]) {
+  G(r, 0, v[0], v[4], v[8], v[12]);
+  G(r, 1, v[1], v[5], v[9], v[13]);
+  G(r, 2, v[2], v[6], v[10], v[14]);
+  G(r, 3, v[3], v[7], v[11], v[15]);
+  G(r, 4, v[0], v[5], v[10], v[15]);
+  G(r, 5, v[1], v[6], v[11], v[12]);
+  G(r, 6, v[2], v[7], v[8], v[13]);
+  G(r, 7, v[3], v[4], v[9], v[14]);
+}
 
 static void blake2s_compress(const uint8_t block[BLAKE2S_BLOCKBYTES]) {
   uint32_t m[16];
   uint32_t v[16];
 
-  for (int i = 0; i < 16; ++i) {
-    m[i] = load32(block + i * sizeof(m[i]));
+  memcpy64(m, block);
+
+  memcpy32(v, S->h);
+
+  uint64_t* v64 = (uint64_t*)v;
+  uint64_t* blake2s_IV64 = (uint64_t*)blake2s_IV;
+  uint64_t* st64 = (uint64_t*)S->t;
+  uint64_t* sf64 = (uint64_t*)S->f;
+  v64[4] = blake2s_IV64[0];
+  v64[5] = blake2s_IV64[1];
+  v64[6] = blake2s_IV64[2] ^ st64[0];
+  v64[7] = blake2s_IV64[3] ^ sf64[0];
+
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 10; ++i) {
+    round(i, m, v);
   }
 
-  for (int i = 0; i < 8; ++i) {
-    v[i] = S->h[i];
-  }
-
-  v[8] = blake2s_IV[0];
-  v[9] = blake2s_IV[1];
-  v[10] = blake2s_IV[2];
-  v[11] = blake2s_IV[3];
-  v[12] = blake2s_IV[4] ^ S->t[0];
-  v[13] = blake2s_IV[5] ^ S->t[1];
-  v[14] = blake2s_IV[6] ^ S->f[0];
-  v[15] = blake2s_IV[7] ^ S->f[1];
-
-  ROUND(0);
-  ROUND(1);
-  ROUND(2);
-  ROUND(3);
-  ROUND(4);
-  ROUND(5);
-  ROUND(6);
-  ROUND(7);
-  ROUND(8);
-  ROUND(9);
-
-  for (int i = 0; i < 8; ++i) {
-    S->h[i] = S->h[i] ^ v[i] ^ v[i + 8];
+  uint64_t* sh64 = (uint64_t*)S->h;
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 4; ++i) {
+    sh64[i] = sh64[i] ^ v64[i] ^ v64[i + 4];
   }
 }
 
 #undef G
-#undef ROUND
 
 void blake2s_update(const void *pin, int inlen) {
   const unsigned char *in = (const unsigned char *)pin;
@@ -174,9 +164,7 @@ void blake2s_update(const void *pin, int inlen) {
     if (inlen > fill) {
       S->buflen = 0;
       /* Fill buffer */
-      for (uint8_t i = 0; i < fill; i++) {
-        S->buf[left + i] = in[i];
-      }
+      memcpy(&S->buf[left], in, fill);
       blake2s_increment_counter(BLAKE2S_BLOCKBYTES);
       blake2s_compress(S->buf); /* Compress */
       in += fill;
@@ -188,9 +176,7 @@ void blake2s_update(const void *pin, int inlen) {
         inlen -= BLAKE2S_BLOCKBYTES;
       }
     }
-    for (uint8_t i = 0; i < inlen; i++) {
-      S->buf[S->buflen + i] = in[i];
-    }
+    memcpy(&S->buf[S->buflen], in, inlen);
     S->buflen += inlen;
   }
 }
