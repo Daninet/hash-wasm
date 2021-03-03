@@ -5,7 +5,7 @@ set -e
 clang --version
 wasm-ld --version
 
-CFLAGS="-flto -O3 -nostdlib -fno-builtin --target=wasm32"
+CFLAGS="-flto -O3 -nostdlib -fno-builtin -ffreestanding --target=wasm32"
 LDFLAGS="-Wl,--strip-all -Wl,--initial-memory=262144 -Wl,--max-memory=262144 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic"
 
 # -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
@@ -26,6 +26,10 @@ stat -c "%n size: %s bytes" /app/wasm/blake2b.wasm
 clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/blake2s.wasm /app/src/blake2s.c
 sha1sum /app/wasm/blake2s.wasm
 stat -c "%n size: %s bytes" /app/wasm/blake2s.wasm
+
+clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/blake3.wasm /app/src/blake3.c
+sha1sum /app/wasm/blake3.wasm
+stat -c "%n size: %s bytes" /app/wasm/blake3.wasm
 
 clang ${CFLAGS} ${LDFLAGS} -o /app/wasm/crc32.wasm /app/src/crc32.c
 sha1sum /app/wasm/crc32.wasm
