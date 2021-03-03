@@ -99,9 +99,8 @@ static __inline__ uint32_t counter_high(uint64_t counter) {
 }
 
 static __inline__ uint32_t load32(const void *src) {
-  const uint8_t *p = (const uint8_t *)src;
-  return ((uint32_t)(p[0]) << 0) | ((uint32_t)(p[1]) << 8) |
-         ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24);
+  const uint32_t *p = (const uint32_t *)src;
+  return p[0];
 }
 
 static __inline__ uint32_t rotr32(uint32_t w, uint32_t c) {
@@ -139,80 +138,37 @@ static __inline__ void round_fn(uint32_t state[16], const uint32_t *msg, size_t 
 
 static __inline__ void load_key_words(const uint8_t key[BLAKE3_KEY_LEN],
                            uint32_t key_words[8]) {
-  key_words[0] = load32(&key[0 * 4]);
-  key_words[1] = load32(&key[1 * 4]);
-  key_words[2] = load32(&key[2 * 4]);
-  key_words[3] = load32(&key[3 * 4]);
-  key_words[4] = load32(&key[4 * 4]);
-  key_words[5] = load32(&key[5 * 4]);
-  key_words[6] = load32(&key[6 * 4]);
-  key_words[7] = load32(&key[7 * 4]);
+  memcpy32(key_words, key);
 }
 
 static __inline__ void compress_pre(uint32_t state[16], const uint32_t cv[8],
                          const uint8_t block[BLAKE3_BLOCK_LEN],
                          uint8_t block_len, uint64_t counter, uint8_t flags) {
   uint32_t block_words[16];
-  block_words[0] = load32(block + 4 * 0);
-  block_words[1] = load32(block + 4 * 1);
-  block_words[2] = load32(block + 4 * 2);
-  block_words[3] = load32(block + 4 * 3);
-  block_words[4] = load32(block + 4 * 4);
-  block_words[5] = load32(block + 4 * 5);
-  block_words[6] = load32(block + 4 * 6);
-  block_words[7] = load32(block + 4 * 7);
-  block_words[8] = load32(block + 4 * 8);
-  block_words[9] = load32(block + 4 * 9);
-  block_words[10] = load32(block + 4 * 10);
-  block_words[11] = load32(block + 4 * 11);
-  block_words[12] = load32(block + 4 * 12);
-  block_words[13] = load32(block + 4 * 13);
-  block_words[14] = load32(block + 4 * 14);
-  block_words[15] = load32(block + 4 * 15);
 
-  state[0] = cv[0];
-  state[1] = cv[1];
-  state[2] = cv[2];
-  state[3] = cv[3];
-  state[4] = cv[4];
-  state[5] = cv[5];
-  state[6] = cv[6];
-  state[7] = cv[7];
-  state[8] = IV[0];
-  state[9] = IV[1];
-  state[10] = IV[2];
-  state[11] = IV[3];
+  memcpy64(block_words, block);
+  memcpy32(state, cv);
+  memcpy16(&state[8], IV);
+
   state[12] = counter_low(counter);
   state[13] = counter_high(counter);
   state[14] = (uint32_t)block_len;
   state[15] = (uint32_t)flags;
 
-  round_fn(state, &block_words[0], 0);
-  round_fn(state, &block_words[0], 1);
-  round_fn(state, &block_words[0], 2);
-  round_fn(state, &block_words[0], 3);
-  round_fn(state, &block_words[0], 4);
-  round_fn(state, &block_words[0], 5);
-  round_fn(state, &block_words[0], 6);
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 7; i++) {
+    // Select the message schedule based on the round.
+    round_fn(state, &block_words[0], i);
+  }
 }
 
 static __inline__ void store32(void *dst, uint32_t w) {
-  uint8_t *p = (uint8_t *)dst;
-  p[0] = (uint8_t)(w >> 0);
-  p[1] = (uint8_t)(w >> 8);
-  p[2] = (uint8_t)(w >> 16);
-  p[3] = (uint8_t)(w >> 24);
+  uint32_t *p = (uint32_t *)dst;
+  p[0] = w;
 }
 
 static __inline__ void store_cv_words(uint8_t bytes_out[32], uint32_t cv_words[8]) {
-  store32(&bytes_out[0 * 4], cv_words[0]);
-  store32(&bytes_out[1 * 4], cv_words[1]);
-  store32(&bytes_out[2 * 4], cv_words[2]);
-  store32(&bytes_out[3 * 4], cv_words[3]);
-  store32(&bytes_out[4 * 4], cv_words[4]);
-  store32(&bytes_out[5 * 4], cv_words[5]);
-  store32(&bytes_out[6 * 4], cv_words[6]);
-  store32(&bytes_out[7 * 4], cv_words[7]);
+  memcpy32(bytes_out, cv_words);
 }
 
 void blake3_compress_xof_portable(const uint32_t cv[8],
@@ -222,22 +178,18 @@ void blake3_compress_xof_portable(const uint32_t cv[8],
   uint32_t state[16];
   compress_pre(state, cv, block, block_len, counter, flags);
 
-  store32(&out[0 * 4], state[0] ^ state[8]);
-  store32(&out[1 * 4], state[1] ^ state[9]);
-  store32(&out[2 * 4], state[2] ^ state[10]);
-  store32(&out[3 * 4], state[3] ^ state[11]);
-  store32(&out[4 * 4], state[4] ^ state[12]);
-  store32(&out[5 * 4], state[5] ^ state[13]);
-  store32(&out[6 * 4], state[6] ^ state[14]);
-  store32(&out[7 * 4], state[7] ^ state[15]);
-  store32(&out[8 * 4], state[8] ^ cv[0]);
-  store32(&out[9 * 4], state[9] ^ cv[1]);
-  store32(&out[10 * 4], state[10] ^ cv[2]);
-  store32(&out[11 * 4], state[11] ^ cv[3]);
-  store32(&out[12 * 4], state[12] ^ cv[4]);
-  store32(&out[13 * 4], state[13] ^ cv[5]);
-  store32(&out[14 * 4], state[14] ^ cv[6]);
-  store32(&out[15 * 4], state[15] ^ cv[7]);
+  uint64_t* state64 = (uint64_t*)state;
+  uint64_t* out64 = (uint64_t*)out;
+  uint64_t* cv64 = (uint64_t*)cv;
+
+  out64[0] = state64[0] ^ state64[4];
+  out64[1] = state64[1] ^ state64[5];
+  out64[2] = state64[2] ^ state64[6];
+  out64[3] = state64[3] ^ state64[7];
+  out64[4] = state64[4] ^ cv64[0];
+  out64[5] = state64[5] ^ cv64[1];
+  out64[6] = state64[6] ^ cv64[2];
+  out64[7] = state64[7] ^ cv64[3];
 }
 
 void blake3_compress_in_place_portable(uint32_t cv[8],
@@ -246,21 +198,20 @@ void blake3_compress_in_place_portable(uint32_t cv[8],
                                        uint8_t flags) {
   uint32_t state[16];
   compress_pre(state, cv, block, block_len, counter, flags);
-  cv[0] = state[0] ^ state[8];
-  cv[1] = state[1] ^ state[9];
-  cv[2] = state[2] ^ state[10];
-  cv[3] = state[3] ^ state[11];
-  cv[4] = state[4] ^ state[12];
-  cv[5] = state[5] ^ state[13];
-  cv[6] = state[6] ^ state[14];
-  cv[7] = state[7] ^ state[15];
+
+  uint64_t *state64 = (uint64_t*)state;
+  uint64_t *cv64 = (uint64_t*)cv;
+  cv64[0] = state64[0] ^ state64[4];
+  cv64[1] = state64[1] ^ state64[5];
+  cv64[2] = state64[2] ^ state64[6];
+  cv64[3] = state64[3] ^ state64[7];
 }
 
 static __inline__ void chunk_state_init(blake3_chunk_state *self, const uint32_t key[8],
                              uint8_t flags) {
-  memcpy(self->cv, key, BLAKE3_KEY_LEN);
+  memcpy32(self->cv, key);
   self->chunk_counter = 0;
-  memset(self->buf, 0, BLAKE3_BLOCK_LEN);
+  memset64(self->buf, 0);
   self->buf_len = 0;
   self->blocks_compressed = 0;
   self->flags = flags;
@@ -268,10 +219,10 @@ static __inline__ void chunk_state_init(blake3_chunk_state *self, const uint32_t
 
 static __inline__ void chunk_state_reset(blake3_chunk_state *self, const uint32_t key[8],
                               uint64_t chunk_counter) {
-  memcpy(self->cv, key, BLAKE3_KEY_LEN);
+  memcpy32(self->cv, key);
   self->chunk_counter = chunk_counter;
   self->blocks_compressed = 0;
-  memset(self->buf, 0, BLAKE3_BLOCK_LEN);
+  memset64(self->buf, 0);
   self->buf_len = 0;
 }
 
@@ -287,7 +238,9 @@ static __inline__ size_t chunk_state_fill_buf(blake3_chunk_state *self,
     take = input_len;
   }
   uint8_t *dest = self->buf + ((size_t)self->buf_len);
-  memcpy(dest, input, take);
+  for (size_t i = 0; i < take; i++) {
+    dest[i] = input[i];
+  }
   self->buf_len += (uint8_t)take;
   return take;
 }
@@ -313,8 +266,9 @@ static __inline__ output_t make_output(const uint32_t input_cv[8],
                             uint8_t block_len, uint64_t counter,
                             uint8_t flags) {
   output_t ret;
-  memcpy(ret.input_cv, input_cv, 32);
-  memcpy(ret.block, block, BLAKE3_BLOCK_LEN);
+  memcpy32(ret.input_cv, input_cv);
+  memcpy64(ret.block, block);
+
   ret.block_len = block_len;
   ret.counter = counter;
   ret.flags = flags;
@@ -329,7 +283,7 @@ static __inline__ output_t make_output(const uint32_t input_cv[8],
 // bytes.
 static __inline__ void output_chaining_value(const output_t *self, uint8_t cv[32]) {
   uint32_t cv_words[8];
-  memcpy(cv_words, self->input_cv, 32);
+  memcpy32(cv_words, self->input_cv);
   blake3_compress_in_place_portable(cv_words, self->block, self->block_len,
                            self->counter, self->flags);
   store_cv_words(cv, cv_words);
@@ -370,7 +324,7 @@ static __inline__ void chunk_state_update(blake3_chunk_state *self, const uint8_
           self->flags | chunk_state_maybe_start_flag(self));
       self->blocks_compressed += 1;
       self->buf_len = 0;
-      memset(self->buf, 0, BLAKE3_BLOCK_LEN);
+      memset64(self->buf, 0);
     }
   }
 
@@ -415,7 +369,7 @@ static __inline__ void hash_one_portable(const uint8_t *input, size_t blocks,
                               uint8_t flags, uint8_t flags_start,
                               uint8_t flags_end, uint8_t out[BLAKE3_OUT_LEN]) {
   uint32_t cv[8];
-  memcpy(cv, key, BLAKE3_KEY_LEN);
+  memcpy32(cv, key);
   uint8_t block_flags = flags | flags_start;
   while (blocks > 0) {
     if (blocks == 1) {
@@ -455,10 +409,6 @@ static __inline__ size_t compress_chunks_parallel(const uint8_t *input, size_t i
                                        const uint32_t key[8],
                                        uint64_t chunk_counter, uint8_t flags,
                                        uint8_t *out) {
-#if defined(BLAKE3_TESTING)
-  assert(0 < input_len);
-  assert(input_len <= MAX_SIMD_DEGREE * BLAKE3_CHUNK_LEN);
-#endif
 
   const uint8_t *chunks_array[MAX_SIMD_DEGREE];
   size_t input_position = 0;
@@ -499,10 +449,6 @@ static __inline__ size_t compress_parents_parallel(const uint8_t *child_chaining
                                         size_t num_chaining_values,
                                         const uint32_t key[8], uint8_t flags,
                                         uint8_t *out) {
-#if defined(BLAKE3_TESTING)
-  assert(2 <= num_chaining_values);
-  assert(num_chaining_values <= 2 * MAX_SIMD_DEGREE_OR_2);
-#endif
 
   const uint8_t *parents_array[MAX_SIMD_DEGREE_OR_2];
   size_t parents_array_len = 0;
@@ -521,9 +467,7 @@ static __inline__ size_t compress_parents_parallel(const uint8_t *child_chaining
 
   // If there's an odd child left over, it becomes an output.
   if (num_chaining_values > 2 * parents_array_len) {
-    memcpy(&out[parents_array_len * BLAKE3_OUT_LEN],
-           &child_chaining_values[2 * parents_array_len * BLAKE3_OUT_LEN],
-           BLAKE3_OUT_LEN);
+    memcpy32(&out[parents_array_len * BLAKE3_OUT_LEN], &child_chaining_values[2 * parents_array_len * BLAKE3_OUT_LEN]);
     return parents_array_len + 1;
   } else {
     return parents_array_len;
@@ -596,7 +540,7 @@ static size_t blake3_compress_subtree_wide(const uint8_t *input,
   // right_n=1. Rather than compressing them into a single output, return
   // them directly, to make sure we always have at least two outputs.
   if (left_n == 1) {
-    memcpy(out, cv_array, 2 * BLAKE3_OUT_LEN);
+    memcpy64(out, cv_array);
     return 2;
   }
 
@@ -619,9 +563,6 @@ static size_t blake3_compress_subtree_wide(const uint8_t *input,
 static __inline__ void compress_subtree_to_parent_node(
     const uint8_t *input, size_t input_len, const uint32_t key[8],
     uint64_t chunk_counter, uint8_t flags, uint8_t out[2 * BLAKE3_OUT_LEN]) {
-#if defined(BLAKE3_TESTING)
-  assert(input_len > BLAKE3_CHUNK_LEN);
-#endif
 
   uint8_t cv_array[MAX_SIMD_DEGREE_OR_2 * BLAKE3_OUT_LEN];
   size_t num_cvs = blake3_compress_subtree_wide(input, input_len, key,
@@ -634,14 +575,16 @@ static __inline__ void compress_subtree_to_parent_node(
   while (num_cvs > 2) {
     num_cvs =
         compress_parents_parallel(cv_array, num_cvs, key, flags, out_array);
-    memcpy(cv_array, out_array, num_cvs * BLAKE3_OUT_LEN);
+    if (num_cvs > 0) {
+      memcpy32(cv_array, out_array);
+    }
   }
-  memcpy(out, cv_array, 2 * BLAKE3_OUT_LEN);
+  memcpy64(out, cv_array);
 }
 
 static __inline__ void hasher_init_base(blake3_hasher *self, const uint32_t key[8],
                              uint8_t flags) {
-  memcpy(self->key, key, BLAKE3_KEY_LEN);
+  memcpy32(self->key, key);
   chunk_state_init(&self->chunk, key, flags);
   self->cv_stack_len = 0;
 }
@@ -714,8 +657,7 @@ static __inline__ void hasher_merge_cv_stack(blake3_hasher *self, uint64_t total
 static __inline__ void hasher_push_cv(blake3_hasher *self, uint8_t new_cv[BLAKE3_OUT_LEN],
                            uint64_t chunk_counter) {
   hasher_merge_cv_stack(self, chunk_counter);
-  memcpy(&self->cv_stack[self->cv_stack_len * BLAKE3_OUT_LEN], new_cv,
-         BLAKE3_OUT_LEN);
+  memcpy32(&self->cv_stack[self->cv_stack_len * BLAKE3_OUT_LEN], new_cv);
   self->cv_stack_len += 1;
 }
 
@@ -865,7 +807,7 @@ void blake3_hasher_finalize_seek(const blake3_hasher *self, uint64_t seek,
   while (cvs_remaining > 0) {
     cvs_remaining -= 1;
     uint8_t parent_block[BLAKE3_BLOCK_LEN];
-    memcpy(parent_block, &self->cv_stack[cvs_remaining * 32], 32);
+    memcpy32(parent_block, &self->cv_stack[cvs_remaining * 32]);
     output_chaining_value(&output, &parent_block[32]);
     output = parent_output(parent_block, self->key, self->chunk.flags);
   }

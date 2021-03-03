@@ -23,7 +23,7 @@ uint8_t *Hash_GetBuffer() {
 
 // Sometimes LLVM emits these functions during the optimization step
 // even with -nostdlib -fno-builtin flags
-void* memcpy(void* dst, const void* src, uint32_t cnt) {
+static __inline__ void* memcpy(void* dst, const void* src, uint32_t cnt) {
   uint8_t *destination = dst;
   const uint8_t *source = src;
   while (cnt) {
@@ -33,10 +33,80 @@ void* memcpy(void* dst, const void* src, uint32_t cnt) {
   return dst;
 }
 
-void* memset(void* dst, const uint8_t value, uint32_t cnt) {
+static __inline__ void* memset(void* dst, const uint8_t value, uint32_t cnt) {
   uint8_t *p = dst;
-  while(cnt--) {
+  while (cnt--) {
     *p++ = value;
   }
   return dst;
+}
+
+static __inline__ void memcpy16(void* dst, const void* src) {
+  uint64_t* dst64 = (uint64_t*)dst;
+  uint64_t* src64 = (uint64_t*)src;
+
+  dst64[0] = src64[0];
+  dst64[1] = src64[1];
+}
+
+static __inline__ void memcpy32(void* dst, const void* src) {
+  uint64_t* dst64 = (uint64_t*)dst;
+  uint64_t* src64 = (uint64_t*)src;
+
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 4; i++) {
+    dst64[i] = src64[i];
+  }
+}
+
+static __inline__ void memcpy64(void* dst, const void* src) {
+  uint64_t* dst64 = (uint64_t*)dst;
+  uint64_t* src64 = (uint64_t*)src;
+
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 8; i++) {
+    dst64[i] = src64[i];
+  }
+}
+
+static __inline__ uint64_t widen8to64(const uint8_t value) {
+  return value | (value << 8) | (value << 16) | (value << 24);
+}
+
+static __inline__ void memset16(void* dst, const uint8_t value) {
+  uint64_t val = widen8to64(value);
+  uint64_t* dst64 = (uint64_t*)dst;
+
+  dst64[0] = val;
+  dst64[1] = val;
+}
+
+static __inline__ void memset32(void* dst, const uint8_t value) {
+  uint64_t val = widen8to64(value);
+  uint64_t* dst64 = (uint64_t*)dst;
+
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 4; i++) {
+    dst64[i] = val;
+  }
+}
+
+static __inline__ void memset64(void* dst, const uint8_t value) {
+  uint64_t val = widen8to64(value);
+  uint64_t* dst64 = (uint64_t*)dst;
+
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 8; i++) {
+    dst64[i] = val;
+  }
+}
+
+static __inline__ void memset128(void* dst, const uint8_t value) {
+  uint64_t val = widen8to64(value);
+  uint64_t* dst64 = (uint64_t*)dst;
+
+  #pragma clang loop unroll(full)
+  for (int i = 0; i < 16; i++) {
+    dst64[i] = val;
+  }
 }

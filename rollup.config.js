@@ -5,7 +5,7 @@ import { terser } from 'rollup-plugin-terser';
 import license from 'rollup-plugin-license';
 
 const ALGORITHMS = [
-  'argon2', 'bcrypt', 'blake2b', 'blake2s', 'crc32', 'hmac', 'keccak', 'md4', 'md5',
+  'argon2', 'bcrypt', 'blake2b', 'blake2s', 'blake3', 'crc32', 'hmac', 'keccak', 'md4', 'md5',
   'pbkdf2', 'ripemd160', 'scrypt', 'sha1', 'sha3', 'sha224', 'sha256', 'sha384', 'sha512',
   'sm3', 'whirlpool', 'xxhash32', 'xxhash64',
 ];
