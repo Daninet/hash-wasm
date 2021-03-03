@@ -157,7 +157,7 @@ test('bcrypt verify bundled tests', async () => {
 
   expect(await bcryptVerify({
     hash: '$2x$05$/OK.fbVrR/bpIqNJ5ianF.CE5elHaaO4EbggVDjb8P19RukzXSM3e',
-    password: Buffer.from(['0xa3']),
+    password: Buffer.from([0xa3]),
   })).toBe(true);
 
   expect(await bcryptVerify({
