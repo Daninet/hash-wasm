@@ -310,9 +310,7 @@ Browser support
 Benchmark
 =====
 
-You can make your own measurements here: [link](https://csb-9b6mf.daninet.now.sh/)
-
-The source code for the benchmark can be found [here](https://codesandbox.io/s/hash-wasm-benchmark-9b6mf)
+You can make your own measurements here: [link](https://daninet.github.io/hash-wasm-benchmark/)
 
 Two scenarios were measured:
 - throughput with the short form (input size = 32 bytes)
