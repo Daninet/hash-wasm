@@ -1,6 +1,8 @@
 #include <stdint.h>
 
+#ifndef NULL
 #define NULL 0
+#endif
 
 #ifdef _MSC_VER
 #define WASM_EXPORT
