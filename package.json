@@ -84,6 +84,7 @@
     "@types/node": "^14.14.31",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
+    "assemblyscript": "^0.18.15",
     "binaryen": "^99.0.0",
     "compression-webpack-plugin": "^7.1.2",
     "eslint": "^7.21.0",
@@ -105,5 +106,8 @@
     "tslib": "^2.1.0",
     "typedoc": "^0.20.28",
     "typescript": "^4.2.2"
+  },
+  "dependencies": {
+    "@assemblyscript/loader": "^0.18.15"
   }
 }
