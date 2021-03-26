@@ -25,9 +25,10 @@ void init_lut() {
   }
 
   for (uint32_t i = 1; i < 256; ++i) {
-    for (uint32_t j = 1; j < 8; j++) {
-      uint32_t lv = Crc32Lookup[0][i];
-      Crc32Lookup[j][i] = (lv >> 8) ^ Crc32Lookup[0][lv & 255];
+    uint32_t lv = Crc32Lookup[0][i];
+    for (uint32_t j = 1; j < 8; ++j) {
+      lv = (lv >> 8) ^ Crc32Lookup[0][lv & 255];
+      Crc32Lookup[j][i] = lv;
     }
   }
 }
