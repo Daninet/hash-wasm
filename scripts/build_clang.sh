@@ -6,7 +6,7 @@ clang --version
 wasm-ld --version
 
 CFLAGS="-flto -O3 -nostdlib -fno-builtin -ffreestanding --target=wasm32"
-LDFLAGS="-Wl,--strip-all -Wl,--initial-memory=262144 -Wl,--max-memory=262144 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic"
+LDFLAGS="-Wl,--strip-all -Wl,--initial-memory=131072 -Wl,--max-memory=131072 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic"
 
 # -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
 # -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
