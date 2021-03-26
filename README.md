@@ -19,7 +19,7 @@ Supported algorithms
 | BLAKE2b                                        | 6 kB                  |
 | BLAKE2s                                        | 5 kB                  |
 | BLAKE3                                         | 9 kB                  |
-| CRC32                                          | 11 kB                 |
+| CRC32                                          | 3 kB                  |
 | HMAC                                           | -                     |
 | MD4                                            | 4 kB                  |
 | MD5                                            | 4 kB                  |
