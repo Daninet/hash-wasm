@@ -1,3 +1,8 @@
+## 4.6.0 (March 26, 2021)
+* Smaller CRC32 binary (now it computes the lookup table at the first run)
+* Less RAM required for the WASM instances: it only allocates 128kB of RAM instead of 256kB
+* Update dependencies
+
 ## 4.5.0 (March 6, 2021)
 * Add BLAKE3 algorithm
 * Performance improvements at BLAKE2
