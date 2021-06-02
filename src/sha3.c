@@ -317,6 +317,14 @@ void Hash_Final(uint8_t padding) {
 }
 
 WASM_EXPORT
+const uint32_t STATE_SIZE = sizeof(*ctx); 
+
+WASM_EXPORT
+uint8_t* Hash_GetState() {
+  return (uint8_t*) ctx;
+}
+
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam, uint8_t finalParam) {
   Hash_Init(initParam);
   Hash_Update(length);

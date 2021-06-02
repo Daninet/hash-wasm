@@ -30,6 +30,19 @@ export type IHasher = {
     (outputType?: 'hex'): string;
   };
   /**
+   * Save the current state of the hasher for later resumption with load(). Cannot be called
+   * before .init() or after .digest()
+   *
+   * Note that this state can include arbitrary information about the value being hashed (e.g.
+   * could include N plaintext bytes from the value), so needs to be treated as being as
+   * sensitive as the input value itself.
+   */
+  save: () => Uint8Array;
+  /**
+   * Resume a state that was created by save().
+   */
+  load: (data: Uint8Array) => IHasher;
+  /**
    * Block size in bytes
    */
   blockSize: number;
@@ -62,6 +75,11 @@ export async function WASMInterface(binary: any, hashLength: number) {
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
     const memoryBuffer = wasmInstance.exports.memory.buffer;
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, totalSize);
+  };
+
+  const getStateSize = () => {
+    const view = new DataView(wasmInstance.exports.memory.buffer);
+    return view.getUint32(wasmInstance.exports.STATE_SIZE, true);
   };
 
   const loadWASMPromise = wasmMutex.dispatch(async () => {
@@ -142,6 +160,28 @@ export async function WASMInterface(binary: any, hashLength: number) {
     return getDigestHex(digestChars, memoryView, hashLength);
   };
 
+  const save = (): Uint8Array => {
+    if (!initialized) {
+      throw new Error('save() called before init() or after digest()');
+    }
+    const stateOffset: number = wasmInstance.exports.Hash_GetState();
+    const stateLength: number = getStateSize();
+    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    // the data is copied to allow GC of the original memory object
+    return new Uint8Array(memoryBuffer, stateOffset, stateLength).slice(0);
+  };
+
+  const load = (data: Uint8Array) => {
+    const stateOffset: number = wasmInstance.exports.Hash_GetState();
+    const stateLength: number = getStateSize();
+    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    if (data.length !== stateLength) {
+      throw new Error(`Bad state length (expected ${stateLength} bytes, got ${data.length})`);
+    }
+    new Uint8Array(memoryBuffer, stateOffset, stateLength).set(data);
+    initialized = true;
+  };
+
   const isDataShort = (data: IDataType) => {
     if (typeof data === 'string') {
       // worst case is 4 bytes / char
@@ -203,9 +243,12 @@ export async function WASMInterface(binary: any, hashLength: number) {
     writeMemory,
     getExports,
     setMemorySize,
+    getStateSize,
     init,
     update,
     digest,
+    save,
+    load,
     calculate,
     hashLength,
   };
