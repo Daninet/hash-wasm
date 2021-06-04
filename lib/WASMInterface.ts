@@ -32,8 +32,8 @@ export type IHasher = {
     (outputType?: 'hex'): string;
   };
   /**
-   * Save the current state of the hasher for later resumption with load(). Cannot be called
-   * before .init() or after .digest()
+   * Save the current internal state of the hasher for later resumption with load().
+   * Cannot be called before .init() or after .digest()
    *
    * Note that this state can include arbitrary information about the value being hashed (e.g.
    * could include N plaintext bytes from the value), so needs to be treated as being as
@@ -42,9 +42,9 @@ export type IHasher = {
   save: () => Uint8Array;
   /**
    * Resume a state that was created by save(). If this state was not created by a
-   * compatible build of wasm-hash, an exception will be thrown.
+   * compatible build of hash-wasm, an exception will be thrown.
    */
-  load: (data: Uint8Array) => IHasher;
+  load: (state: Uint8Array) => IHasher;
   /**
    * Block size in bytes
    */

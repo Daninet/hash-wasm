@@ -54,7 +54,7 @@ Features
 - Works in Web Workers
 - Zero dependencies
 - Supports concurrent hash calculations with multiple states
-- Supports saving and loading the state of the hash to support segmented hashing and rewinding 
+- Supports saving and loading the internal state of the hash (segmented hashing and rewinding)
 - [Unit tests](https://github.com/Daninet/hash-wasm/tree/master/test) for all algorithms
 - 100% open source & transparent [build process](https://github.com/Daninet/hash-wasm/actions)
 - Easy to use, Promise-based API
@@ -297,36 +297,28 @@ You can read more about this issue here: https://en.wikipedia.org/wiki/Unicode_e
 
 ### Resumable hashing
 
-You can save the current state of the hash to a Uint8Array (after `.init()` has been called, but before `.digest()`) 
-using the `.save()` function. This state may be written to disk or stored elsewhere in memory. You can then use the 
-`.load(state)` function to reload that state into a new instance of the hash, or back into the same instance.
+You can save the current internal state of the hash using the `.save()` function. This state may be written to disk or stored elsewhere in memory.
+You can then use the `.load(state)` function to reload that state into a new instance of the hash, or back into the same instance.
 
-This allows you to span the work of hashing a file across multiple processes (e.g. in environments with limited 
-execution times like AWS Lambda, where large jobs need to be split across multiple invocations), or rewind the hash 
-to an earlier point in the stream. For example, the first process could:
+This allows you to span the work of hashing a file across multiple processes (e.g. in environments with limited execution times like AWS Lambda, where large jobs need to be split across multiple invocations), or rewind the hash  to an earlier point in the stream. For example, the first process could:
 
 ```js
-const fn = createMD5();
-fn.init();
-fn.update("Hello, ");
-const state = fn.save(); // Save this state to a file
+// first process starts hashing
+const md5 = await createMD5();
+md5.init();
+md5.update("Hello, ");
+const state = md5.save(); // save this state
+
+// second process resumes hashing from the stored state
+const md5 = await createMD5();
+md5.load(state);
+md5.update("world!");
+console.log(md5.digest()); // Prints 6cd3556deb0da54bca060b4c39479839 = md5("Hello, world!")
 ```
 
-Then a second process can load that state and resume hashing:
+*Note that both the saving and loading processes must be running compatible versions of the hash function (i.e. the hash function hasn't changed between the versions of hash-wasm used in the saving and loading processes). If the saved state is incompatible, `load()` will throw an exception.*
 
-```js
-const fn = createMD5();
-fn.load(state);
-fn.update("world!");
-console.log(fn.digest()); // Prints 6cd3556deb0da54bca060b4c39479839
-```
-
-Note that both the saving and loading processes must be running compatible versions of the hash function (i.e. the
-hash function hasn't changed between the versions of hash-wasm used in the saving and loading processes). If the 
-saved state is incompatible, `load()` will throw an exception.
-
-The saved state can contain information about the input, including plaintext input bytes, so from a security perspective 
-it must be treated with the same care as the input data itself.
+*The saved state can contain information about the input, including plaintext input bytes, so from a security perspective it must be treated with the same care as the input data itself.*
 
 <br/>
 
@@ -449,6 +441,8 @@ interface IHasher {
   init: () => IHasher;
   update: (data: IDataType) => IHasher;
   digest: (outputType: 'hex' | 'binary') => string | Uint8Array; // by default returns hex string
+  save: () => Uint8Array; // returns the internal state for later resumption
+  load: (state: Uint8Array) => IHasher; // loads a previously saved internal state
   blockSize: number; // in bytes
   digestSize: number; // in bytes
 }
