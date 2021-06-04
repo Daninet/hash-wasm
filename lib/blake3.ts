@@ -109,6 +109,8 @@ export function createBLAKE3(
         },
       update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType, digestParam) as any,
+      save: () => wasm.save(),
+      load: (data) => { wasm.load(data); return obj; },
       blockSize: 64,
       digestSize: outputSize,
     };

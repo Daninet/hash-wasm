@@ -1,9 +1,11 @@
 import Mutex from './mutex';
 import {
-  decodeBase64, getDigestHex, getUInt8Buffer, IDataType,
+  decodeBase64, getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
+  hexStringEqualsUInt8,
 } from './util';
 
 export const MAX_HEAP = 16 * 1024;
+const WASM_FUNC_HASH_LENGTH = 4;
 const wasmMutex = new Mutex();
 
 type ThenArg<T> = T extends Promise<infer U> ? U :
@@ -29,6 +31,20 @@ export type IHasher = {
     (outputType: 'binary'): Uint8Array;
     (outputType?: 'hex'): string;
   };
+  /**
+   * Save the current state of the hasher for later resumption with load(). Cannot be called
+   * before .init() or after .digest()
+   *
+   * Note that this state can include arbitrary information about the value being hashed (e.g.
+   * could include N plaintext bytes from the value), so needs to be treated as being as
+   * sensitive as the input value itself.
+   */
+  save: () => Uint8Array;
+  /**
+   * Resume a state that was created by save(). If this state was not created by a
+   * compatible build of wasm-hash, an exception will be thrown.
+   */
+  load: (data: Uint8Array) => IHasher;
   /**
    * Block size in bytes
    */
@@ -62,6 +78,11 @@ export async function WASMInterface(binary: any, hashLength: number) {
     const arrayOffset: number = wasmInstance.exports.Hash_GetBuffer();
     const memoryBuffer = wasmInstance.exports.memory.buffer;
     memoryView = new Uint8Array(memoryBuffer, arrayOffset, totalSize);
+  };
+
+  const getStateSize = () => {
+    const view = new DataView(wasmInstance.exports.memory.buffer);
+    return view.getUint32(wasmInstance.exports.STATE_SIZE, true);
   };
 
   const loadWASMPromise = wasmMutex.dispatch(async () => {
@@ -142,6 +163,35 @@ export async function WASMInterface(binary: any, hashLength: number) {
     return getDigestHex(digestChars, memoryView, hashLength);
   };
 
+  const save = (): Uint8Array => {
+    if (!initialized) {
+      throw new Error('save() called before init() or after digest()');
+    }
+    const stateOffset: number = wasmInstance.exports.Hash_GetState();
+    const stateLength: number = getStateSize();
+    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    const result = new Uint8Array(WASM_FUNC_HASH_LENGTH + stateLength);
+    writeHexToUInt8(result, binary.hash);
+    result.set(new Uint8Array(memoryBuffer, stateOffset, stateLength), WASM_FUNC_HASH_LENGTH);
+    return result;
+  };
+
+  const load = (data: Uint8Array) => {
+    const stateOffset: number = wasmInstance.exports.Hash_GetState();
+    const stateLength: number = getStateSize();
+    const overallLength: number = WASM_FUNC_HASH_LENGTH + stateLength;
+    const memoryBuffer = wasmInstance.exports.memory.buffer;
+    if (data.length !== overallLength) {
+      throw new Error(`Bad state length (expected ${overallLength} bytes, got ${data.length})`);
+    }
+    if (!hexStringEqualsUInt8(binary.hash, data.subarray(0, WASM_FUNC_HASH_LENGTH))) {
+      throw new Error('This state was written by an incompatible hash implementation');
+    }
+    const newState = data.subarray(WASM_FUNC_HASH_LENGTH);
+    new Uint8Array(memoryBuffer, stateOffset, stateLength).set(newState);
+    initialized = true;
+  };
+
   const isDataShort = (data: IDataType) => {
     if (typeof data === 'string') {
       // worst case is 4 bytes / char
@@ -203,9 +253,12 @@ export async function WASMInterface(binary: any, hashLength: number) {
     writeMemory,
     getExports,
     setMemorySize,
+    getStateSize,
     init,
     update,
     digest,
+    save,
+    load,
     calculate,
     hashLength,
   };

@@ -21,10 +21,14 @@ const uint64_t Prime5 = 2870177450012600261ULL;
 // temporarily store up to 31 bytes between multiple add() calls
 const uint64_t MaxBufferSize = 31 + 1;
 
-uint64_t state[4];
-unsigned char buffer[MaxBufferSize];
-unsigned int bufferSize;
-uint64_t totalLength;
+struct XXHash64_CTX {
+	uint64_t state[4];
+	unsigned char buffer[MaxBufferSize];
+	unsigned int bufferSize;
+	uint64_t totalLength;
+};
+
+static struct XXHash64_CTX sctx;
 
 // rotate bits, should compile to a single CPU instruction (ROL)
 static inline uint64_t rotateLeft(uint64_t x, unsigned char bits) {
@@ -54,12 +58,12 @@ void Hash_Init() {
   // seed is at the memory object
   uint64_t seed = *((uint64_t*)main_buffer);
 
-  state[0] = seed + Prime1 + Prime2;
-  state[1] = seed + Prime2;
-  state[2] = seed;
-  state[3] = seed - Prime1;
-  bufferSize = 0;
-  totalLength = 0;
+  sctx.state[0] = seed + Prime1 + Prime2;
+  sctx.state[1] = seed + Prime2;
+  sctx.state[2] = seed;
+  sctx.state[3] = seed - Prime1;
+  sctx.bufferSize = 0;
+  sctx.totalLength = 0;
 }
 
 // add a chunk of bytes
@@ -73,15 +77,15 @@ void Hash_Update(uint32_t length) {
   // no data ?
   if (length == 0) return;
 
-  totalLength += length;
+  sctx.totalLength += length;
   // byte-wise access
   const unsigned char* data = (const unsigned char*)input;
 
   // unprocessed old data plus new data still fit in temporary buffer ?
-  if (bufferSize + length < MaxBufferSize) {
+  if (sctx.bufferSize + length < MaxBufferSize) {
     // just add new data
     while (length-- > 0) {
-      buffer[bufferSize++] = *data++;
+      sctx.buffer[sctx.bufferSize++] = *data++;
     }
 
     return;
@@ -92,18 +96,18 @@ void Hash_Update(uint32_t length) {
   const unsigned char* stopBlock = stop - MaxBufferSize;
 
   // some data left from previous update ?
-  if (bufferSize > 0) {
+  if (sctx.bufferSize > 0) {
     // make sure temporary buffer is full (16 bytes)
-    while (bufferSize < MaxBufferSize) {
-      buffer[bufferSize++] = *data++;
+    while (sctx.bufferSize < MaxBufferSize) {
+      sctx.buffer[sctx.bufferSize++] = *data++;
     }
 
     // process these 32 bytes (4x8)
-    process(buffer, &state[0], &state[1], &state[2], &state[3]);
+    process(sctx.buffer, &sctx.state[0], &sctx.state[1], &sctx.state[2], &sctx.state[3]);
   }
 
   // copying state to local variables helps optimizer A LOT
-  uint64_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
+  uint64_t s0 = sctx.state[0], s1 = sctx.state[1], s2 = sctx.state[2], s3 = sctx.state[3];
   // 32 bytes at once
   while (data <= stopBlock) {
     // local variables s0..s3 instead of state[0]..state[3] are much faster
@@ -111,15 +115,15 @@ void Hash_Update(uint32_t length) {
     data += 32;
   }
   // copy back
-  state[0] = s0;
-  state[1] = s1;
-  state[2] = s2;
-  state[3] = s3;
+  sctx.state[0] = s0;
+  sctx.state[1] = s1;
+  sctx.state[2] = s2;
+  sctx.state[3] = s3;
 
   // copy remainder to temporary buffer
-  bufferSize = stop - data;
-  for (unsigned int i = 0; i < bufferSize; i++) {
-    buffer[i] = data[i];
+  sctx.bufferSize = stop - data;
+  for (unsigned int i = 0; i < sctx.bufferSize; i++) {
+    sctx.buffer[i] = data[i];
   }
 
   return;
@@ -130,25 +134,25 @@ WASM_EXPORT
 void Hash_Final() {
   // fold 256 bit state into one single 64 bit value
   uint64_t result;
-  if (totalLength >= MaxBufferSize) {
-    result = rotateLeft(state[0], 1) + rotateLeft(state[1], 7) +
-             rotateLeft(state[2], 12) + rotateLeft(state[3], 18);
-    result = (result ^ processSingle(0, state[0])) * Prime1 + Prime4;
-    result = (result ^ processSingle(0, state[1])) * Prime1 + Prime4;
-    result = (result ^ processSingle(0, state[2])) * Prime1 + Prime4;
-    result = (result ^ processSingle(0, state[3])) * Prime1 + Prime4;
+  if (sctx.totalLength >= MaxBufferSize) {
+    result = rotateLeft(sctx.state[0], 1) + rotateLeft(sctx.state[1], 7) +
+             rotateLeft(sctx.state[2], 12) + rotateLeft(sctx.state[3], 18);
+    result = (result ^ processSingle(0, sctx.state[0])) * Prime1 + Prime4;
+    result = (result ^ processSingle(0, sctx.state[1])) * Prime1 + Prime4;
+    result = (result ^ processSingle(0, sctx.state[2])) * Prime1 + Prime4;
+    result = (result ^ processSingle(0, sctx.state[3])) * Prime1 + Prime4;
   } else {
     // internal state wasn't set in add(), therefore original seed is still
     // stored in state2
-    result = state[2] + Prime5;
+    result = sctx.state[2] + Prime5;
   }
 
-  result += totalLength;
+  result += sctx.totalLength;
 
   // process remaining bytes in temporary buffer
-  const unsigned char* data = buffer;
+  const unsigned char* data = sctx.buffer;
   // point beyond last byte
-  const unsigned char* stop = data + bufferSize;
+  const unsigned char* stop = data + sctx.bufferSize;
 
   // at least 8 bytes left ? => eat 8 bytes per step
   for (; data + 8 <= stop; data += 8) {
@@ -187,6 +191,14 @@ void Hash_Final() {
   main_buffer[5] = (lo & 0x00ff0000) >> 16;
   main_buffer[6] = (lo & 0x0000ff00) >> 8;
   main_buffer[7] = lo & 0x000000ff;
+}
+
+WASM_EXPORT
+const uint32_t STATE_SIZE = sizeof(sctx); 
+
+WASM_EXPORT
+uint8_t* Hash_GetState() {
+  return (uint8_t*) &sctx;
 }
 
 WASM_EXPORT
