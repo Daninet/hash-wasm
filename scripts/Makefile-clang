@@ -1,0 +1,49 @@
+CFLAGS=-flto -O3 -nostdlib -fno-builtin -ffreestanding --target=wasm32
+LDFLAGS=-Wl,--strip-all -Wl,--initial-memory=131072 -Wl,--max-memory=131072 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic
+
+# -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
+# -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
+
+all : \
+		/app/wasm/argon2.wasm \
+		/app/wasm/bcrypt.wasm \
+		/app/wasm/blake2b.wasm \
+		/app/wasm/blake2s.wasm \
+		/app/wasm/blake3.wasm \
+		/app/wasm/crc32.wasm \
+		/app/wasm/md4.wasm \
+		/app/wasm/md5.wasm \
+		/app/wasm/ripemd160.wasm \
+		/app/wasm/scrypt.wasm \
+		/app/wasm/sha1.wasm \
+		/app/wasm/sha256.wasm \
+		/app/wasm/sha512.wasm \
+		/app/wasm/sha3.wasm \
+		/app/wasm/sm3.wasm \
+		/app/wasm/whirlpool.wasm \
+		/app/wasm/xxhash32.wasm \
+		/app/wasm/xxhash64.wasm 
+	clang --version
+	wasm-ld --version
+
+# Generic targets:
+/app/wasm/%.wasm : /app/src/%.c
+	clang $(CFLAGS) $(LDFLAGS) -o $@ $<
+	sha1sum $@
+	stat -c "%n size: %s bytes" $@
+
+# Targets that need special compile arguments: 
+/app/wasm/argon2.wasm : /app/src/argon2.c
+	clang $(CFLAGS) $(LDFLAGS) -Wl,--max-memory=2147483648 -o $@ $<	
+	sha1sum $@
+	stat -c "%n size: %s bytes" $@
+
+/app/wasm/bcrypt.wasm : /app/src/bcrypt.c
+	clang $(CFLAGS) $(LDFLAGS) -fno-strict-aliasing -o $@ $<
+	sha1sum $@
+	stat -c "%n size: %s bytes" $@
+
+/app/wasm/scrypt.wasm : /app/src/scrypt.c
+	clang $(CFLAGS) $(LDFLAGS) -Wl,--max-memory=2147483648 -o $@ $< 
+	sha1sum $@
+	stat -c "%n size: %s bytes" $@

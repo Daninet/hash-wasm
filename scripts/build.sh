@@ -16,7 +16,7 @@ docker run \
   -v $(pwd):/app \
   -u $(id -u):$(id -g) \
   clang:latest \
-  bash -c /app/scripts/build_clang.sh
+  make -f /app/scripts/Makefile-clang --silent --always-make --output-sync=target -j8 all
 
 # node scripts/optimize
 node scripts/make_json
