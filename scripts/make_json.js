@@ -9,9 +9,7 @@ files.forEach((file) => {
   const data = fs.readFileSync(path.join(dir, file));
   const base64Data = data.toString('base64');
   const parsedName = path.parse(file);
-  const sha1 = crypto.createHash('sha1');
-  sha1.update(data);
-  const hash = sha1.digest('hex').substring(0, 8);
+  const hash = crypto.createHash('sha1').update(data).digest('hex').substring(0, 8);
   const json = JSON.stringify({ name: parsedName.name, data: base64Data, hash });
   fs.writeFileSync(path.join(dir, `${file}.json`), json);
 });

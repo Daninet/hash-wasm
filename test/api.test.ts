@@ -81,6 +81,8 @@ test('saveAndLoad', async () => {
     fn.load(saved);
     fn.update('bc');
     expect(fn.digest()).toBe(abcHash[index]);
+    // save() shoudn't work after digest() is called
+    expect(() => fn.save()).toThrow();
   });
 });
 
@@ -98,9 +100,27 @@ test('saveAndLoad - load as init', async () => {
     return fn.save();
   });
   (await createAllFunctions(false)).forEach((fn, index) => {
-    fn.load(savedHasherStates[index]);
-    fn.update('world');
+    fn.load(savedHasherStates[index]).update('world');
     expect(fn.digest()).toBe(helloWorldHashes[index]);
+  });
+});
+
+test('saveAndLoad - invalid parameters', async () => {
+  const functions: IHasher[] = await createAllFunctions(false);
+
+  // Detect changes in the function hash:
+  functions.forEach((fn) => {
+    fn.init();
+    expect(() => fn.load(0 as any)).toThrow();
+    expect(() => fn.load({} as any)).toThrow();
+    expect(() => fn.load('1234' as any)).toThrow();
+    expect(() => fn.load([] as any)).toThrow();
+    expect(() => fn.load(null as any)).toThrow();
+    expect(() => fn.load(undefined as any)).toThrow();
+    expect(() => fn.load(new ArrayBuffer(8) as any)).toThrow();
+    expect(() => fn.load(new Uint8ClampedArray(8) as any)).toThrow();
+    expect(() => fn.load(new Uint16Array(8) as any)).toThrow();
+    expect(() => fn.load(new Int8Array(8) as any)).toThrow();
   });
 });
 

@@ -4,6 +4,7 @@ import {
   blake2b, blake3, crc32, md4, md5, sha1, sha256, sha384, sha3,
   xxhash32, xxhash64, createMD4, keccak, ripemd160,
 } from '../lib';
+import { hexStringEqualsUInt8 } from '../lib/util';
 import { MAX_HEAP } from '../lib/WASMInterface';
 
 test('Sync cycle multiple algorithms', async () => {
@@ -54,4 +55,17 @@ test('unicode string length handling', async () => {
       expect(md4Instance.digest()).toBe(ok);
     }
   }
+});
+
+test('hexStringEqualsUInt8()', async () => {
+  expect(hexStringEqualsUInt8('', new Uint8Array([]))).toBe(true);
+  expect(hexStringEqualsUInt8('', new Uint8Array([0]))).toBe(false);
+  expect(hexStringEqualsUInt8('AB', new Uint8Array([0xAB]))).toBe(true);
+  expect(hexStringEqualsUInt8('ABCD', new Uint8Array([0xAB, 0xCD]))).toBe(true);
+  expect(hexStringEqualsUInt8('ABCD', new Uint8Array([0xAB]))).toBe(false);
+  expect(hexStringEqualsUInt8('ABCD', new Uint8Array([0x1B, 0xCD]))).toBe(false);
+  expect(hexStringEqualsUInt8('ABCD', new Uint8Array([0xAB, 0x0D]))).toBe(false);
+  expect(hexStringEqualsUInt8('ABCD', new Uint8Array([0xAB, 0xC0]))).toBe(false);
+  expect(hexStringEqualsUInt8('123456', new Uint8Array([0x12, 0x34, 0x56]))).toBe(true);
+  expect(hexStringEqualsUInt8('123456', new Uint8Array([0x12, 0x34, 0x66]))).toBe(false);
 });

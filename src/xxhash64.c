@@ -22,10 +22,10 @@ const uint64_t Prime5 = 2870177450012600261ULL;
 const uint64_t MaxBufferSize = 31 + 1;
 
 struct XXHash64_CTX {
-	uint64_t state[4];
-	unsigned char buffer[MaxBufferSize];
-	unsigned int bufferSize;
-	uint64_t totalLength;
+  uint64_t state[4];
+  unsigned char buffer[MaxBufferSize];
+  unsigned int bufferSize;
+  uint64_t totalLength;
 };
 
 static struct XXHash64_CTX sctx;

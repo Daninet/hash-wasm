@@ -57,6 +57,12 @@ test('invalid parameters', async () => {
   expect(() => createHMAC(hasher as any, 'x')).toThrow();
 });
 
+test('save and load should throw', async () => {
+  const hmac = await createHMAC(md5Hasher, 'key1');
+  expect(() => hmac.save()).toThrow();
+  expect(() => hmac.load(new Uint8Array([]))).toThrow();
+});
+
 test('simple test', async () => {
   await HMACTest('key', 'The quick brown fox jumps over the lazy dog');
 });

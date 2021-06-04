@@ -23,10 +23,10 @@ static const uint32_t MaxBufferSize = 15 + 1;
 
 // internal state and temporary buffer
 struct XXHash32_CTX {
-	uint32_t state[4];  // state[2] == seed if totalLength < MaxBufferSize
-	unsigned char buffer[MaxBufferSize];
-	unsigned int bufferSize;
-	uint64_t totalLength;
+  uint32_t state[4];  // state[2] == seed if totalLength < MaxBufferSize
+  unsigned char buffer[MaxBufferSize];
+  unsigned int bufferSize;
+  uint64_t totalLength;
 };
 
 static struct XXHash32_CTX sctx;
