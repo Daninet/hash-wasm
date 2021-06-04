@@ -53,6 +53,12 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
       hasher.update(uintArr);
       return hasher.digest(outputType);
     }) as any,
+    save: () => {
+      throw new Error('save() not supported');
+    },
+    load: () => {
+      throw new Error('load() not supported');
+    },
 
     blockSize: hasher.blockSize,
     digestSize: hasher.digestSize,

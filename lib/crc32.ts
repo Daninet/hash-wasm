@@ -39,6 +39,8 @@ export function createCRC32(): Promise<IHasher> {
       init: () => { wasm.init(); return obj; },
       update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType) as any,
+      save: () => wasm.save(),
+      load: (data) => { wasm.load(data); return obj; },
       blockSize: 4,
       digestSize: 4,
     };

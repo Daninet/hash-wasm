@@ -36,6 +36,19 @@ export function writeHexToUInt8(buf: Uint8Array, str: string) {
   }
 }
 
+export function hexStringEqualsUInt8(str: string, buf: Uint8Array): boolean {
+  if (str.length !== buf.length * 2) {
+    return false;
+  }
+  for (let i = 0; i < buf.length; i++) {
+    const strIndex = i << 1;
+    if (buf[i] !== hexCharCodesToInt(str.charCodeAt(strIndex), str.charCodeAt(strIndex + 1))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 const alpha = 'a'.charCodeAt(0) - 10;
 const digit = '0'.charCodeAt(0);
 export function getDigestHex(tmpBuffer: Uint8Array, input: Uint8Array, hashLength: number): string {

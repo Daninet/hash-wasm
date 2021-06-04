@@ -269,6 +269,14 @@ void Hash_Update(uint32_t size) {
 }
 
 WASM_EXPORT
+const uint32_t STATE_SIZE = sizeof(S); 
+
+WASM_EXPORT
+uint8_t* Hash_GetState() {
+  return (uint8_t*) S;
+}
+
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam) {
   Hash_Init(initParam);
   Hash_Update(length);

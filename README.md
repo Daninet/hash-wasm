@@ -54,6 +54,7 @@ Features
 - Works in Web Workers
 - Zero dependencies
 - Supports concurrent hash calculations with multiple states
+- Supports saving and loading the state of the hash to support segmented hashing and rewinding 
 - [Unit tests](https://github.com/Daninet/hash-wasm/tree/master/test) for all algorithms
 - 100% open source & transparent [build process](https://github.com/Daninet/hash-wasm/actions)
 - Easy to use, Promise-based API
@@ -293,6 +294,39 @@ te.encode('\u00fc'.normalize('NFKC')); // Uint8Array(2) [195, 188]
 ```
 
 You can read more about this issue here: https://en.wikipedia.org/wiki/Unicode_equivalence
+
+### Resumable hashing
+
+You can save the current state of the hash to a Uint8Array (after `.init()` has been called, but before `.digest()`) 
+using the `.save()` function. This state may be written to disk or stored elsewhere in memory. You can then use the 
+`.load(state)` function to reload that state into a new instance of the hash, or back into the same instance.
+
+This allows you to span the work of hashing a file across multiple processes (e.g. in environments with limited 
+execution times like AWS Lambda, where large jobs need to be split across multiple invocations), or rewind the hash 
+to an earlier point in the stream. For example, the first process could:
+
+```js
+const fn = createMD5();
+fn.init();
+fn.update("Hello, ");
+const state = fn.save(); // Save this state to a file
+```
+
+Then a second process can load that state and resume hashing:
+
+```js
+const fn = createMD5();
+fn.load(state);
+fn.update("world!");
+console.log(fn.digest()); // Prints 6cd3556deb0da54bca060b4c39479839
+```
+
+Note that both the saving and loading processes must be running compatible versions of the hash function (i.e. the
+hash function hasn't changed between the versions of hash-wasm used in the saving and loading processes). If the 
+saved state is incompatible, `load()` will throw an exception.
+
+The saved state can contain information about the input, including plaintext input bytes, so from a security perspective 
+it must be treated with the same care as the input data itself.
 
 <br/>
 

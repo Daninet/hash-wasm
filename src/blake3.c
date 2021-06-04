@@ -852,6 +852,14 @@ void Hash_Final(uint32_t digestBytes) {
 }
 
 WASM_EXPORT
+const uint32_t STATE_SIZE = sizeof(hasher); 
+
+WASM_EXPORT
+uint8_t* Hash_GetState() {
+  return (uint8_t*) &hasher;
+}
+
+WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam, uint32_t digestBytes) {
   Hash_Init(initParam);
   Hash_Update(length);

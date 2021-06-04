@@ -29,10 +29,14 @@
 #define BLOCK_LEN 64 // In bytes
 #define STATE_LEN 64 // In bytes
 
-uint8_t buffer[BLOCK_LEN]; /* buffer of data to hash */
-uint8_t hash[STATE_LEN];   /* the hashing state */
-uint32_t rem;
-uint64_t totalBytes;
+struct Whirlpool_CTX {
+	uint8_t buffer[BLOCK_LEN]; /* buffer of data to hash */
+	uint8_t hash[STATE_LEN];   /* the hashing state */
+	uint32_t rem;
+	uint64_t totalBytes;
+};
+
+static struct Whirlpool_CTX sctx;
 
 static void whirlpool_round(uint64_t block[static 8], const uint64_t key[static 8]);
 
@@ -47,6 +51,7 @@ static uint64_t ROUND_CONSTANTS[32] = {
   UINT64_C(0x6C9D0BDC53C1BB2A), UINT64_C(0xE11489AC46F67431), UINT64_C(0xEDD0B67009693A16), UINT64_C(0x86F85C28A49842CC),
 };
 
+// Temporary state that doesn't need to be preserved between calls to _compress()
 uint64_t tempState[8];
 uint64_t tempBlock[8];
 uint64_t rcon[8] = {0};
@@ -151,10 +156,10 @@ static void whirlpool_round(uint64_t block[static 8], const uint64_t key[static 
 WASM_EXPORT
 void Hash_Init() {
   for (uint32_t i = 0; i < 64; i+=8) {
-    *(uint64_t*)(hash + i) = 0;
+    *(uint64_t*)(sctx.hash + i) = 0;
   }
-  totalBytes = 0;
-  rem = 0;
+  sctx.totalBytes = 0;
+  sctx.rem = 0;
 }
 
 inline uint32_t min(uint32_t a, uint32_t b) {
@@ -164,30 +169,30 @@ inline uint32_t min(uint32_t a, uint32_t b) {
 
 WASM_EXPORT
 void Hash_Update(uint32_t len) {
-  totalBytes += len;
+  sctx.totalBytes += len;
   uint32_t read = 0;
-  if (rem > 0) {
-    uint32_t end = min(64, rem + len);
-    for (uint8_t z = rem; z < end; z++) {
-      buffer[z] = main_buffer[read++];
+  if (sctx.rem > 0) {
+    uint32_t end = min(64, sctx.rem + len);
+    for (uint8_t z = sctx.rem; z < end; z++) {
+      sctx.buffer[z] = main_buffer[read++];
     }
     if (end == 64) {
-      whirlpool_compress(hash, buffer);
-      rem = 0;
+      whirlpool_compress(sctx.hash, sctx.buffer);
+      sctx.rem = 0;
     } else {
-      rem = end;
+      sctx.rem = end;
     }
   }
 
   while (len - read >= 64) {
-    whirlpool_compress(hash, &main_buffer[read]);
+    whirlpool_compress(sctx.hash, &main_buffer[read]);
     read += 64;
   }
 
   if (len - read > 0) {
-    rem = len - read;
-    for (uint8_t z = 0; z < rem; z++) {
-      buffer[z] = main_buffer[read + z];
+    sctx.rem = len - read;
+    for (uint8_t z = 0; z < sctx.rem; z++) {
+      sctx.buffer[z] = main_buffer[read + z];
     }
   }
 }
@@ -197,29 +202,37 @@ void Hash_Final() {
   const int LENGTH_SIZE = 32;
 
   uint8_t temp[64] = {0};
-  for (uint8_t i = 0; i < rem; i++) {
-    temp[i] = buffer[i];
+  for (uint8_t i = 0; i < sctx.rem; i++) {
+    temp[i] = sctx.buffer[i];
   }
-  temp[rem] = 0x80;
-  rem++;
+  temp[sctx.rem] = 0x80;
+  sctx.rem++;
 
-  if (BLOCK_LEN - rem < LENGTH_SIZE) {
-    whirlpool_compress(hash, temp);
+  if (BLOCK_LEN - sctx.rem < LENGTH_SIZE) {
+    whirlpool_compress(sctx.hash, temp);
     for (uint32_t i = 0; i < 32; i+=8) {
       *(uint64_t*)(temp + i) = 0;
     }
   }
 
-  temp[BLOCK_LEN - 1] = (uint8_t)((totalBytes & 0x1FU) << 3);
-  totalBytes >>= 5;
-  for (int i = 1; i < LENGTH_SIZE; i++, totalBytes >>= 8) {
-    temp[BLOCK_LEN - 1 - i] = (uint8_t)(totalBytes & 0xFFU);
+  temp[BLOCK_LEN - 1] = (uint8_t)((sctx.totalBytes & 0x1FU) << 3);
+  sctx.totalBytes >>= 5;
+  for (int i = 1; i < LENGTH_SIZE; i++, sctx.totalBytes >>= 8) {
+    temp[BLOCK_LEN - 1 - i] = (uint8_t)(sctx.totalBytes & 0xFFU);
   }
-  whirlpool_compress(hash, temp);
+  whirlpool_compress(sctx.hash, temp);
 
   for (uint32_t i = 0; i < 64; i+=8) {
-    *(uint64_t*)(main_buffer + i) = *(uint64_t*)(hash + i);
+    *(uint64_t*)(main_buffer + i) = *(uint64_t*)(sctx.hash + i);
   }
+}
+
+WASM_EXPORT
+const uint32_t STATE_SIZE = sizeof(sctx); 
+
+WASM_EXPORT
+uint8_t* Hash_GetState() {
+  return (uint8_t*) &sctx;
 }
 
 WASM_EXPORT
