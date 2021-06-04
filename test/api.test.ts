@@ -84,7 +84,7 @@ test('saveAndLoad', async () => {
   });
 });
 
-test('loadInsteadOfInit', async () => {
+test('saveAndLoad - load as init', async () => {
   // Verify that load() can be used instead of a call to init() and still give the same results
   // This checks that e.g. crc32's init_lut() gets called even if we don't call init() ourselves
   const helloWorldHashes = (await createAllFunctions(false)).map((fn) => {
@@ -101,5 +101,29 @@ test('loadInsteadOfInit', async () => {
     fn.load(savedHasherStates[index]);
     fn.update('world');
     expect(fn.digest()).toBe(helloWorldHashes[index]);
+  });
+});
+
+test('saveAndLoad - incompatible states', async () => {
+  const functions: IHasher[] = await createAllFunctions(false);
+
+  // Detect changes in the function hash:
+  functions.forEach((fn) => {
+    fn.init();
+    const state = fn.save();
+    // Check that every byte is verified:
+    for (let i = 0; i < 4; i++) {
+      state[i] = 255 - state[i];
+      expect(() => fn.load(state)).toThrow();
+      state[i] = 255 - state[i];
+    }
+  });
+
+  // Detect incompatible lengths:
+  functions.forEach((fn) => {
+    fn.init();
+    let state = fn.save();
+    state = state.subarray(0, state.length - 1);
+    expect(() => fn.load(state)).toThrow();
   });
 });

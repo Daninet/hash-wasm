@@ -1,9 +1,11 @@
 import Mutex from './mutex';
 import {
-  decodeBase64, getDigestHex, getUInt8Buffer, IDataType,
+  decodeBase64, getDigestHex, getUInt8Buffer, IDataType, writeHexToUInt8,
+  hexStringEqualsUInt8,
 } from './util';
 
 export const MAX_HEAP = 16 * 1024;
+const WASM_FUNC_HASH_LENGTH = 4;
 const wasmMutex = new Mutex();
 
 type ThenArg<T> = T extends Promise<infer U> ? U :
@@ -39,7 +41,8 @@ export type IHasher = {
    */
   save: () => Uint8Array;
   /**
-   * Resume a state that was created by save().
+   * Resume a state that was created by save(). If this state was not created by a
+   * compatible build of wasm-hash, an exception will be thrown.
    */
   load: (data: Uint8Array) => IHasher;
   /**
@@ -167,18 +170,25 @@ export async function WASMInterface(binary: any, hashLength: number) {
     const stateOffset: number = wasmInstance.exports.Hash_GetState();
     const stateLength: number = getStateSize();
     const memoryBuffer = wasmInstance.exports.memory.buffer;
-    // the data is copied to allow GC of the original memory object
-    return new Uint8Array(memoryBuffer, stateOffset, stateLength).slice(0);
+    const result = new Uint8Array(WASM_FUNC_HASH_LENGTH + stateLength);
+    writeHexToUInt8(result, binary.hash);
+    result.set(new Uint8Array(memoryBuffer, stateOffset, stateLength), WASM_FUNC_HASH_LENGTH);
+    return result;
   };
 
   const load = (data: Uint8Array) => {
     const stateOffset: number = wasmInstance.exports.Hash_GetState();
     const stateLength: number = getStateSize();
+    const overallLength: number = WASM_FUNC_HASH_LENGTH + stateLength;
     const memoryBuffer = wasmInstance.exports.memory.buffer;
-    if (data.length !== stateLength) {
-      throw new Error(`Bad state length (expected ${stateLength} bytes, got ${data.length})`);
+    if (data.length !== overallLength) {
+      throw new Error(`Bad state length (expected ${overallLength} bytes, got ${data.length})`);
     }
-    new Uint8Array(memoryBuffer, stateOffset, stateLength).set(data);
+    if (!hexStringEqualsUInt8(binary.hash, data.subarray(0, WASM_FUNC_HASH_LENGTH))) {
+      throw new Error('This state was written by an incompatible hash implementation');
+    }
+    const newState = data.subarray(WASM_FUNC_HASH_LENGTH);
+    new Uint8Array(memoryBuffer, stateOffset, stateLength).set(newState);
     initialized = true;
   };
 

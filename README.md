@@ -321,9 +321,9 @@ fn.update("world!");
 console.log(fn.digest()); // Prints 6cd3556deb0da54bca060b4c39479839
 ```
 
-Note that both the saving and loading processes **must** be running the same build of hash-wasm, there is no portability
-between different versions or different builds. Loading incompatible states could cause exceptions, infinite loops, or 
-silently-wrong answers.
+Note that both the saving and loading processes must be running compatible versions of the hash function (i.e. the
+hash function hasn't changed between the versions of hash-wasm used in the saving and loading processes). If the 
+saved state is incompatible, `load()` will throw an exception.
 
 The saved state can contain information about the input, including plaintext input bytes, so from a security perspective 
 it must be treated with the same care as the input data itself.
