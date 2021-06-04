@@ -231,11 +231,7 @@ void Hash_Calculate(uint32_t length, uint32_t memorySize) {
     }
   }
 
-  for (uint16_t i = 0; i < 128; i++) {
-    t[i] = *(uint64_t *)&B[destIndex + i * 8];
-  }
-
-  for (uint16_t i = 0; i < 128; i++) {
-    *(uint64_t *)&B[i * 8] = t[i];
+  for (uint16_t i = 0; i < 1024; i += 8) {
+    *(uint64_t *)&B[i] = *(uint64_t *)&B[destIndex + i];
   }
 }
