@@ -41,9 +41,31 @@ test('Simulate browsers', async () => {
   (globalThis as any) = global;
 });
 
+test('Use global self', async () => {
+  const global = globalThis;
+  (globalThis as any).self = global;
+  (globalThis as any) = undefined;
+
+  const { md5 } = jest.requireActual('../lib');
+  expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
+
+  (globalThis as any) = global;
+});
+
 test('Delete global self', async () => {
   const global = globalThis;
   delete globalThis.self;
+  (globalThis as any) = undefined;
+
+  const { md5 } = jest.requireActual('../lib');
+  expect(await md5('a')).toBe('0cc175b9c0f1b6a831c399e269772661');
+
+  (globalThis as any) = global;
+});
+
+test('Use global window', async () => {
+  const global = globalThis;
+  (globalThis as any).window = global;
   (globalThis as any) = undefined;
 
   const { md5 } = jest.requireActual('../lib');
