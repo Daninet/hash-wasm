@@ -14,6 +14,7 @@ Supported algorithms
 
 | Name                                           | Bundle size (gzipped) |
 |------------------------------------------------|-----------------------|
+| Adler-32                                       | 3 kB                  |
 | Argon2: Argon2d, Argon2i, Argon2id (v1.3)      | 11 kB                 |
 | bcrypt                                         | 11 kB                 |
 | BLAKE2b                                        | 6 kB                  |
@@ -418,6 +419,7 @@ API
 type IDataType = string | Buffer | Uint8Array | Uint16Array | Uint32Array;
 
 // all functions return hash in hex format
+adler32(data: IDataType): Promise<string>
 blake2b(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 512 bits
 blake2s(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 256 bits
 blake3(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 256 bits
@@ -447,6 +449,7 @@ interface IHasher {
   digestSize: number; // in bytes
 }
 
+createAdler32(): Promise<IHasher>
 createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 512 bits
 createBLAKE2s(bits?: number, key?: IDataType): Promise<IHasher> // default is 256 bits
 createBLAKE3(bits?: number, key?: IDataType): Promise<IHasher> // default is 256 bits

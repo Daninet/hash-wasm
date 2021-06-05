@@ -1,3 +1,4 @@
+export * from './adler32';
 export * from './argon2';
 export * from './blake2b';
 export * from './blake2s';
