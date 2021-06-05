@@ -5,6 +5,7 @@ LDFLAGS=-Wl,--strip-all -Wl,--initial-memory=131072 -Wl,--max-memory=131072 -Wl,
 # -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
 
 all : \
+		/app/wasm/adler32.wasm \
 		/app/wasm/argon2.wasm \
 		/app/wasm/bcrypt.wasm \
 		/app/wasm/blake2b.wasm \
