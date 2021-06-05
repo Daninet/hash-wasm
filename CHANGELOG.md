@@ -1,3 +1,11 @@
+## 4.7.0 (June 5, 2021)
+* Add Adler-32 algorithm
+* New feature: saving and loading the internal state of the hash (segmented hashing and rewinding)
+* Faster builds using GNU Make
+* Fix alignment of the main buffer (might result in better performance on some platforms)
+* Updated dependencies
+* *(Special thanks to Nicholas Sherlock for his contributions)*
+
 ## 4.6.0 (March 26, 2021)
 * Smaller CRC32 binary (now it computes the lookup table at the first run)
 * Less RAM required for the WASM instances: it only allocates 128kB of RAM instead of 256kB
