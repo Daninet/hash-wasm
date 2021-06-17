@@ -112,10 +112,6 @@ XXH_FORCE_INLINE xxh_u64 XXH_xorshift64(xxh_u64 v64, int shift) {
   return v64 ^ (v64 >> shift);
 }
 
-XXH_FORCE_INLINE void* XXH_memcpy(void* dest, const void* src, size_t size) {
-  return memcpy(dest, src, size);
-}
-
 /*
  * This is a stronger avalanche,
  * inspired by Pelle Evensen's rrmxmx
@@ -420,7 +416,7 @@ void XXH3_update(XXH3_state_t* state, const xxh_u8* input, size_t len) {
     XXH_ASSERT(state->bufferedSize <= XXH3_INTERNALBUFFER_SIZE);
 
     if (state->bufferedSize + len <= XXH3_INTERNALBUFFER_SIZE) { /* fill in tmp buffer */
-      XXH_memcpy(state->buffer + state->bufferedSize, input, len);
+      memcpy2(state->buffer + state->bufferedSize, input, len);
       state->bufferedSize += (XXH32_hash_t)len;
       return;
     }
@@ -436,7 +432,7 @@ void XXH3_update(XXH3_state_t* state, const xxh_u8* input, size_t len) {
      */
     if (state->bufferedSize) {
       size_t const loadSize = XXH3_INTERNALBUFFER_SIZE - state->bufferedSize;
-      XXH_memcpy(state->buffer + state->bufferedSize, input, loadSize);
+      memcpy2(state->buffer + state->bufferedSize, input, loadSize);
       input += loadSize;
       XXH3_consumeStripes(state->acc, &state->nbStripesSoFar,
                           state->nbStripesPerBlock, state->buffer,
@@ -462,7 +458,7 @@ void XXH3_update(XXH3_state_t* state, const xxh_u8* input, size_t len) {
     XXH_ASSERT(input < bEnd);
 
     /* Some remaining input (always) : buffer it */
-    XXH_memcpy(state->buffer, input, (size_t)(bEnd - input));
+    memcpy2(state->buffer, input, (size_t)(bEnd - input));
     state->bufferedSize = (XXH32_hash_t)(bEnd - input);
   }
 
@@ -517,7 +513,7 @@ void XXH3_digest_long(
    * Digest on a local copy. This way, the state remains unaltered, and it can
    * continue ingesting more input afterwards.
    */
-  memcpy(acc, state->acc, sizeof(state->acc));
+  memcpy2(acc, state->acc, sizeof(state->acc));
   if (state->bufferedSize >= XXH_STRIPE_LEN) {
     size_t const nbStripes = (state->bufferedSize - 1) / XXH_STRIPE_LEN;
     size_t nbStripesSoFar = state->nbStripesSoFar;
@@ -531,8 +527,8 @@ void XXH3_digest_long(
     xxh_u8 lastStripe[XXH_STRIPE_LEN];
     size_t const catchupSize = XXH_STRIPE_LEN - state->bufferedSize;
     XXH_ASSERT(state->bufferedSize > 0); /* there is always some input buffered */
-    memcpy(lastStripe, state->buffer + sizeof(state->buffer) - catchupSize, catchupSize);
-    memcpy(lastStripe + catchupSize, state->buffer, state->bufferedSize);
+    memcpy2(lastStripe, state->buffer + sizeof(state->buffer) - catchupSize, catchupSize);
+    memcpy2(lastStripe + catchupSize, state->buffer, state->bufferedSize);
     XXH3_accumulate_512_scalar(
       acc,
       lastStripe,
