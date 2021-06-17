@@ -11,6 +11,7 @@
 
 #define WITH_BUFFER
 #include "hash-wasm.h"
+#define bswap32 __builtin_bswap32
 
 static const uint32_t Prime1 = 2654435761U;
 static const uint32_t Prime2 = 2246822519U;
@@ -162,10 +163,8 @@ void Hash_Final() {
   result *= Prime3;
   result ^= result >> 16;
 
-  main_buffer[0] = result >> 24;
-  main_buffer[1] = (result & 0x00ff0000) >> 16;
-  main_buffer[2] = (result & 0x0000ff00) >> 8;
-  main_buffer[3] = result & 0x000000ff;
+  result = bswap32(result);
+  memcpy32(main_buffer, &result);
 }
 
 WASM_EXPORT
