@@ -74,14 +74,14 @@ typedef struct {
   do {                                  \
     enum { XXH_sa = 1 / (int)(!!(c)) }; \
   } while (0)
-#define XXH_ACC_ALIGN 8
+#define XXH_ACC_ALIGN 64
 #define XXH_ACC_NB (XXH_STRIPE_LEN / sizeof(xxh_u64))
 #define XXH_SECRET_MERGEACCS_START 11
 #define XXH3_MIDSIZE_MAX 240
 #define XXH_SECRET_LASTACC_START 7
 #define XXH3_MIDSIZE_STARTOFFSET 3
 #define XXH3_MIDSIZE_LASTOFFSET 17
-#define XXH_SEC_ALIGN 8
+#define XXH_SEC_ALIGN 64
 
 XXH_FORCE_INLINE xxh_u64 XXH_mult32to64(xxh_u64 x, xxh_u64 y) {
   return (x & 0xFFFFFFFF) * (y & 0xFFFFFFFF);
