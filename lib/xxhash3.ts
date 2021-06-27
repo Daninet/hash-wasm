@@ -1,6 +1,6 @@
 import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
-import wasmJson from '../wasm/xxhash64.wasm.json';
+import wasmJson from '../wasm/xxhash3.wasm.json';
 import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
@@ -23,7 +23,7 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
 }
 
 /**
- * Calculates xxHash64 hash
+ * Calculates xxHash3 hash
  * @param data Input data (string, Buffer or TypedArray)
  * @param seedLow Lower 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
@@ -31,7 +31,7 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
  *  initialize the internal state of the algorithm (defaults to 0)
  * @returns Computed hash as a hexadecimal string
  */
-export function xxhash64(
+export function xxhash3(
   data: IDataType, seedLow = 0, seedHigh = 0,
 ): Promise<string> {
   if (validateSeed(seedLow)) {
@@ -63,13 +63,13 @@ export function xxhash64(
 }
 
 /**
- * Creates a new xxHash64 hash instance
+ * Creates a new xxHash3 hash instance
  * @param seedLow Lower 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
  * @param seedHigh Higher 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
  */
-export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
+export function createXXHash3(seedLow = 0, seedHigh = 0): Promise<IHasher> {
   if (validateSeed(seedLow)) {
     return Promise.reject(validateSeed(seedLow));
   }
@@ -93,7 +93,7 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
       digest: (outputType) => wasm.digest(outputType) as any,
       save: () => wasm.save(),
       load: (data) => { wasm.load(data); return obj; },
-      blockSize: 32,
+      blockSize: 512,
       digestSize: 8,
     };
     return obj;

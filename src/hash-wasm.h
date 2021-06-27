@@ -44,6 +44,23 @@ static __inline__ void* memset(void* dst, const uint8_t value, uint32_t cnt) {
   return dst;
 }
 
+static __inline__ void* memcpy2(void* dst, const void* src, uint32_t cnt) {
+  uint64_t *destination64 = dst;
+  const uint64_t *source64 = src;
+  while (cnt >= 8) {
+    *(destination64++)= *(source64++);
+    cnt -= 8;
+  }
+
+  uint8_t *destination = (uint8_t*)destination64;
+  const uint8_t *source = (uint8_t*)source64;
+  while (cnt) {
+    *(destination++)= *(source++);
+    --cnt;
+  }
+  return dst;
+}
+
 static __inline__ void memcpy16(void* dst, const void* src) {
   uint64_t* dst64 = (uint64_t*)dst;
   uint64_t* src64 = (uint64_t*)src;

@@ -235,6 +235,8 @@ export async function WASMInterface(binary: any, hashLength: number) {
       break;
 
     case 'xxhash64': // cannot simplify
+    case 'xxhash3':
+    case 'xxhash128':
       canSimplify = () => false;
       break;
 

@@ -1,6 +1,6 @@
 import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
 import Mutex from './mutex';
-import wasmJson from '../wasm/xxhash64.wasm.json';
+import wasmJson from '../wasm/xxhash128.wasm.json';
 import lockedCreate from './lockedCreate';
 import { IDataType } from './util';
 
@@ -23,7 +23,7 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
 }
 
 /**
- * Calculates xxHash64 hash
+ * Calculates xxHash128 hash
  * @param data Input data (string, Buffer or TypedArray)
  * @param seedLow Lower 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
@@ -31,7 +31,7 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
  *  initialize the internal state of the algorithm (defaults to 0)
  * @returns Computed hash as a hexadecimal string
  */
-export function xxhash64(
+export function xxhash128(
   data: IDataType, seedLow = 0, seedHigh = 0,
 ): Promise<string> {
   if (validateSeed(seedLow)) {
@@ -43,7 +43,7 @@ export function xxhash64(
   }
 
   if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 8)
+    return lockedCreate(mutex, wasmJson, 16)
       .then((wasm) => {
         wasmCache = wasm;
         writeSeed(seedBuffer, seedLow, seedHigh);
@@ -63,13 +63,13 @@ export function xxhash64(
 }
 
 /**
- * Creates a new xxHash64 hash instance
+ * Creates a new xxHash128 hash instance
  * @param seedLow Lower 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
  * @param seedHigh Higher 32 bits of the number used to
  *  initialize the internal state of the algorithm (defaults to 0)
  */
-export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
+export function createXXHash128(seedLow = 0, seedHigh = 0): Promise<IHasher> {
   if (validateSeed(seedLow)) {
     return Promise.reject(validateSeed(seedLow));
   }
@@ -78,7 +78,7 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
     return Promise.reject(validateSeed(seedHigh));
   }
 
-  return WASMInterface(wasmJson, 8).then((wasm) => {
+  return WASMInterface(wasmJson, 16).then((wasm) => {
     const instanceBuffer = new ArrayBuffer(8);
     writeSeed(instanceBuffer, seedLow, seedHigh);
     wasm.writeMemory(new Uint8Array(instanceBuffer));
@@ -93,8 +93,8 @@ export function createXXHash64(seedLow = 0, seedHigh = 0): Promise<IHasher> {
       digest: (outputType) => wasm.digest(outputType) as any,
       save: () => wasm.save(),
       load: (data) => { wasm.load(data); return obj; },
-      blockSize: 32,
-      digestSize: 8,
+      blockSize: 512,
+      digestSize: 16,
     };
     return obj;
   });
