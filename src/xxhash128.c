@@ -74,14 +74,14 @@ typedef struct {
   do {                                  \
     enum { XXH_sa = 1 / (int)(!!(c)) }; \
   } while (0)
-#define XXH_ACC_ALIGN 8
+#define XXH_ACC_ALIGN 64
 #define XXH_ACC_NB (XXH_STRIPE_LEN / sizeof(xxh_u64))
 #define XXH_SECRET_MERGEACCS_START 11
 #define XXH3_MIDSIZE_MAX 240
 #define XXH_SECRET_LASTACC_START 7
 #define XXH3_MIDSIZE_STARTOFFSET 3
 #define XXH3_MIDSIZE_LASTOFFSET 17
-#define XXH_SEC_ALIGN 8
+#define XXH_SEC_ALIGN 64
 
 XXH_FORCE_INLINE xxh_u64 XXH_mult32to64(xxh_u64 x, xxh_u64 y) {
   return (x & 0xFFFFFFFF) * (y & 0xFFFFFFFF);
@@ -110,20 +110,6 @@ XXH_FORCE_INLINE void XXH_writeLE64(void* dst, xxh_u64 v64) {
 XXH_FORCE_INLINE xxh_u64 XXH_xorshift64(xxh_u64 v64, int shift) {
   XXH_ASSERT(0 <= shift && shift < 64);
   return v64 ^ (v64 >> shift);
-}
-
-/*
- * This is a stronger avalanche,
- * inspired by Pelle Evensen's rrmxmx
- * preferable when input has not been previously mixed
- */
-XXH_FORCE_INLINE XXH64_hash_t XXH3_rrmxmx(xxh_u64 h64, xxh_u64 len) {
-  /* this mix is inspired by Pelle Evensen's rrmxmx */
-  h64 ^= XXH_rotl64(h64, 49) ^ XXH_rotl64(h64, 24);
-  h64 *= 0x9FB21C651E98DF25ULL;
-  h64 ^= (h64 >> 35) + len;
-  h64 *= 0x9FB21C651E98DF25ULL;
-  return XXH_xorshift64(h64, 28);
 }
 
 XXH_FORCE_INLINE XXH128_hash_t XXH_mult64to128(xxh_u64 lhs, xxh_u64 rhs) {
@@ -221,7 +207,7 @@ struct XXH3_state_s {
 
 typedef struct XXH3_state_s XXH3_state_t;
 
-static xxh_u64 XXH64_avalanche(xxh_u64 h64) {
+XXH_FORCE_INLINE xxh_u64 XXH64_avalanche(xxh_u64 h64) {
   h64 ^= h64 >> 33;
   h64 *= XXH_PRIME64_2;
   h64 ^= h64 >> 29;
@@ -230,19 +216,21 @@ static xxh_u64 XXH64_avalanche(xxh_u64 h64) {
   return h64;
 }
 
-static xxh_u64 XXH3_mul128_fold64(xxh_u64 lhs, xxh_u64 rhs) {
+XXH_FORCE_INLINE xxh_u64 XXH3_mul128_fold64(xxh_u64 lhs, xxh_u64 rhs) {
   XXH128_hash_t product = XXH_mult64to128(lhs, rhs);
   return product.low64 ^ product.high64;
 }
 
-inline xxh_u64 XXH3_mix16B(
+XXH_FORCE_INLINE xxh_u64 XXH3_mix16B(
   const xxh_u8* XXH_RESTRICT input,
   const xxh_u8* XXH_RESTRICT secret, xxh_u64 seed64
 ) {
   xxh_u64 const input_lo = XXH_readLE64(input);
   xxh_u64 const input_hi = XXH_readLE64(input + 8);
-  return XXH3_mul128_fold64(input_lo ^ (XXH_readLE64(secret) + seed64),
-                            input_hi ^ (XXH_readLE64(secret + 8) - seed64));
+  return XXH3_mul128_fold64(
+    input_lo ^ (XXH_readLE64(secret) + seed64),
+    input_hi ^ (XXH_readLE64(secret + 8) - seed64)
+  );
 }
 
 static void XXH3_reset_internal(
@@ -404,8 +392,7 @@ void XXH3_update(XXH3_state_t* state, const xxh_u8* input, size_t len) {
     state->totalLen += len;
     XXH_ASSERT(state->bufferedSize <= XXH3_INTERNALBUFFER_SIZE);
 
-    if (state->bufferedSize + len <=
-        XXH3_INTERNALBUFFER_SIZE) { /* fill in tmp buffer */
+    if (state->bufferedSize + len <= XXH3_INTERNALBUFFER_SIZE) { /* fill in tmp buffer */
       memcpy2(state->buffer + state->bufferedSize, input, len);
       state->bufferedSize += (XXH32_hash_t)len;
       return;
@@ -424,10 +411,12 @@ void XXH3_update(XXH3_state_t* state, const xxh_u8* input, size_t len) {
       size_t const loadSize = XXH3_INTERNALBUFFER_SIZE - state->bufferedSize;
       memcpy2(state->buffer + state->bufferedSize, input, loadSize);
       input += loadSize;
-      XXH3_consumeStripes(state->acc, &state->nbStripesSoFar,
-                          state->nbStripesPerBlock, state->buffer,
-                          XXH3_INTERNALBUFFER_STRIPES, secret,
-                          state->secretLimit);
+      XXH3_consumeStripes(
+        state->acc, &state->nbStripesSoFar,
+        state->nbStripesPerBlock, state->buffer,
+        XXH3_INTERNALBUFFER_STRIPES, secret,
+        state->secretLimit
+      );
       state->bufferedSize = 0;
     }
     XXH_ASSERT(input < bEnd);
@@ -437,8 +426,9 @@ void XXH3_update(XXH3_state_t* state, const xxh_u8* input, size_t len) {
       const xxh_u8* const limit = bEnd - XXH3_INTERNALBUFFER_SIZE;
       do {
         XXH3_consumeStripes(
-            state->acc, &state->nbStripesSoFar, state->nbStripesPerBlock, input,
-            XXH3_INTERNALBUFFER_STRIPES, secret, state->secretLimit);
+          state->acc, &state->nbStripesSoFar, state->nbStripesPerBlock, input,
+          XXH3_INTERNALBUFFER_STRIPES, secret, state->secretLimit
+        );
         input += XXH3_INTERNALBUFFER_SIZE;
       } while (input < limit);
       /* for last partial stripe */
@@ -506,23 +496,25 @@ void XXH3_digest_long(
   if (state->bufferedSize >= XXH_STRIPE_LEN) {
     size_t const nbStripes = (state->bufferedSize - 1) / XXH_STRIPE_LEN;
     size_t nbStripesSoFar = state->nbStripesSoFar;
-    XXH3_consumeStripes(acc, &nbStripesSoFar, state->nbStripesPerBlock,
-                        state->buffer, nbStripes, secret, state->secretLimit);
+    XXH3_consumeStripes(
+      acc, &nbStripesSoFar, state->nbStripesPerBlock,
+      state->buffer, nbStripes, secret, state->secretLimit
+    );
     /* last stripe */
     XXH3_accumulate_512_scalar(
-        acc, state->buffer + state->bufferedSize - XXH_STRIPE_LEN,
-        secret + state->secretLimit - XXH_SECRET_LASTACC_START);
+      acc, state->buffer + state->bufferedSize - XXH_STRIPE_LEN,
+      secret + state->secretLimit - XXH_SECRET_LASTACC_START
+    );
   } else { /* bufferedSize < XXH_STRIPE_LEN */
     xxh_u8 lastStripe[XXH_STRIPE_LEN];
     size_t const catchupSize = XXH_STRIPE_LEN - state->bufferedSize;
-    XXH_ASSERT(state->bufferedSize >
-               0); /* there is always some input buffered */
-    memcpy2(lastStripe, state->buffer + sizeof(state->buffer) - catchupSize,
-            catchupSize);
+    XXH_ASSERT(state->bufferedSize > 0); /* there is always some input buffered */
+    memcpy2(lastStripe, state->buffer + sizeof(state->buffer) - catchupSize, catchupSize);
     memcpy2(lastStripe + catchupSize, state->buffer, state->bufferedSize);
     XXH3_accumulate_512_scalar(
-        acc, lastStripe,
-        secret + state->secretLimit - XXH_SECRET_LASTACC_START);
+      acc, lastStripe,
+      secret + state->secretLimit - XXH_SECRET_LASTACC_START
+    );
   }
 }
 
@@ -951,19 +943,18 @@ XXH128_hash_t XXH3_128bits_digest(const XXH3_state_t* state) {
   if (state->totalLen > XXH3_MIDSIZE_MAX) {
     XXH_ALIGN(XXH_ACC_ALIGN) XXH64_hash_t acc[XXH_ACC_NB];
     XXH3_digest_long(acc, state, secret);
-    XXH_ASSERT(state->secretLimit + XXH_STRIPE_LEN >=
-               sizeof(acc) + XXH_SECRET_MERGEACCS_START);
+    XXH_ASSERT(state->secretLimit + XXH_STRIPE_LEN >= sizeof(acc) + XXH_SECRET_MERGEACCS_START);
     {
       XXH128_hash_t h128;
       h128.low64 = XXH3_mergeAccs(
         acc, secret + XXH_SECRET_MERGEACCS_START, (xxh_u64)state->totalLen * XXH_PRIME64_1
       );
       h128.high64 =
-          XXH3_mergeAccs(
-            acc,
-            secret + state->secretLimit + XXH_STRIPE_LEN - sizeof(acc) - XXH_SECRET_MERGEACCS_START,
-            ~((xxh_u64)state->totalLen * XXH_PRIME64_2)
-          );
+        XXH3_mergeAccs(
+          acc,
+          secret + state->secretLimit + XXH_STRIPE_LEN - sizeof(acc) - XXH_SECRET_MERGEACCS_START,
+          ~((xxh_u64)state->totalLen * XXH_PRIME64_2)
+        );
       return h128;
     }
   }

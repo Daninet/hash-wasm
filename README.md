@@ -36,6 +36,8 @@ Supported algorithms
 | Whirlpool                                      | 6 kB                  |
 | xxHash32                                       | 3 kB                  |
 | xxHash64                                       | 4 kB                  |
+| xxHash3                                        | 7 kB                  |
+| xxHash128                                      | 8 kB                  |
 
 Features
 =======
@@ -438,6 +440,8 @@ sm3(data: IDataType): Promise<string>
 whirlpool(data: IDataType): Promise<string>
 xxhash32(data: IDataType, seed?: number): Promise<string>
 xxhash64(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
+xxhash3(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
+xxhash128(data: IDataType, seedLow?: number, seedHigh?: number): Promise<string>
 
 interface IHasher {
   init: () => IHasher;
@@ -468,6 +472,8 @@ createSM3(): Promise<IHasher>
 createWhirlpool(): Promise<IHasher>
 createXXHash32(seed: number): Promise<IHasher>
 createXXHash64(seedLow: number, seedHigh: number): Promise<IHasher>
+createXXHash3(seedLow: number, seedHigh: number): Promise<IHasher>
+createXXHash128(seedLow: number, seedHigh: number): Promise<IHasher>
 
 createHMAC(hashFunction: Promise<IHasher>, key: IDataType): Promise<IHasher>
 

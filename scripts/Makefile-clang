@@ -23,7 +23,9 @@ all : \
 		/app/wasm/sm3.wasm \
 		/app/wasm/whirlpool.wasm \
 		/app/wasm/xxhash32.wasm \
-		/app/wasm/xxhash64.wasm 
+		/app/wasm/xxhash64.wasm \
+		/app/wasm/xxhash3.wasm \
+		/app/wasm/xxhash128.wasm 
 	clang --version
 	wasm-ld --version
 

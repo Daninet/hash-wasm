@@ -1,5 +1,7 @@
-## 4.8.0 (...)
+## 4.8.0 (June 27, 2021)
 * Optimized Adler-32 for WASM
+* Add xxhash3() and xxhash128() hash functions
+* Slightly faster xxhash32() and xxhash64()
 
 ## 4.7.0 (June 5, 2021)
 * Add Adler-32 algorithm
