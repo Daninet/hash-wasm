@@ -93,7 +93,7 @@ export function createXXHash3(seedLow = 0, seedHigh = 0): Promise<IHasher> {
       digest: (outputType) => wasm.digest(outputType) as any,
       save: () => wasm.save(),
       load: (data) => { wasm.load(data); return obj; },
-      blockSize: 32,
+      blockSize: 512,
       digestSize: 8,
     };
     return obj;
