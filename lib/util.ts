@@ -10,7 +10,7 @@ function getGlobal() {
 }
 
 const globalObject = getGlobal();
-const nodeBuffer = (globalObject as NodeJS.Global).Buffer ?? null;
+const nodeBuffer = globalObject.Buffer ?? null;
 const textEncoder = globalObject.TextEncoder ? new globalObject.TextEncoder() : null;
 
 export type ITypedArray = Uint8Array | Uint16Array | Uint32Array;
