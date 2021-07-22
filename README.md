@@ -20,7 +20,7 @@ Supported algorithms
 | BLAKE2b                                        | 6 kB                  |
 | BLAKE2s                                        | 5 kB                  |
 | BLAKE3                                         | 9 kB                  |
-| CRC32                                          | 3 kB                  |
+| CRC32, CRC32C                                  | 3 kB                  |
 | HMAC                                           | -                     |
 | MD4                                            | 4 kB                  |
 | MD5                                            | 4 kB                  |
@@ -426,6 +426,7 @@ blake2b(data: IDataType, bits?: number, key?: IDataType): Promise<string> // def
 blake2s(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 256 bits
 blake3(data: IDataType, bits?: number, key?: IDataType): Promise<string> // default is 256 bits
 crc32(data: IDataType): Promise<string>
+crc32c(data: IDataType): Promise<string>
 keccak(data: IDataType, bits?: 224 | 256 | 384 | 512): Promise<string> // default is 512 bits
 md4(data: IDataType): Promise<string>
 md5(data: IDataType): Promise<string>
@@ -458,6 +459,7 @@ createBLAKE2b(bits?: number, key?: IDataType): Promise<IHasher> // default is 51
 createBLAKE2s(bits?: number, key?: IDataType): Promise<IHasher> // default is 256 bits
 createBLAKE3(bits?: number, key?: IDataType): Promise<IHasher> // default is 256 bits
 createCRC32(): Promise<IHasher>
+createCRC32C(): Promise<IHasher>
 createKeccak(bits?: 224 | 256 | 384 | 512): Promise<IHasher> // default is 512 bits
 createMD4(): Promise<IHasher>
 createMD5(): Promise<IHasher>

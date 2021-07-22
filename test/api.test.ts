@@ -22,7 +22,7 @@ async function createAllFunctions(includeHMAC) : Promise<IHasher[]> {
 
 test('IHasherApi', async () => {
   const functions: IHasher[] = await createAllFunctions(true);
-  expect(functions.length).toBe(22);
+  expect(functions.length).toBe(23);
 
   // eslint-disable-next-line no-restricted-syntax
   for (const fn of functions) {
@@ -67,7 +67,7 @@ test('saveAndLoad', async () => {
 
   const functions: IHasher[] = await createAllFunctions(false);
 
-  expect(functions.length).toBe(21);
+  expect(functions.length).toBe(22);
 
   functions.forEach((fn, index) => {
     fn.init();
@@ -94,7 +94,7 @@ test('saveAndLoad - load as init', async () => {
     fn.update('Hello world');
     return fn.digest();
   });
-  expect(helloWorldHashes.length).toBe(21);
+  expect(helloWorldHashes.length).toBe(22);
   const savedHasherStates = (await createAllFunctions(false)).map((fn) => {
     fn.update('Hello ');
     return fn.save();
