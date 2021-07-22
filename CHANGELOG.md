@@ -1,3 +1,7 @@
+## 4.9.0 (July 22, 2021)
+* Add CRC32C
+* Update dependencies, including Clang
+
 ## 4.8.0 (June 27, 2021)
 * Optimized Adler-32 for WASM
 * Add xxhash3() and xxhash128() hash functions
