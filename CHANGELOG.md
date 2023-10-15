@@ -1,3 +1,7 @@
+## 4.10.0 (October 15, 2023)
+* Add sideEffects: false to package.json
+* Update dependencies, including Clang
+
 ## 4.9.0 (July 22, 2021)
 * Add CRC32C
 * Update dependencies, including Clang

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import { terser } from 'rollup-plugin-terser';

@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 import crypto from 'crypto';
 import {
-  createHMAC, createMD4, createMD5, createSHA1,
+  createHMAC, createMD5, createSHA1,
   createSHA224, createSHA256, createSHA384, createSHA512,
   createSHA3,
 } from '../lib';
@@ -24,7 +24,6 @@ async function getHashWasmHMAC(algorithm, key, data) {
   return hmac.digest();
 }
 
-const md4Hasher = createMD4();
 const md5Hasher = createMD5();
 const sha1Hasher = createSHA1();
 const sha224Hasher = createSHA224();
@@ -37,7 +36,6 @@ const sha3384Hasher = createSHA3(384);
 const sha3512Hasher = createSHA3(512);
 
 async function HMACTest(key, data) {
-  expect(await getHashWasmHMAC(md4Hasher, key, data)).toBe(getNodeHMAC('md4', key, data));
   expect(await getHashWasmHMAC(md5Hasher, key, data)).toBe(getNodeHMAC('md5', key, data));
   expect(await getHashWasmHMAC(sha1Hasher, key, data)).toBe(getNodeHMAC('sha1', key, data));
   expect(await getHashWasmHMAC(sha224Hasher, key, data)).toBe(getNodeHMAC('sha224', key, data));

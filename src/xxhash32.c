@@ -20,12 +20,12 @@ static const uint32_t Prime4 = 668265263U;
 static const uint32_t Prime5 = 374761393U;
 
 // temporarily store up to 15 bytes between multiple add() calls
-static const uint32_t MaxBufferSize = 15 + 1;
+#define MAX_BUFFER_SIZE (15 + 1)
 
 // internal state and temporary buffer
 struct XXHash32_CTX {
-  uint32_t state[4];  // state[2] == seed if totalLength < MaxBufferSize
-  unsigned char buffer[MaxBufferSize];
+  uint32_t state[4];  // state[2] == seed if totalLength < MAX_BUFFER_SIZE
+  unsigned char buffer[MAX_BUFFER_SIZE];
   unsigned int bufferSize;
   uint64_t totalLength;
 };
@@ -79,7 +79,7 @@ void Hash_Update(uint32_t length) {
   const unsigned char* data = (const unsigned char*)input;
 
   // unprocessed old data plus new data still fit in temporary buffer ?
-  if (sctx.bufferSize + length < MaxBufferSize) {
+  if (sctx.bufferSize + length < MAX_BUFFER_SIZE) {
     // just add new data
     while (length-- > 0) {
       sctx.buffer[sctx.bufferSize++] = *data++;
@@ -89,12 +89,12 @@ void Hash_Update(uint32_t length) {
 
   // point beyond last byte
   const unsigned char* stop = data + length;
-  const unsigned char* stopBlock = stop - MaxBufferSize;
+  const unsigned char* stopBlock = stop - MAX_BUFFER_SIZE;
 
   // some data left from previous update ?
   if (sctx.bufferSize > 0) {
     // make sure temporary buffer is full (16 bytes)
-    while (sctx.bufferSize < MaxBufferSize) {
+    while (sctx.bufferSize < MAX_BUFFER_SIZE) {
       sctx.buffer[sctx.bufferSize++] = *data++;
     }
 
@@ -130,7 +130,7 @@ void Hash_Final() {
   uint32_t result = (uint32_t)sctx.totalLength;
 
   // fold 128 bit state into one single 32 bit value
-  if (sctx.totalLength >= MaxBufferSize) {
+  if (sctx.totalLength >= MAX_BUFFER_SIZE) {
     result += rotateLeft(sctx.state[0],  1) +
               rotateLeft(sctx.state[1],  7) +
               rotateLeft(sctx.state[2], 12) +

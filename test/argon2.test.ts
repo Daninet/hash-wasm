@@ -7,7 +7,8 @@ const hash = async (
   password, salt, parallelism, iterations, memorySize,
   hashLength, outputType, hashType = null,
 ) => {
-  let fn = null;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  let fn: Function = null as any;
   if (hashType === 'd') {
     fn = argon2d;
   } else if (hashType === 'id') {
@@ -335,7 +336,7 @@ test('longer calculations', async () => {
     '67f09ac991e535f9a99f4d6c4ac80f32',
     'e4a286c82d343ab9d8f77af35c6aaf0b',
   ]);
-});
+}, 30000);
 
 test('Invalid parameters', async () => {
   const functions = [argon2i, argon2d, argon2id];

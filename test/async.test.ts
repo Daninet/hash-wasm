@@ -9,7 +9,7 @@ function getMemoryUsage() {
   // eslint-disable-next-line no-bitwise
   const i = ~~(Math.log2(usage) / 10);
   // eslint-disable-next-line no-restricted-properties,prefer-template
-  return (usage / Math.pow(1024, i)).toFixed(2) + ('KMGTPEZY'[i - 1] || '') + 'B';
+  return (usage / (1024 ** i)).toFixed(2) + ('KMGTPEZY'[i - 1] || '') + 'B';
 }
 
 test('Async cycle multiple algorithms', async () => {

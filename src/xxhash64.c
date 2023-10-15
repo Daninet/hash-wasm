@@ -20,11 +20,11 @@ const uint64_t Prime4 = 9650029242287828579ULL;
 const uint64_t Prime5 = 2870177450012600261ULL;
 
 // temporarily store up to 31 bytes between multiple add() calls
-const uint64_t MaxBufferSize = 31 + 1;
+#define MAX_BUFFER_SIZE (31 + 1)
 
 struct XXHash64_CTX {
   uint64_t state[4];
-  unsigned char buffer[MaxBufferSize];
+  unsigned char buffer[MAX_BUFFER_SIZE];
   unsigned int bufferSize;
   uint64_t totalLength;
 };
@@ -83,7 +83,7 @@ void Hash_Update(uint32_t length) {
   const unsigned char* data = (const unsigned char*)input;
 
   // unprocessed old data plus new data still fit in temporary buffer ?
-  if (sctx.bufferSize + length < MaxBufferSize) {
+  if (sctx.bufferSize + length < MAX_BUFFER_SIZE) {
     // just add new data
     while (length-- > 0) {
       sctx.buffer[sctx.bufferSize++] = *data++;
@@ -94,12 +94,12 @@ void Hash_Update(uint32_t length) {
 
   // point beyond last byte
   const unsigned char* stop = data + length;
-  const unsigned char* stopBlock = stop - MaxBufferSize;
+  const unsigned char* stopBlock = stop - MAX_BUFFER_SIZE;
 
   // some data left from previous update ?
   if (sctx.bufferSize > 0) {
     // make sure temporary buffer is full (16 bytes)
-    while (sctx.bufferSize < MaxBufferSize) {
+    while (sctx.bufferSize < MAX_BUFFER_SIZE) {
       sctx.buffer[sctx.bufferSize++] = *data++;
     }
 
@@ -135,7 +135,7 @@ WASM_EXPORT
 void Hash_Final() {
   // fold 256 bit state into one single 64 bit value
   uint64_t result;
-  if (sctx.totalLength >= MaxBufferSize) {
+  if (sctx.totalLength >= MAX_BUFFER_SIZE) {
     result = rotateLeft(sctx.state[0], 1) + rotateLeft(sctx.state[1], 7) +
              rotateLeft(sctx.state[2], 12) + rotateLeft(sctx.state[3], 18);
     result = (result ^ processSingle(0, sctx.state[0])) * Prime1 + Prime4;
