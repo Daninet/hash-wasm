@@ -64,6 +64,9 @@ export function createKeccak(bits: IValidBits = 512): Promise<IHasher> {
       init: () => { wasm.init(bits); return obj; },
       update: (data) => { wasm.update(data); return obj; },
       digest: (outputType) => wasm.digest(outputType, 0x01) as any,
+      calculate: (outputType) => (outputType === 'binary'
+        ? (data) => wasm.calculateBin(data, bits, 0x01)
+        : (data) => wasm.calculateHex(data, bits, 0x01)) as any,
       save: () => wasm.save(),
       load: (data) => { wasm.load(data); return obj; },
       blockSize: 200 - 2 * outputSize,

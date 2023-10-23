@@ -32,6 +32,13 @@ export type IHasher = {
     (outputType?: 'hex'): string;
   };
   /**
+   * Shorthand for init . update . digest('binary'|'hex')
+   */
+  calculate?: {
+    (outputType: 'binary'): (data: IDataType) => Uint8Array;
+    (outputType?: 'hex'): (data: IDataType) => string;
+  }
+  /**
    * Save the current internal state of the hasher for later resumption with load().
    * Cannot be called before .init() or after .digest()
    *
@@ -244,8 +251,8 @@ export async function WASMInterface(binary: any, hashLength: number) {
       break;
   }
 
-  // shorthand for (init + update + digest) for better performance
-  const calculate = (
+  // shorthand for (init . update . digest('hex')) for better performance
+  const calculateHex = (
     data: IDataType, initParam = null, digestParam = null,
   ): string => {
     if (!canSimplify(data, initParam)) {
@@ -261,6 +268,23 @@ export async function WASMInterface(binary: any, hashLength: number) {
     return getDigestHex(digestChars, memoryView, hashLength);
   };
 
+  // shorthand for (init . update . digest('binary')) for better performance
+  const calculateBin = (
+    data: IDataType, initParam = null, digestParam = null,
+  ): Uint8Array => {
+    if (!canSimplify(data, initParam)) {
+      init(initParam);
+      update(data);
+      return digest('binary', digestParam) as Uint8Array;
+    }
+
+    const buffer = getUInt8Buffer(data);
+    memoryView.set(buffer);
+    wasmInstance.exports.Hash_Calculate(buffer.length, initParam, digestParam);
+
+    return memoryView.slice(0, hashLength);
+  };
+
   await setupInterface();
 
   return {
@@ -273,7 +297,9 @@ export async function WASMInterface(binary: any, hashLength: number) {
     digest,
     save,
     load,
-    calculate,
+    calculate: calculateHex,
+    calculateHex,
+    calculateBin,
     hashLength,
   };
 }
