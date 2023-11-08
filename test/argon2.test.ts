@@ -104,6 +104,46 @@ test('argon2i', async () => {
   ).toBe('c0efcdc71934adfa47d3e48cb82679899b21');
 });
 
+test.each`
+  hashFn      | secret          | memorySize | iterations | parallelism | expected
+  ${argon2i}  | ${'somesecret'} | ${64}      | ${1}       | ${1}        | ${'$argon2i$v=19$m=64,t=1,p=1$c29tZXNhbHQ$feIpCNM774/NRKH7kk05fPDR9AVmS1Ti'}
+  ${argon2d}  | ${'somesecret'} | ${64}      | ${1}       | ${1}        | ${'$argon2d$v=19$m=64,t=1,p=1$c29tZXNhbHQ$BC1zOS/31Hbq1XqrbUolSJD8lbGO5hYA'}
+  ${argon2id} | ${'somesecret'} | ${64}      | ${1}       | ${1}        | ${'$argon2id$v=19$m=64,t=1,p=1$c29tZXNhbHQ$RvwmOL1c3noOUb9Tb0PVAyFny0544DEN'}
+                                             
+  ${argon2i}  | ${'somesecret'} | ${64}      | ${2}       | ${1}        | ${'$argon2i$v=19$m=64,t=2,p=1$c29tZXNhbHQ$TSUIZoltkBnapO9908hb/n6UtBg/NzWC'}
+  ${argon2d}  | ${'somesecret'} | ${64}      | ${2}       | ${1}        | ${'$argon2d$v=19$m=64,t=2,p=1$c29tZXNhbHQ$UwnJWSBvwsqUqSfQ3O8eAeM35RaF3qVV'}
+  ${argon2id} | ${'somesecret'} | ${64}      | ${2}       | ${1}        | ${'$argon2id$v=19$m=64,t=2,p=1$c29tZXNhbHQ$iOtAF9uLeVkqVavTbncWiTAX+a0RQ34k'}
+`('$hashFn.name with secret=$secret and m=$memorySize,t=$iterations,p=$parallelism', async ({ hashFn, expected, ...params }) => {
+  expect(
+    await hashFn({
+      ...params,
+      password: 'password',
+      salt: 'somesalt',
+      hashLength: 24,
+      outputType: 'encoded',
+    }),
+  ).toBe(expected);
+});
+
+test.each`
+  phcString                                                                     | secret          
+  ${'$argon2i$v=19$m=64,t=1,p=1$c29tZXNhbHQ$feIpCNM774/NRKH7kk05fPDR9AVmS1Ti'}  | ${'somesecret'} 
+  ${'$argon2d$v=19$m=64,t=1,p=1$c29tZXNhbHQ$BC1zOS/31Hbq1XqrbUolSJD8lbGO5hYA'}  | ${'somesecret'} 
+  ${'$argon2id$v=19$m=64,t=1,p=1$c29tZXNhbHQ$RvwmOL1c3noOUb9Tb0PVAyFny0544DEN'} | ${'somesecret'} 
+                                                                                                  
+  ${'$argon2i$v=19$m=64,t=2,p=1$c29tZXNhbHQ$TSUIZoltkBnapO9908hb/n6UtBg/NzWC'}  | ${'somesecret'} 
+  ${'$argon2d$v=19$m=64,t=2,p=1$c29tZXNhbHQ$UwnJWSBvwsqUqSfQ3O8eAeM35RaF3qVV'}  | ${'somesecret'} 
+  ${'$argon2id$v=19$m=64,t=2,p=1$c29tZXNhbHQ$iOtAF9uLeVkqVavTbncWiTAX+a0RQ34k'} | ${'somesecret'} 
+`('argon2Verify("$phcString") with secret=$secret', async ({ phcString, secret }) => {
+  expect(
+    await argon2Verify({
+      password: 'password',
+      secret,
+      hash: phcString,
+    }),
+  ).toBe(true);
+});
+
 test('others', async () => {
   expect(
     await hashMultiple('password', 'somesalt', 1, 1, 64, 24, 'hex'),

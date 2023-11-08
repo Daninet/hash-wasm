@@ -18,6 +18,10 @@ export interface IArgon2Options {
    */
   salt: IDataType;
   /**
+   * Secret for keyed hashing
+   */
+  secret?: IDataType;
+  /**
    * Number of iterations to perform
    */
   iterations: number;
@@ -118,6 +122,7 @@ async function argon2Internal(options: IArgon2OptionsExtended): Promise<string |
   const version = 0x13;
   const hashType = getHashType(options.hashType);
   const { memorySize } = options; // in KB
+  const secret = getUInt8Buffer(options.secret ?? '');
 
   const [argon2Interface, blake512] = await Promise.all([
     WASMInterface(wasmJson, 1024),
@@ -143,7 +148,8 @@ async function argon2Internal(options: IArgon2OptionsExtended): Promise<string |
   blake512.update(password);
   blake512.update(int32LE(salt.length));
   blake512.update(salt);
-  blake512.update(int32LE(0)); // key length + key
+  blake512.update(int32LE(secret.length));
+  blake512.update(secret);
   blake512.update(int32LE(0)); // associatedData length + associatedData
 
   const segments = Math.floor(memorySize / (parallelism * 4)); // length of each lane
@@ -207,6 +213,8 @@ const validateOptions = (options: IArgon2Options) => {
   if (options.salt.length < 8) {
     throw new Error('Salt should be at least 8 bytes long');
   }
+
+  options.secret = getUInt8Buffer(options.secret ?? '');
 
   if (!Number.isInteger(options.iterations) || options.iterations < 1) {
     throw new Error('Iterations should be a positive number');
@@ -290,12 +298,20 @@ export interface Argon2VerifyOptions {
    */
   password: IDataType;
   /**
+   * Secret used on hash creation
+   */
+  secret?: IDataType;
+  /**
    * A previously generated argon2 hash in the 'encoded' output format
    */
   hash: string;
 }
 
-const getHashParameters = (password: IDataType, encoded: string): IArgon2OptionsExtended => {
+const getHashParameters = (
+  password: IDataType,
+  encoded: string,
+  secret?: IDataType,
+): IArgon2OptionsExtended => {
   const regex = /^\$argon2(id|i|d)\$v=([0-9]+)\$((?:[mtp]=[0-9]+,){2}[mtp]=[0-9]+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
   const match = encoded.match(regex);
   if (!match) {
@@ -317,6 +333,7 @@ const getHashParameters = (password: IDataType, encoded: string): IArgon2Options
   return {
     ...parsedParameters,
     password,
+    secret,
     hashType: hashType as IArgon2OptionsExtended['hashType'],
     salt: decodeBase64(salt),
     hashLength: getDecodeBase64Length(hash),
@@ -341,7 +358,7 @@ const validateVerifyOptions = (options: Argon2VerifyOptions) => {
 export async function argon2Verify(options: Argon2VerifyOptions): Promise<boolean> {
   validateVerifyOptions(options);
 
-  const params = getHashParameters(options.password, options.hash);
+  const params = getHashParameters(options.password, options.hash, options.secret);
   validateOptions(params);
 
   const hashStart = options.hash.lastIndexOf('$') + 1;
