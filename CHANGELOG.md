@@ -1,3 +1,6 @@
+## 4.11.0 (November 13, 2023)
+* Added `secret` parameter to Argon2 (by [@malobre](https://github.com/malobre))
+
 ## 4.10.0 (October 15, 2023)
 * Add sideEffects: false to package.json
 * Update dependencies, including Clang
