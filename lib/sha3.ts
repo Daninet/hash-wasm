@@ -1,7 +1,7 @@
 import {
-  WASMInterface,
-  type IWASMInterface,
-  type IHasher,
+	WASMInterface,
+	type IWASMInterface,
+	type IHasher,
 } from "./WASMInterface";
 import Mutex from "./mutex";
 import wasmJson from "../wasm/sha3.wasm.json";
@@ -13,10 +13,10 @@ const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
 function validateBits(bits: IValidBits) {
-  if (![224, 256, 384, 512].includes(bits)) {
-    return new Error("Invalid variant! Valid values: 224, 256, 384, 512");
-  }
-  return null;
+	if (![224, 256, 384, 512].includes(bits)) {
+		return new Error("Invalid variant! Valid values: 224, 256, 384, 512");
+	}
+	return null;
 }
 
 /**
@@ -26,25 +26,25 @@ function validateBits(bits: IValidBits) {
  * @returns Computed hash as a hexadecimal string
  */
 export function sha3(data: IDataType, bits: IValidBits = 512): Promise<string> {
-  if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
-  }
+	if (validateBits(bits)) {
+		return Promise.reject(validateBits(bits));
+	}
 
-  const hashLength = bits / 8;
+	const hashLength = bits / 8;
 
-  if (wasmCache === null || wasmCache.hashLength !== hashLength) {
-    return lockedCreate(mutex, wasmJson, hashLength).then((wasm) => {
-      wasmCache = wasm;
-      return wasmCache.calculate(data, bits, 0x06);
-    });
-  }
+	if (wasmCache === null || wasmCache.hashLength !== hashLength) {
+		return lockedCreate(mutex, wasmJson, hashLength).then((wasm) => {
+			wasmCache = wasm;
+			return wasmCache.calculate(data, bits, 0x06);
+		});
+	}
 
-  try {
-    const hash = wasmCache.calculate(data, bits, 0x06);
-    return Promise.resolve(hash);
-  } catch (err) {
-    return Promise.reject(err);
-  }
+	try {
+		const hash = wasmCache.calculate(data, bits, 0x06);
+		return Promise.resolve(hash);
+	} catch (err) {
+		return Promise.reject(err);
+	}
 }
 
 /**
@@ -52,32 +52,32 @@ export function sha3(data: IDataType, bits: IValidBits = 512): Promise<string> {
  * @param bits Number of output bits. Valid values: 224, 256, 384, 512
  */
 export function createSHA3(bits: IValidBits = 512): Promise<IHasher> {
-  if (validateBits(bits)) {
-    return Promise.reject(validateBits(bits));
-  }
+	if (validateBits(bits)) {
+		return Promise.reject(validateBits(bits));
+	}
 
-  const outputSize = bits / 8;
+	const outputSize = bits / 8;
 
-  return WASMInterface(wasmJson, outputSize).then((wasm) => {
-    wasm.init(bits);
-    const obj: IHasher = {
-      init: () => {
-        wasm.init(bits);
-        return obj;
-      },
-      update: (data) => {
-        wasm.update(data);
-        return obj;
-      },
-      digest: (outputType) => wasm.digest(outputType, 0x06) as any,
-      save: () => wasm.save(),
-      load: (data) => {
-        wasm.load(data);
-        return obj;
-      },
-      blockSize: 200 - 2 * outputSize,
-      digestSize: outputSize,
-    };
-    return obj;
-  });
+	return WASMInterface(wasmJson, outputSize).then((wasm) => {
+		wasm.init(bits);
+		const obj: IHasher = {
+			init: () => {
+				wasm.init(bits);
+				return obj;
+			},
+			update: (data) => {
+				wasm.update(data);
+				return obj;
+			},
+			digest: (outputType) => wasm.digest(outputType, 0x06) as any,
+			save: () => wasm.save(),
+			load: (data) => {
+				wasm.load(data);
+				return obj;
+			},
+			blockSize: 200 - 2 * outputSize,
+			digestSize: outputSize,
+		};
+		return obj;
+	});
 }
