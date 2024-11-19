@@ -25,3 +25,6 @@ export * from "./scrypt";
 export * from "./bcrypt";
 export * from "./whirlpool";
 export * from "./sm3";
+
+export type { IDataType } from "./util";
+export type { IHasher } from "./WASMInterface";
