@@ -4,7 +4,7 @@ export * from "./blake2b";
 export * from "./blake2s";
 export * from "./blake3";
 export * from "./crc32";
-export * from "./crc32c";
+export * from "./crc64";
 export * from "./md4";
 export * from "./md5";
 export * from "./sha1";

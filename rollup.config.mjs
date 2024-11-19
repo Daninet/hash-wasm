@@ -12,7 +12,7 @@ const ALGORITHMS = [
   "blake2s",
   "blake3",
   "crc32",
-  "crc32c",
+  "crc64",
   "hmac",
   "keccak",
   "md4",
