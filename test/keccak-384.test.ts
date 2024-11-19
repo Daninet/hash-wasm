@@ -1,5 +1,5 @@
-import fs from "fs";
-import { keccak, createKeccak } from "../lib";
+import fs from "node:fs";
+import { createKeccak, keccak } from "../lib";
 import { getVariableLengthChunks } from "./util";
 /* global test, expect */
 
@@ -137,7 +137,9 @@ test("chunked increasing length", async () => {
 		const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
 		const hashRef = await keccak(new Uint8Array(flatchunks), 384);
 		hash.init();
-		chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+		for (const chunk of chunks) {
+			hash.update(new Uint8Array(chunk));
+		}
 		expect(hash.digest("hex")).toBe(hashRef);
 	};
 	const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
@@ -174,8 +176,8 @@ test("Invalid inputs throw", async () => {
 	const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
 	const hash = await createKeccak(384);
 
-	invalidInputs.forEach(async (input: any) => {
-		await expect(keccak(input, 384)).rejects.toThrow();
-		expect(() => hash.update(input)).toThrow();
-	});
+	for (const input of invalidInputs) {
+		await expect(keccak(input as any, 384)).rejects.toThrow();
+		expect(() => hash.update(input as any)).toThrow();
+	}
 });

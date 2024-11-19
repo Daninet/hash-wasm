@@ -1,6 +1,6 @@
 /* global test, expect */
 import * as api from "../lib";
-import { IHasher } from "../lib/WASMInterface";
+import type { IHasher } from "../lib/WASMInterface";
 
 async function createAllFunctions(includeHMAC): Promise<IHasher[]> {
 	const keys = Object.keys(api).filter(
@@ -115,7 +115,7 @@ test("saveAndLoad - invalid parameters", async () => {
 	const functions: IHasher[] = await createAllFunctions(false);
 
 	// Detect changes in the function hash:
-	functions.forEach((fn) => {
+	for (const fn of functions) {
 		fn.init();
 		expect(() => fn.load(0 as any)).toThrow();
 		expect(() => fn.load({} as any)).toThrow();
@@ -127,14 +127,14 @@ test("saveAndLoad - invalid parameters", async () => {
 		expect(() => fn.load(new Uint8ClampedArray(8) as any)).toThrow();
 		expect(() => fn.load(new Uint16Array(8) as any)).toThrow();
 		expect(() => fn.load(new Int8Array(8) as any)).toThrow();
-	});
+	}
 });
 
 test("saveAndLoad - incompatible states", async () => {
 	const functions: IHasher[] = await createAllFunctions(false);
 
 	// Detect changes in the function hash:
-	functions.forEach((fn) => {
+	for (const fn of functions) {
 		fn.init();
 		const state = fn.save();
 		// Check that every byte is verified:
@@ -143,13 +143,13 @@ test("saveAndLoad - incompatible states", async () => {
 			expect(() => fn.load(state)).toThrow();
 			state[i] = 255 - state[i];
 		}
-	});
+	}
 
 	// Detect incompatible lengths:
-	functions.forEach((fn) => {
+	for (const fn of functions) {
 		fn.init();
 		let state = fn.save();
 		state = state.subarray(0, state.length - 1);
 		expect(() => fn.load(state)).toThrow();
-	});
+	}
 });

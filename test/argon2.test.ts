@@ -1,4 +1,4 @@
-import { argon2d, argon2i, argon2id, argon2Verify } from "../lib";
+import { argon2Verify, argon2d, argon2i, argon2id } from "../lib";
 /* global test, expect */
 
 const hash = async (
@@ -11,13 +11,15 @@ const hash = async (
 	outputType,
 	hashType = null,
 ) => {
-	let fn: Function = null as any;
+	let fn: typeof argon2d | typeof argon2id | typeof argon2i;
 	if (hashType === "d") {
 		fn = argon2d;
 	} else if (hashType === "id") {
 		fn = argon2id;
 	} else if (hashType === "i") {
 		fn = argon2i;
+	} else {
+		throw new Error("Unsupported function type");
 	}
 
 	return fn({

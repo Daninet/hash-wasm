@@ -4,20 +4,20 @@ import {
 	blake2b,
 	blake3,
 	crc32,
-	md4,
-	md5,
-	sha1,
-	sha256,
-	sha384,
-	sha3,
-	xxhash32,
-	xxhash64,
 	createMD4,
 	keccak,
+	md4,
+	md5,
 	ripemd160,
+	sha1,
+	sha3,
+	sha256,
+	sha384,
+	xxhash32,
+	xxhash64,
 } from "../lib";
-import { hexStringEqualsUInt8 } from "../lib/util";
 import { MAX_HEAP } from "../lib/WASMInterface";
+import { hexStringEqualsUInt8 } from "../lib/util";
 
 test("Sync cycle multiple algorithms", async () => {
 	for (let i = 0; i < 100; i++) {

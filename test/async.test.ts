@@ -1,23 +1,23 @@
 /* global test, expect */
 import {
 	blake2b,
+	keccak,
 	md4,
 	md5,
+	ripemd160,
 	sha1,
+	sha3,
 	sha256,
 	sha384,
-	sha3,
 	xxhash32,
 	xxhash64,
-	ripemd160,
-	keccak,
 } from "../lib";
 
 function getMemoryUsage() {
 	const usage = process.memoryUsage().heapUsed;
 
 	const i = ~~(Math.log2(usage) / 10);
-	return (usage / 1024 ** i).toFixed(2) + ("KMGTPEZY"[i - 1] || "") + "B";
+	return `${(usage / 1024 ** i).toFixed(2)}${"KMGTPEZY"[i - 1] || ""}B`;
 }
 
 test("Async cycle multiple algorithms", async () => {

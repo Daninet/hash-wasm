@@ -1,4 +1,4 @@
-import { sha3, createSHA3 } from "../lib";
+import { createSHA3, sha3 } from "../lib";
 /* global test, expect */
 
 test("invalid parameters", async () => {

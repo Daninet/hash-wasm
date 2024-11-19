@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "node:fs";
 import { blake3, createBLAKE3 } from "../lib";
 import { getVariableLengthChunks } from "./util";
 /* global test, expect */
@@ -137,7 +137,9 @@ test("chunked increasing length", async () => {
 		const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
 		const hashRef = await blake3(new Uint8Array(flatchunks), 512);
 		hash.init();
-		chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+		for (const chunk of chunks) {
+			hash.update(new Uint8Array(chunk));
+		}
 		expect(hash.digest("hex")).toBe(hashRef);
 	};
 	const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 512, 300];
@@ -174,8 +176,8 @@ test("Invalid inputs throw", async () => {
 	const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
 	const hash = await createBLAKE3(512);
 
-	invalidInputs.forEach(async (input: any) => {
-		await expect(blake3(input, 512)).rejects.toThrow();
-		expect(() => hash.update(input)).toThrow();
-	});
+	for (const input of invalidInputs) {
+		await expect(blake3(input as any, 512)).rejects.toThrow();
+		expect(() => hash.update(input as any)).toThrow();
+	}
 });

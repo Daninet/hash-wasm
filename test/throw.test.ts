@@ -1,18 +1,18 @@
 /* global test, expect */
 import {
 	adler32,
+	crc32,
+	keccak,
 	md4,
 	md5,
-	crc32,
 	sha1,
+	sha3,
 	sha224,
 	sha256,
 	sha384,
 	sha512,
-	sha3,
 	xxhash32,
 	xxhash64,
-	keccak,
 } from "../lib";
 
 test("Invalid inputs throw after", async () => {

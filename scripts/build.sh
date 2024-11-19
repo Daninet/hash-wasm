@@ -5,7 +5,7 @@ set -e
 mkdir -p dist
 mkdir -p wasm
 
-npm run eslint
+npm run lint
 
 if [[ "$(docker images -q clang:hash-wasm 2> /dev/null)" == "" ]]; then
   docker build -f scripts/Dockerfile -t clang:hash-wasm .

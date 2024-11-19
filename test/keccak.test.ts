@@ -1,4 +1,4 @@
-import { keccak, createKeccak } from "../lib";
+import { createKeccak, keccak } from "../lib";
 /* global test, expect */
 
 test("invalid parameters", async () => {

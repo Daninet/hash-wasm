@@ -1,13 +1,13 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import {
 	createHMAC,
 	createMD5,
 	createSHA1,
+	createSHA3,
 	createSHA224,
 	createSHA256,
 	createSHA384,
 	createSHA512,
-	createSHA3,
 } from "../lib";
 
 /* global test, expect */

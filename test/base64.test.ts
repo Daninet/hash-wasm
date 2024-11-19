@@ -1,5 +1,5 @@
 /* global test, expect */
-import { encodeBase64, decodeBase64, getDecodeBase64Length } from "../lib/util";
+import { decodeBase64, encodeBase64, getDecodeBase64Length } from "../lib/util";
 
 test("encodes basic base64 strings", () => {
 	expect(encodeBase64(Buffer.from(""))).toBe("");

@@ -1,6 +1,6 @@
-import fs from "fs";
-import { xxhash128 as origXXHash128, createXXHash128 } from "../lib";
-import { IDataType } from "../lib/util";
+import fs from "node:fs";
+import { createXXHash128, xxhash128 as origXXHash128 } from "../lib";
+import type { IDataType } from "../lib/util";
 import { getVariableLengthChunks } from "./util";
 /* global test, expect */
 
@@ -173,7 +173,9 @@ test("chunked increasing length", async () => {
 		const flatchunks = chunks.reduce((acc, val) => acc.concat(val), []);
 		const hashRef = await xxhash128(new Uint8Array(flatchunks));
 		hash.init();
-		chunks.forEach((chunk) => hash.update(new Uint8Array(chunk)));
+		for (const chunk of chunks) {
+			hash.update(new Uint8Array(chunk));
+		}
 		expect(hash.digest("hex")).toBe(hashRef);
 	};
 	const maxLens = [1, 3, 27, 50, 57, 64, 91, 127, 256, 300];
@@ -228,8 +230,8 @@ test("Invalid inputs throw", async () => {
 	const invalidInputs = [0, 1, Number(1), {}, [], null, undefined];
 	const hash = await createXXHash128();
 
-	invalidInputs.forEach(async (input: any) => {
-		await expect(origXXHash128(input)).rejects.toThrow();
-		expect(() => hash.update(input)).toThrow();
-	});
+	for (const input of invalidInputs) {
+		await expect(origXXHash128(input as any)).rejects.toThrow();
+		expect(() => hash.update(input as any)).toThrow();
+	}
 });

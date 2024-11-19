@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { createSHA512, pbkdf2 } from "../lib";
 
 /* global test, expect */
