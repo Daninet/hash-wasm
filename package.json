@@ -24,7 +24,7 @@
     "md5",
     "adler-32",
     "crc32",
-    "crc32c",
+    "crc64",
     "sha-1",
     "sha-2",
     "sha-3",

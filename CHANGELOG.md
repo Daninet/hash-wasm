@@ -1,5 +1,7 @@
 ## 4.12.0 (November , 2024)
 
+- **BREAKING CHANGE**: crc32c() and createCRC32C() were removed. You can now do the same thing with crc32() and createCRC32() through setting the polynomial parameter to 0x82F63B78
+- Added CRC-64 hash function
 - Exported IDataType, IHasher types from index.ts
 - Update dependencies, including Clang
 - Migrate from ESLint to Biome and fix linting errors
