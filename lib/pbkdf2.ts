@@ -1,7 +1,6 @@
-/* eslint-disable no-bitwise */
-import { IHasher } from './WASMInterface';
-import { createHMAC } from './hmac';
-import { getDigestHex, getUInt8Buffer, IDataType } from './util';
+import type { IHasher } from "./WASMInterface";
+import { createHMAC } from "./hmac";
+import { getDigestHex, getUInt8Buffer, type IDataType } from "./util";
 
 export interface IPBKDF2Options {
   /**
@@ -27,19 +26,24 @@ export interface IPBKDF2Options {
   /**
    * Desired output type. Defaults to 'hex'
    */
-  outputType?: 'hex' | 'binary';
+  outputType?: "hex" | "binary";
 }
 
 async function calculatePBKDF2(
-  digest: IHasher, salt: IDataType, iterations: number,
-  hashLength: number, outputType?: 'hex' | 'binary',
+  digest: IHasher,
+  salt: IDataType,
+  iterations: number,
+  hashLength: number,
+  outputType?: "hex" | "binary"
 ): Promise<Uint8Array | string> {
   const DK = new Uint8Array(hashLength);
   const block1 = new Uint8Array(salt.length + 4);
   const block1View = new DataView(block1.buffer);
   const saltBuffer = getUInt8Buffer(salt);
   const saltUIntBuffer = new Uint8Array(
-    saltBuffer.buffer, saltBuffer.byteOffset, saltBuffer.length,
+    saltBuffer.buffer,
+    saltBuffer.byteOffset,
+    saltBuffer.length
   );
   block1.set(saltUIntBuffer);
 
@@ -55,13 +59,13 @@ async function calculatePBKDF2(
 
     digest.init();
     digest.update(block1);
-    T = digest.digest('binary');
+    T = digest.digest("binary");
     U = T.slice();
 
     for (let j = 1; j < iterations; j++) {
       digest.init();
       digest.update(U);
-      U = digest.digest('binary');
+      U = digest.digest("binary");
       for (let k = 0; k < hLen; k++) {
         T[k] ^= U[k];
       }
@@ -71,7 +75,7 @@ async function calculatePBKDF2(
     destPos += hLen;
   }
 
-  if (outputType === 'binary') {
+  if (outputType === "binary") {
     return DK;
   }
 
@@ -80,43 +84,47 @@ async function calculatePBKDF2(
 }
 
 const validateOptions = (options: IPBKDF2Options) => {
-  if (!options || typeof options !== 'object') {
-    throw new Error('Invalid options parameter. It requires an object.');
+  if (!options || typeof options !== "object") {
+    throw new Error("Invalid options parameter. It requires an object.");
   }
 
   if (!options.hashFunction || !options.hashFunction.then) {
-    throw new Error('Invalid hash function is provided! Usage: pbkdf2("password", "salt", 1000, 32, createSHA1()).');
+    throw new Error(
+      'Invalid hash function is provided! Usage: pbkdf2("password", "salt", 1000, 32, createSHA1()).'
+    );
   }
 
   if (!Number.isInteger(options.iterations) || options.iterations < 1) {
-    throw new Error('Iterations should be a positive number');
+    throw new Error("Iterations should be a positive number");
   }
 
   if (!Number.isInteger(options.hashLength) || options.hashLength < 1) {
-    throw new Error('Hash length should be a positive number');
+    throw new Error("Hash length should be a positive number");
   }
 
   if (options.outputType === undefined) {
-    options.outputType = 'hex';
+    options.outputType = "hex";
   }
 
-  if (!['hex', 'binary'].includes(options.outputType)) {
-    throw new Error(`Insupported output type ${options.outputType}. Valid values: ['hex', 'binary']`);
+  if (!["hex", "binary"].includes(options.outputType)) {
+    throw new Error(
+      `Insupported output type ${options.outputType}. Valid values: ['hex', 'binary']`
+    );
   }
 };
 
 interface IPBKDF2OptionsBinary {
-  outputType: 'binary';
+  outputType: "binary";
 }
 
-type PBKDF2ReturnType<T> =
-  T extends IPBKDF2OptionsBinary ? Uint8Array :
-  string;
+type PBKDF2ReturnType<T> = T extends IPBKDF2OptionsBinary ? Uint8Array : string;
 
 /**
  * Generates a new PBKDF2 hash for the supplied password
  */
-export async function pbkdf2<T extends IPBKDF2Options>(options: T): Promise<PBKDF2ReturnType<T>> {
+export async function pbkdf2<T extends IPBKDF2Options>(
+  options: T
+): Promise<PBKDF2ReturnType<T>> {
   validateOptions(options);
 
   const hmac = await createHMAC(options.hashFunction, options.password);
@@ -125,6 +133,6 @@ export async function pbkdf2<T extends IPBKDF2Options>(options: T): Promise<PBKD
     options.salt,
     options.iterations,
     options.hashLength,
-    options.outputType,
+    options.outputType
   ) as any;
 }

@@ -1,6 +1,5 @@
-/* eslint-disable no-bitwise */
-import { IHasher } from './WASMInterface';
-import { getUInt8Buffer, IDataType } from './util';
+import type { IHasher } from "./WASMInterface";
+import { getUInt8Buffer, type IDataType } from "./util";
 
 function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
   const { blockSize } = hasher;
@@ -9,7 +8,7 @@ function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
 
   if (buf.length > blockSize) {
     hasher.update(buf);
-    const uintArr = hasher.digest('binary');
+    const uintArr = hasher.digest("binary");
     hasher.init();
     return uintArr;
   }
@@ -29,7 +28,7 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
 
   for (let i = 0; i < blockSize; i++) {
     const v = keyBuffer[i];
-    opad[i] = v ^ 0x5C;
+    opad[i] = v ^ 0x5c;
     keyBuffer[i] = v ^ 0x36;
   }
 
@@ -47,17 +46,17 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
       return obj;
     },
     digest: ((outputType) => {
-      const uintArr = hasher.digest('binary');
+      const uintArr = hasher.digest("binary");
       hasher.init();
       hasher.update(opad);
       hasher.update(uintArr);
       return hasher.digest(outputType);
     }) as any,
     save: () => {
-      throw new Error('save() not supported');
+      throw new Error("save() not supported");
     },
     load: () => {
-      throw new Error('load() not supported');
+      throw new Error("load() not supported");
     },
 
     blockSize: hasher.blockSize,
@@ -71,9 +70,14 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
  * @param hash Hash algorithm to use. It has to be the return value of a function like createSHA1()
  * @param key Key (string, Buffer or TypedArray)
  */
-export function createHMAC(hash: Promise<IHasher>, key: IDataType): Promise<IHasher> {
+export function createHMAC(
+  hash: Promise<IHasher>,
+  key: IDataType
+): Promise<IHasher> {
   if (!hash || !hash.then) {
-    throw new Error('Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").');
+    throw new Error(
+      'Invalid hash function is provided! Usage: createHMAC(createMD5(), "key").'
+    );
   }
 
   return hash.then((hasher) => calculateHmac(hasher, key));

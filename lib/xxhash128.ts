@@ -1,16 +1,22 @@
-import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
-import Mutex from './mutex';
-import wasmJson from '../wasm/xxhash128.wasm.json';
-import lockedCreate from './lockedCreate';
-import { IDataType } from './util';
+import {
+  WASMInterface,
+  type IWASMInterface,
+  type IHasher,
+} from "./WASMInterface";
+import Mutex from "./mutex";
+import wasmJson from "../wasm/xxhash128.wasm.json";
+import lockedCreate from "./lockedCreate";
+import type { IDataType } from "./util";
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 const seedBuffer = new ArrayBuffer(8);
 
 function validateSeed(seed: number) {
-  if (!Number.isInteger(seed) || seed < 0 || seed > 0xFFFFFFFF) {
-    return new Error('Seed must be given as two valid 32-bit long unsigned integers (lo + high).');
+  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
+    return new Error(
+      "Seed must be given as two valid 32-bit long unsigned integers (lo + high)."
+    );
   }
   return null;
 }
@@ -32,7 +38,9 @@ function writeSeed(arr: ArrayBuffer, low: number, high: number) {
  * @returns Computed hash as a hexadecimal string
  */
 export function xxhash128(
-  data: IDataType, seedLow = 0, seedHigh = 0,
+  data: IDataType,
+  seedLow = 0,
+  seedHigh = 0
 ): Promise<string> {
   if (validateSeed(seedLow)) {
     return Promise.reject(validateSeed(seedLow));
@@ -43,13 +51,12 @@ export function xxhash128(
   }
 
   if (wasmCache === null) {
-    return lockedCreate(mutex, wasmJson, 16)
-      .then((wasm) => {
-        wasmCache = wasm;
-        writeSeed(seedBuffer, seedLow, seedHigh);
-        wasmCache.writeMemory(new Uint8Array(seedBuffer));
-        return wasmCache.calculate(data);
-      });
+    return lockedCreate(mutex, wasmJson, 16).then((wasm) => {
+      wasmCache = wasm;
+      writeSeed(seedBuffer, seedLow, seedHigh);
+      wasmCache.writeMemory(new Uint8Array(seedBuffer));
+      return wasmCache.calculate(data);
+    });
   }
 
   try {
@@ -89,10 +96,16 @@ export function createXXHash128(seedLow = 0, seedHigh = 0): Promise<IHasher> {
         wasm.init();
         return obj;
       },
-      update: (data) => { wasm.update(data); return obj; },
+      update: (data) => {
+        wasm.update(data);
+        return obj;
+      },
       digest: (outputType) => wasm.digest(outputType) as any,
       save: () => wasm.save(),
-      load: (data) => { wasm.load(data); return obj; },
+      load: (data) => {
+        wasm.load(data);
+        return obj;
+      },
       blockSize: 512,
       digestSize: 16,
     };

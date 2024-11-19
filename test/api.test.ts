@@ -1,50 +1,48 @@
-/* eslint-disable no-await-in-loop */
 /* global test, expect */
-import * as api from '../lib';
-import { IHasher } from '../lib/WASMInterface';
+import * as api from "../lib";
+import { IHasher } from "../lib/WASMInterface";
 
-async function createAllFunctions(includeHMAC) : Promise<IHasher[]> {
-  const keys = Object.keys(api).filter((key) => key.startsWith('create') && (includeHMAC || key !== 'createHMAC'));
+async function createAllFunctions(includeHMAC): Promise<IHasher[]> {
+  const keys = Object.keys(api).filter(
+    (key) => key.startsWith("create") && (includeHMAC || key !== "createHMAC")
+  );
 
   return Promise.all(
-    keys.map(
-      (key) => {
-        switch (key) {
-          case 'createHMAC':
-            return api[key](api.createMD5(), 'x');
-          default:
-            return api[key]();
-        }
-      },
-    ),
+    keys.map((key) => {
+      switch (key) {
+        case "createHMAC":
+          return api[key](api.createMD5(), "x");
+        default:
+          return api[key]();
+      }
+    })
   );
 }
 
-test('IHasherApi', async () => {
+test("IHasherApi", async () => {
   const functions: IHasher[] = await createAllFunctions(true);
   expect(functions.length).toBe(23);
 
-  // eslint-disable-next-line no-restricted-syntax
   for (const fn of functions) {
     expect(fn.blockSize).toBeGreaterThan(0);
     expect(fn.digestSize).toBeGreaterThan(0);
 
     const startValueHex = fn.digest();
-    expect(typeof startValueHex).toBe('string');
+    expect(typeof startValueHex).toBe("string");
     fn.init();
     expect(fn.digest()).toBe(startValueHex);
     fn.init();
-    expect(fn.digest('hex')).toBe(startValueHex);
+    expect(fn.digest("hex")).toBe(startValueHex);
 
     fn.init();
-    const startValueBinary = fn.digest('binary');
+    const startValueBinary = fn.digest("binary");
     expect(ArrayBuffer.isView(startValueBinary)).toBe(true);
     expect(startValueBinary.BYTES_PER_ELEMENT).toBe(1);
     expect(startValueBinary.length).toBe(startValueHex.length / 2);
     fn.init();
-    expect(fn.digest('binary')).toStrictEqual(startValueBinary);
+    expect(fn.digest("binary")).toStrictEqual(startValueBinary);
 
-    const arr = new Array(2000).fill(0xFF).map((i) => i % 256);
+    const arr = new Array(2000).fill(0xff).map((i) => i % 256);
     const buf = Buffer.from(arr);
     fn.init();
     fn.update(buf);
@@ -57,13 +55,21 @@ test('IHasherApi', async () => {
     expect(chain.digest()).toBe(hash);
 
     expect(() => fn.digest()).toThrow();
-    expect(() => fn.update('a')).toThrow();
+    expect(() => fn.update("a")).toThrow();
   }
 });
 
-test('saveAndLoad', async () => {
-  const aHash: string[] = (await createAllFunctions(false)).map((fn) => { fn.init(); fn.update('a'); return fn.digest(); });
-  const abcHash: string[] = (await createAllFunctions(false)).map((fn) => { fn.init(); fn.update('abc'); return fn.digest(); });
+test("saveAndLoad", async () => {
+  const aHash: string[] = (await createAllFunctions(false)).map((fn) => {
+    fn.init();
+    fn.update("a");
+    return fn.digest();
+  });
+  const abcHash: string[] = (await createAllFunctions(false)).map((fn) => {
+    fn.init();
+    fn.update("abc");
+    return fn.digest();
+  });
 
   const functions: IHasher[] = await createAllFunctions(false);
 
@@ -72,40 +78,40 @@ test('saveAndLoad', async () => {
   functions.forEach((fn, index) => {
     fn.init();
     fn.load(fn.save());
-    fn.update('a');
+    fn.update("a");
     const saved = fn.save();
-    fn.update('bc');
+    fn.update("bc");
     expect(fn.digest()).toBe(abcHash[index]);
     fn.load(saved);
     expect(fn.digest()).toBe(aHash[index]);
     fn.load(saved);
-    fn.update('bc');
+    fn.update("bc");
     expect(fn.digest()).toBe(abcHash[index]);
     // save() shoudn't work after digest() is called
     expect(() => fn.save()).toThrow();
   });
 });
 
-test('saveAndLoad - load as init', async () => {
+test("saveAndLoad - load as init", async () => {
   // Verify that load() can be used instead of a call to init() and still give the same results
   // This checks that e.g. crc32's init_lut() gets called even if we don't call init() ourselves
   const helloWorldHashes = (await createAllFunctions(false)).map((fn) => {
     fn.init();
-    fn.update('Hello world');
+    fn.update("Hello world");
     return fn.digest();
   });
   expect(helloWorldHashes.length).toBe(22);
   const savedHasherStates = (await createAllFunctions(false)).map((fn) => {
-    fn.update('Hello ');
+    fn.update("Hello ");
     return fn.save();
   });
   (await createAllFunctions(false)).forEach((fn, index) => {
-    fn.load(savedHasherStates[index]).update('world');
+    fn.load(savedHasherStates[index]).update("world");
     expect(fn.digest()).toBe(helloWorldHashes[index]);
   });
 });
 
-test('saveAndLoad - invalid parameters', async () => {
+test("saveAndLoad - invalid parameters", async () => {
   const functions: IHasher[] = await createAllFunctions(false);
 
   // Detect changes in the function hash:
@@ -113,7 +119,7 @@ test('saveAndLoad - invalid parameters', async () => {
     fn.init();
     expect(() => fn.load(0 as any)).toThrow();
     expect(() => fn.load({} as any)).toThrow();
-    expect(() => fn.load('1234' as any)).toThrow();
+    expect(() => fn.load("1234" as any)).toThrow();
     expect(() => fn.load([] as any)).toThrow();
     expect(() => fn.load(null as any)).toThrow();
     expect(() => fn.load(undefined as any)).toThrow();
@@ -124,7 +130,7 @@ test('saveAndLoad - invalid parameters', async () => {
   });
 });
 
-test('saveAndLoad - incompatible states', async () => {
+test("saveAndLoad - incompatible states", async () => {
   const functions: IHasher[] = await createAllFunctions(false);
 
   // Detect changes in the function hash:

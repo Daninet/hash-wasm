@@ -1,21 +1,24 @@
-import { WASMInterface, IWASMInterface, IHasher } from './WASMInterface';
-import Mutex from './mutex';
-import wasmJson from '../wasm/blake2s.wasm.json';
-import lockedCreate from './lockedCreate';
-import { getUInt8Buffer, IDataType } from './util';
+import {
+  WASMInterface,
+  type IWASMInterface,
+  type IHasher,
+} from "./WASMInterface";
+import Mutex from "./mutex";
+import wasmJson from "../wasm/blake2s.wasm.json";
+import lockedCreate from "./lockedCreate";
+import { getUInt8Buffer, type IDataType } from "./util";
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
 
 function validateBits(bits: number) {
   if (!Number.isInteger(bits) || bits < 8 || bits > 256 || bits % 8 !== 0) {
-    return new Error('Invalid variant! Valid values: 8, 16, ..., 256');
+    return new Error("Invalid variant! Valid values: 8, 16, ..., 256");
   }
   return null;
 }
 
 function getInitParam(outputBits, keyBits) {
-  // eslint-disable-next-line no-bitwise
   return outputBits | (keyBits << 16);
 }
 
@@ -28,7 +31,9 @@ function getInitParam(outputBits, keyBits) {
  * @returns Computed hash as a hexadecimal string
  */
 export function blake2s(
-  data: IDataType, bits = 256, key: IDataType = null,
+  data: IDataType,
+  bits = 256,
+  key: IDataType = null
 ): Promise<string> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));
@@ -39,7 +44,7 @@ export function blake2s(
   if (key !== null) {
     keyBuffer = getUInt8Buffer(key);
     if (keyBuffer.length > 32) {
-      return Promise.reject(new Error('Max key length is 32 bytes'));
+      return Promise.reject(new Error("Max key length is 32 bytes"));
     }
     initParam = getInitParam(bits, keyBuffer.length);
   }
@@ -47,14 +52,13 @@ export function blake2s(
   const hashLength = bits / 8;
 
   if (wasmCache === null || wasmCache.hashLength !== hashLength) {
-    return lockedCreate(mutex, wasmJson, hashLength)
-      .then((wasm) => {
-        wasmCache = wasm;
-        if (initParam > 512) {
-          wasmCache.writeMemory(keyBuffer);
-        }
-        return wasmCache.calculate(data, initParam);
-      });
+    return lockedCreate(mutex, wasmJson, hashLength).then((wasm) => {
+      wasmCache = wasm;
+      if (initParam > 512) {
+        wasmCache.writeMemory(keyBuffer);
+      }
+      return wasmCache.calculate(data, initParam);
+    });
   }
 
   try {
@@ -75,7 +79,8 @@ export function blake2s(
  * @param key Optional key (string, Buffer or TypedArray). Maximum length is 32 bytes.
  */
 export function createBLAKE2s(
-  bits = 256, key: IDataType = null,
+  bits = 256,
+  key: IDataType = null
 ): Promise<IHasher> {
   if (validateBits(bits)) {
     return Promise.reject(validateBits(bits));
@@ -86,7 +91,7 @@ export function createBLAKE2s(
   if (key !== null) {
     keyBuffer = getUInt8Buffer(key);
     if (keyBuffer.length > 32) {
-      return Promise.reject(new Error('Max key length is 32 bytes'));
+      return Promise.reject(new Error("Max key length is 32 bytes"));
     }
     initParam = getInitParam(bits, keyBuffer.length);
   }
@@ -100,20 +105,27 @@ export function createBLAKE2s(
     wasm.init(initParam);
 
     const obj: IHasher = {
-      init: initParam > 512
-        ? () => {
-          wasm.writeMemory(keyBuffer);
-          wasm.init(initParam);
-          return obj;
-        }
-        : () => {
-          wasm.init(initParam);
-          return obj;
-        },
-      update: (data) => { wasm.update(data); return obj; },
+      init:
+        initParam > 512
+          ? () => {
+              wasm.writeMemory(keyBuffer);
+              wasm.init(initParam);
+              return obj;
+            }
+          : () => {
+              wasm.init(initParam);
+              return obj;
+            },
+      update: (data) => {
+        wasm.update(data);
+        return obj;
+      },
       digest: (outputType) => wasm.digest(outputType) as any,
       save: () => wasm.save(),
-      load: (data) => { wasm.load(data); return obj; },
+      load: (data) => {
+        wasm.load(data);
+        return obj;
+      },
       blockSize: 64,
       digestSize: outputSize,
     };
