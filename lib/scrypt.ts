@@ -1,8 +1,8 @@
-import { getDigestHex, type IDataType } from "./util";
-import { WASMInterface } from "./WASMInterface";
 import wasmJson from "../wasm/scrypt.wasm.json";
+import { WASMInterface } from "./WASMInterface";
 import { pbkdf2 } from "./pbkdf2";
 import { createSHA256 } from "./sha256";
+import { type IDataType, getDigestHex } from "./util";
 
 export interface ScryptOptions {
 	/**
@@ -137,5 +137,5 @@ export async function scrypt<T extends ScryptOptions>(
 ): Promise<ScryptReturnType<T>> {
 	validateOptions(options);
 
-	return scryptInternal(options) as any;
+	return scryptInternal(options) as Promise<ScryptReturnType<T>>;
 }

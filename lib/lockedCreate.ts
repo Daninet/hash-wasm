@@ -1,9 +1,10 @@
+import { type IWASMInterface, WASMInterface } from "./WASMInterface";
 import type Mutex from "./mutex";
-import { WASMInterface, type IWASMInterface } from "./WASMInterface";
+import type { IEmbeddedWasm } from "./util";
 
 export default async function lockedCreate(
 	mutex: Mutex,
-	binary: any,
+	binary: IEmbeddedWasm,
 	hashLength: number,
 ): Promise<IWASMInterface> {
 	const unlock = await mutex.lock();

@@ -1,11 +1,11 @@
+import wasmJson from "../wasm/bcrypt.wasm.json";
+import { WASMInterface } from "./WASMInterface";
 import {
+	type IDataType,
 	getDigestHex,
 	getUInt8Buffer,
-	type IDataType,
 	intArrayToString,
 } from "./util";
-import { WASMInterface } from "./WASMInterface";
-import wasmJson from "../wasm/bcrypt.wasm.json";
 
 export interface BcryptOptions {
 	/**
@@ -108,7 +108,7 @@ export async function bcrypt<T extends BcryptOptions>(
 ): Promise<BcryptReturnType<T>> {
 	validateOptions(options);
 
-	return bcryptInternal(options) as any;
+	return bcryptInternal(options) as Promise<BcryptReturnType<T>>;
 }
 
 export interface BcryptVerifyOptions {
@@ -127,11 +127,11 @@ const validateHashCharacters = (hash: string): boolean => {
 		return false;
 	}
 
-	if (hash[4] === "0" && parseInt(hash[5], 10) < 4) {
+	if (hash[4] === "0" && Number.parseInt(hash[5], 10) < 4) {
 		return false;
 	}
 
-	if (hash[4] === "3" && parseInt(hash[5], 10) > 1) {
+	if (hash[4] === "3" && Number.parseInt(hash[5], 10) > 1) {
 		return false;
 	}
 

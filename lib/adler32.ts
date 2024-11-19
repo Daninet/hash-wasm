@@ -1,11 +1,11 @@
-import {
-	WASMInterface,
-	type IWASMInterface,
-	type IHasher,
-} from "./WASMInterface";
-import Mutex from "./mutex";
 import wasmJson from "../wasm/adler32.wasm.json";
+import {
+	type IHasher,
+	type IWASMInterface,
+	WASMInterface,
+} from "./WASMInterface";
 import lockedCreate from "./lockedCreate";
+import Mutex from "./mutex";
 import type { IDataType } from "./util";
 
 const mutex = new Mutex();
@@ -49,6 +49,7 @@ export function createAdler32(): Promise<IHasher> {
 				wasm.update(data);
 				return obj;
 			},
+			// biome-ignore lint/suspicious/noExplicitAny: Conflict with IHasher type
 			digest: (outputType) => wasm.digest(outputType) as any,
 			save: () => wasm.save(),
 			load: (data) => {

@@ -1,12 +1,12 @@
-import {
-	WASMInterface,
-	type IWASMInterface,
-	type IHasher,
-} from "./WASMInterface";
-import Mutex from "./mutex";
 import wasmJson from "../wasm/blake2b.wasm.json";
+import {
+	type IHasher,
+	type IWASMInterface,
+	WASMInterface,
+} from "./WASMInterface";
 import lockedCreate from "./lockedCreate";
-import { getUInt8Buffer, type IDataType } from "./util";
+import Mutex from "./mutex";
+import { type IDataType, getUInt8Buffer } from "./util";
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
@@ -120,6 +120,7 @@ export function createBLAKE2b(
 				wasm.update(data);
 				return obj;
 			},
+			// biome-ignore lint/suspicious/noExplicitAny: Conflict with IHasher type
 			digest: (outputType) => wasm.digest(outputType) as any,
 			save: () => wasm.save(),
 			load: (data) => {

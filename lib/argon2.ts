@@ -1,15 +1,15 @@
+import wasmJson from "../wasm/argon2.wasm.json";
+import { type IHasher, WASMInterface } from "./WASMInterface";
+import { createBLAKE2b } from "./blake2b";
 import {
+	type IDataType,
 	decodeBase64,
 	encodeBase64,
 	getDecodeBase64Length,
 	getDigestHex,
 	getUInt8Buffer,
-	type IDataType,
 	writeHexToUInt8,
 } from "./util";
-import { createBLAKE2b } from "./blake2b";
-import { WASMInterface, type IHasher } from "./WASMInterface";
-import wasmJson from "../wasm/argon2.wasm.json";
 
 export interface IArgon2Options {
 	/**
@@ -103,7 +103,7 @@ async function hashFunc(
 
 	const partialBytesNeeded = len - 32 * r;
 
-	let blakeSmall;
+	let blakeSmall: IHasher;
 	if (partialBytesNeeded === 64) {
 		blakeSmall = blake512;
 		blakeSmall.init();
@@ -281,7 +281,7 @@ export async function argon2i<T extends IArgon2Options>(
 	return argon2Internal({
 		...options,
 		hashType: "i",
-	}) as any;
+	}) as Promise<Argon2ReturnType<T>>;
 }
 
 /**
@@ -296,7 +296,7 @@ export async function argon2id<T extends IArgon2Options>(
 	return argon2Internal({
 		...options,
 		hashType: "id",
-	}) as any;
+	}) as Promise<Argon2ReturnType<T>>;
 }
 
 /**
@@ -311,7 +311,7 @@ export async function argon2d<T extends IArgon2Options>(
 	return argon2Internal({
 		...options,
 		hashType: "d",
-	}) as any;
+	}) as Promise<Argon2ReturnType<T>>;
 }
 
 export interface Argon2VerifyOptions {
@@ -348,10 +348,10 @@ const getHashParameters = (
 
 	const parsedParameters: Partial<IArgon2Options> = {};
 	const paramMap = { m: "memorySize", p: "parallelism", t: "iterations" };
-	parameters.split(",").forEach((x) => {
+	for (const x of parameters.split(",")) {
 		const [n, v] = x.split("=");
-		parsedParameters[paramMap[n]] = parseInt(v, 10);
-	});
+		parsedParameters[paramMap[n]] = Number.parseInt(v, 10);
+	}
 
 	return {
 		...parsedParameters,

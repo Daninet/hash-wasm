@@ -1,11 +1,11 @@
-import {
-	WASMInterface,
-	type IWASMInterface,
-	type IHasher,
-} from "./WASMInterface";
-import Mutex from "./mutex";
 import wasmJson from "../wasm/sha3.wasm.json";
+import {
+	type IHasher,
+	type IWASMInterface,
+	WASMInterface,
+} from "./WASMInterface";
 import lockedCreate from "./lockedCreate";
+import Mutex from "./mutex";
 import type { IDataType } from "./util";
 
 type IValidBits = 224 | 256 | 384 | 512;
@@ -69,6 +69,7 @@ export function createSHA3(bits: IValidBits = 512): Promise<IHasher> {
 				wasm.update(data);
 				return obj;
 			},
+			// biome-ignore lint/suspicious/noExplicitAny: Conflict with IHasher type
 			digest: (outputType) => wasm.digest(outputType, 0x06) as any,
 			save: () => wasm.save(),
 			load: (data) => {

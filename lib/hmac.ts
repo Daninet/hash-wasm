@@ -1,5 +1,5 @@
 import type { IHasher } from "./WASMInterface";
-import { getUInt8Buffer, type IDataType } from "./util";
+import { type IDataType, getUInt8Buffer } from "./util";
 
 function calculateKeyBuffer(hasher: IHasher, key: IDataType): Uint8Array {
 	const { blockSize } = hasher;
@@ -45,12 +45,14 @@ function calculateHmac(hasher: IHasher, key: IDataType): IHasher {
 			hasher.update(data);
 			return obj;
 		},
+
 		digest: ((outputType) => {
 			const uintArr = hasher.digest("binary");
 			hasher.init();
 			hasher.update(opad);
 			hasher.update(uintArr);
 			return hasher.digest(outputType);
+			// biome-ignore lint/suspicious/noExplicitAny: Conflict with IHasher type
 		}) as any,
 		save: () => {
 			throw new Error("save() not supported");

@@ -1,11 +1,12 @@
 import Mutex from "./mutex";
 import {
+	type IDataType,
+	type IEmbeddedWasm,
 	decodeBase64,
 	getDigestHex,
 	getUInt8Buffer,
-	type IDataType,
-	writeHexToUInt8,
 	hexStringEqualsUInt8,
+	writeHexToUInt8,
 } from "./util";
 
 export const MAX_HEAP = 16 * 1024;
@@ -14,7 +15,8 @@ const wasmMutex = new Mutex();
 
 type ThenArg<T> = T extends Promise<infer U>
 	? U
-	: T extends (...args: any[]) => Promise<infer V>
+	: // biome-ignore lint/suspicious/noExplicitAny: TS quirks
+		T extends (...args: any[]) => Promise<infer V>
 		? V
 		: T;
 
@@ -63,7 +65,7 @@ export type IHasher = {
 
 const wasmModuleCache = new Map<string, Promise<WebAssembly.Module>>();
 
-export async function WASMInterface(binary: any, hashLength: number) {
+export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 	let wasmInstance = null;
 	let memoryView: Uint8Array = null;
 	let initialized = false;

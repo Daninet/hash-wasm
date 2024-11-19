@@ -1,6 +1,6 @@
 import type { IHasher } from "./WASMInterface";
 import { createHMAC } from "./hmac";
-import { getDigestHex, getUInt8Buffer, type IDataType } from "./util";
+import { type IDataType, getDigestHex, getUInt8Buffer } from "./util";
 
 export interface IPBKDF2Options {
 	/**
@@ -134,5 +134,5 @@ export async function pbkdf2<T extends IPBKDF2Options>(
 		options.iterations,
 		options.hashLength,
 		options.outputType,
-	) as any;
+	) as Promise<PBKDF2ReturnType<T>>;
 }
