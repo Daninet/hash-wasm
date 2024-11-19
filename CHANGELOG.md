@@ -1,3 +1,6 @@
+## 4.12.0 (November , 2024)
+* Update dependencies, including Clang
+
 ## 4.11.0 (November 13, 2023)
 * Added `secret` parameter to Argon2 (by [@malobre](https://github.com/malobre))
 

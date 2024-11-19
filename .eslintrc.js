@@ -9,6 +9,11 @@ module.exports = {
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
   ],
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
   rules: {
     '@typescript-eslint/explicit-function-return-type': 'off',
     'import/no-unresolved': 'off',
