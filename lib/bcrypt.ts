@@ -127,11 +127,11 @@ const validateHashCharacters = (hash: string): boolean => {
 		return false;
 	}
 
-	if (hash[4] === "0" && Number.parseInt(hash[5], 10) < 4) {
+	if (hash[4] === "0" && Number(hash[5]) < 4) {
 		return false;
 	}
 
-	if (hash[4] === "3" && Number.parseInt(hash[5], 10) > 1) {
+	if (hash[4] === "3" && Number(hash[5]) > 1) {
 		return false;
 	}
 

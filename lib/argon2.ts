@@ -350,7 +350,7 @@ const getHashParameters = (
 	const paramMap = { m: "memorySize", p: "parallelism", t: "iterations" };
 	for (const x of parameters.split(",")) {
 		const [n, v] = x.split("=");
-		parsedParameters[paramMap[n]] = Number.parseInt(v, 10);
+		parsedParameters[paramMap[n]] = Number(v);
 	}
 
 	return {

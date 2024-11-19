@@ -10,7 +10,7 @@ import type { IDataType } from "./util";
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;
-const seedBuffer = new ArrayBuffer(8);
+const seedBuffer = new Uint8Array(8);
 
 function validateSeed(seed: number) {
 	if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
@@ -53,15 +53,15 @@ export function xxhash128(
 	if (wasmCache === null) {
 		return lockedCreate(mutex, wasmJson, 16).then((wasm) => {
 			wasmCache = wasm;
-			writeSeed(seedBuffer, seedLow, seedHigh);
-			wasmCache.writeMemory(new Uint8Array(seedBuffer));
+			writeSeed(seedBuffer.buffer, seedLow, seedHigh);
+			wasmCache.writeMemory(seedBuffer);
 			return wasmCache.calculate(data);
 		});
 	}
 
 	try {
-		writeSeed(seedBuffer, seedLow, seedHigh);
-		wasmCache.writeMemory(new Uint8Array(seedBuffer));
+		writeSeed(seedBuffer.buffer, seedLow, seedHigh);
+		wasmCache.writeMemory(seedBuffer);
 		const hash = wasmCache.calculate(data);
 		return Promise.resolve(hash);
 	} catch (err) {
@@ -86,13 +86,13 @@ export function createXXHash128(seedLow = 0, seedHigh = 0): Promise<IHasher> {
 	}
 
 	return WASMInterface(wasmJson, 16).then((wasm) => {
-		const instanceBuffer = new ArrayBuffer(8);
-		writeSeed(instanceBuffer, seedLow, seedHigh);
-		wasm.writeMemory(new Uint8Array(instanceBuffer));
+		const instanceBuffer = new Uint8Array(8);
+		writeSeed(instanceBuffer.buffer, seedLow, seedHigh);
+		wasm.writeMemory(instanceBuffer);
 		wasm.init();
 		const obj: IHasher = {
 			init: () => {
-				wasm.writeMemory(new Uint8Array(instanceBuffer));
+				wasm.writeMemory(instanceBuffer);
 				wasm.init();
 				return obj;
 			},
