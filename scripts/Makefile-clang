@@ -12,6 +12,7 @@ all : \
 		/app/wasm/blake2s.wasm \
 		/app/wasm/blake3.wasm \
 		/app/wasm/crc32.wasm \
+		/app/wasm/crc64.wasm \
 		/app/wasm/md4.wasm \
 		/app/wasm/md5.wasm \
 		/app/wasm/ripemd160.wasm \

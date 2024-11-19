@@ -24,9 +24,9 @@ void init_lut(uint32_t polynomial) {
     crc32_lookup[0][i] = crc;
   }
 
-  for (uint32_t i = 1; i < 256; ++i) {
+  for (int i = 1; i < 256; ++i) {
     uint32_t lv = crc32_lookup[0][i];
-    for (uint32_t j = 1; j < 8; ++j) {
+    for (int j = 1; j < 8; ++j) {
       lv = (lv >> 8) ^ crc32_lookup[0][lv & 255];
       crc32_lookup[j][i] = lv;
     }
@@ -48,10 +48,10 @@ void Hash_Init(uint32_t polynomial) {
 
 WASM_EXPORT
 void Hash_Update(uint32_t length) {
-  const uint8_t* data = main_buffer;
+  const uint8_t *data = main_buffer;
 
   uint32_t crc = ~previous_crc32; // same as previous_crc32 ^ 0xFFFFFFFF
-  const uint32_t* current = (const uint32_t*)data;
+  const uint32_t *current = (const uint32_t *)data;
 
   // process eight bytes at once (Slicing-by-8)
   while (length >= 8) {
@@ -59,17 +59,15 @@ void Hash_Update(uint32_t length) {
     uint32_t two = *current++;
     crc = crc32_lookup[0][(two >> 24) & 0xFF] ^
           crc32_lookup[1][(two >> 16) & 0xFF] ^
-          crc32_lookup[2][(two >> 8) & 0xFF] ^
-          crc32_lookup[3][two & 0xFF] ^
+          crc32_lookup[2][(two >> 8) & 0xFF] ^ crc32_lookup[3][two & 0xFF] ^
           crc32_lookup[4][(one >> 24) & 0xFF] ^
           crc32_lookup[5][(one >> 16) & 0xFF] ^
-          crc32_lookup[6][(one >> 8) & 0xFF] ^
-          crc32_lookup[7][one & 0xFF];
+          crc32_lookup[6][(one >> 8) & 0xFF] ^ crc32_lookup[7][one & 0xFF];
 
     length -= 8;
   }
 
-  const uint8_t* currentChar = (const uint8_t*)current;
+  const uint8_t *currentChar = (const uint8_t *)current;
 
   // remaining 1 to 7 bytes (standard algorithm)
   while (length-- != 0) {
@@ -80,17 +78,13 @@ void Hash_Update(uint32_t length) {
 }
 
 WASM_EXPORT
-void Hash_Final() {
-  ((uint32_t*)main_buffer)[0] = bswap_32(previous_crc32);
-}
+void Hash_Final() { ((uint32_t *)main_buffer)[0] = bswap_32(previous_crc32); }
 
 WASM_EXPORT
 const uint32_t STATE_SIZE = sizeof(previous_crc32);
 
 WASM_EXPORT
-uint8_t* Hash_GetState() {
-  return (uint8_t*) &previous_crc32;
-}
+uint8_t *Hash_GetState() { return (uint8_t *)&previous_crc32; }
 
 WASM_EXPORT
 void Hash_Calculate(uint32_t length, uint32_t initParam) {
