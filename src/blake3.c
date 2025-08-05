@@ -829,6 +829,17 @@ void blake3_hasher_finalize(const blake3_hasher *self, uint8_t *out, size_t out_
   blake3_hasher_finalize_seek(self, 0, out, out_len);
 }
 
+void blake3_hasher_init_derive_key_raw(blake3_hasher *self, const void *context, size_t context_len) {
+  blake3_hasher context_hasher;
+  hasher_init_base(&context_hasher, IV, DERIVE_KEY_CONTEXT);
+  blake3_hasher_update(&context_hasher, context, context_len);
+  uint8_t context_key[BLAKE3_KEY_LEN];
+  blake3_hasher_finalize(&context_hasher, context_key, BLAKE3_KEY_LEN);
+  uint32_t context_key_words[8];
+  load_key_words(context_key, context_key_words);
+  hasher_init_base(self, context_key_words, DERIVE_KEY_MATERIAL);
+}
+
 blake3_hasher hasher;
 
 WASM_EXPORT
@@ -838,6 +849,11 @@ void Hash_Init(uint32_t keyLen) {
   } else {
     blake3_hasher_init(&hasher);
   }
+}
+
+WASM_EXPORT
+void Hash_Init_Derive_Key(size_t context_len) {
+  blake3_hasher_init_derive_key_raw(&hasher, main_buffer, context_len);
 }
 
 WASM_EXPORT
