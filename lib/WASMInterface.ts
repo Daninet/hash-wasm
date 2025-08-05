@@ -136,6 +136,11 @@ export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 		wasmInstance.exports.Hash_Init(bits);
 	};
 
+	const init_derive_key = (context: string) => {
+		initialized = true;
+		wasmInstance.exports.Hash_Init_Derive_Key(context.length);
+	};
+
 	const updateUInt8Array = (data: Uint8Array): void => {
 		let read = 0;
 		while (read < data.length) {
@@ -290,6 +295,17 @@ export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 		return getDigestHex(digestChars, memoryView, hashLength);
 	};
 
+	const derive = (
+		context: string,
+		key: IDataType,
+		outputType: "hex" | "binary" = "hex",
+		digestParam = null,
+	): Uint8Array | string => {
+		init_derive_key(context);
+		update(key);
+		return digest(outputType, digestParam);
+	};
+
 	await setupInterface();
 
 	return {
@@ -303,6 +319,7 @@ export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 		save,
 		load,
 		calculate,
+		derive,
 		hashLength,
 	};
 }

@@ -70,6 +70,48 @@ export function blake3(
 }
 
 /**
+ * Derives new keys from the key material (NOT password!) using BLAKE3. For passwords use Argon2.
+ * @param context Context string of any length.
+ *                Should be hardcoded, globally unique, and application-specific.
+ *                Example: `"[application] [commit timestamp] [purpose]"`
+ * @param key Key material (not a password) of any length. (string, Buffer or TypedArray).
+ * @param bits Number of output bits, which has to be a number
+ *             divisible by 8. Defaults to 256.
+ * @param outputType Type of the output ("hex" | "binary"): HEX string or binary. Default is HEX.
+ * @returns Computed a derived key as a hexadecimal string
+ */
+export function deriveKeyBLAKE3(
+	context: string,
+	key: IDataType,
+	bits = 256,
+	outputType: "hex" | "binary" = "hex",
+): Promise<Uint8Array | string> {
+	if (validateBits(bits)) {
+		return Promise.reject(validateBits(bits));
+	}
+	const hashLength = bits / 8;
+	const digestParam = hashLength;
+
+	const contextBuffer = getUInt8Buffer(context);
+
+	if (wasmCache === null || wasmCache.hashLength !== hashLength) {
+		return lockedCreate(mutex, wasmJson, hashLength).then((wasm) => {
+			wasmCache = wasm;
+			wasmCache.writeMemory(contextBuffer);
+			return wasmCache.derive(context, key, outputType, digestParam);
+		});
+	}
+
+	try {
+		wasmCache.writeMemory(contextBuffer);
+		const hash = wasmCache.derive(context, key, outputType, digestParam);
+		return Promise.resolve(hash);
+	} catch (err) {
+		return Promise.reject(err);
+	}
+}
+
+/**
  * Creates a new BLAKE3 hash instance
  * @param bits Number of output bits, which has to be a number
  *             divisible by 8. Defaults to 256.
