@@ -53,13 +53,16 @@ const MAIN_BUNDLE_CONFIG = {
   input: "lib/index.ts",
   output: [
     {
-      file: "dist/index.umd.js",
+      file: "dist/index.cjs",
       name: "hashwasm",
       format: "umd",
     },
     {
-      file: "dist/index.esm.js",
       format: "es",
+      entryFileNames: "[name].mjs",
+      preserveModules: true,
+      preserveModulesRoot: "lib",
+      dir: "dist",
     },
   ],
   plugins: [json(), typescript(), license(LICENSE_CONFIG)],
@@ -69,12 +72,12 @@ const MINIFIED_MAIN_BUNDLE_CONFIG = {
   input: "lib/index.ts",
   output: [
     {
-      file: "dist/index.umd.min.js",
+      file: "dist/index.min.cjs",
       name: "hashwasm",
       format: "umd",
     },
     {
-      file: "dist/index.esm.min.js",
+      file: "dist/index.min.mjs",
       format: "es",
     },
   ],
@@ -90,7 +93,7 @@ const INDIVIDUAL_BUNDLE_CONFIG = (algorithm) => ({
   input: `lib/${algorithm}.ts`,
   output: [
     {
-      file: `dist/${algorithm}.umd.min.js`,
+      file: `dist/${algorithm}.min.cjs`,
       name: "hashwasm",
       format: "umd",
       extend: true,
