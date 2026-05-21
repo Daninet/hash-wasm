@@ -26,5 +26,6 @@ export * from "./bcrypt";
 export * from "./whirlpool";
 export * from "./sm3";
 
+export { isWasmSimdSupported } from "./simd";
 export type { IDataType } from "./util";
 export type { IHasher } from "./WASMInterface";

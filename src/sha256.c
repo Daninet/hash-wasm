@@ -192,6 +192,142 @@ static void sha256_process_block(uint32_t hash[8], uint32_t block[16]) {
   hash[4] += E, hash[5] += F, hash[6] += G, hash[7] += H;
 }
 
+#if defined(__wasm_simd128__)
+
+#include <wasm_simd128.h>
+
+#define sha256_unpacklo_epi32(__a, __b) \
+  (wasm_i32x4_shuffle(__a, __b, 0, 4, 1, 5))
+#define sha256_unpackhi_epi32(__a, __b) \
+  (wasm_i32x4_shuffle(__a, __b, 2, 6, 3, 7))
+#define sha256_unpacklo_epi64(__a, __b) \
+  (wasm_i64x2_shuffle(__a, __b, 0, 2))
+#define sha256_unpackhi_epi64(__a, __b) \
+  (wasm_i64x2_shuffle(__a, __b, 1, 3))
+#define SHA256_BSWAP32(x) wasm_i8x16_shuffle((x), (x), \
+  3, 2, 1, 0,  7, 6, 5, 4,  11, 10, 9, 8,  15, 14, 13, 12)
+
+static __inline__ v128_t sha256_sigma_simd(v128_t val, int rotr1, int rotr2, int shr) {
+  return wasm_v128_xor(
+    wasm_v128_xor(
+      wasm_v128_xor(
+        wasm_u32x4_shr(val, rotr1),
+        wasm_i32x4_shl(val, 32 - rotr1)
+      ),
+      wasm_v128_xor(
+        wasm_u32x4_shr(val, rotr2),
+        wasm_i32x4_shl(val, 32 - rotr2)
+      )
+    ),
+    wasm_u32x4_shr(val, shr)
+  );
+}
+
+static void sha256_schedule_simd(
+  const uint8_t b0[64], const uint8_t b1[64],
+  const uint8_t b2[64], const uint8_t b3[64],
+  v128_t schedule[64]
+) {
+  #pragma clang loop unroll(full)
+  for (uint32_t q = 0; q < 4; q++) {
+    v128_t r0 = wasm_v128_load(b0 + q * 16);
+    v128_t r1 = wasm_v128_load(b1 + q * 16);
+    v128_t r2 = wasm_v128_load(b2 + q * 16);
+    v128_t r3 = wasm_v128_load(b3 + q * 16);
+    v128_t a = sha256_unpacklo_epi32(r0, r1);
+    v128_t b = sha256_unpackhi_epi32(r0, r1);
+    v128_t c = sha256_unpacklo_epi32(r2, r3);
+    v128_t d = sha256_unpackhi_epi32(r2, r3);
+    schedule[q * 4 + 0] = SHA256_BSWAP32(sha256_unpacklo_epi64(a, c));
+    schedule[q * 4 + 1] = SHA256_BSWAP32(sha256_unpackhi_epi64(a, c));
+    schedule[q * 4 + 2] = SHA256_BSWAP32(sha256_unpacklo_epi64(b, d));
+    schedule[q * 4 + 3] = SHA256_BSWAP32(sha256_unpackhi_epi64(b, d));
+  }
+
+  for (uint32_t i = 16; i < 64; i++) {
+    schedule[i] = wasm_i32x4_add(
+      wasm_i32x4_add(
+        schedule[i - 16],
+        sha256_sigma_simd(schedule[i - 15], 7, 18, 3)
+      ),
+      wasm_i32x4_add(
+        schedule[i - 7],
+        sha256_sigma_simd(schedule[i - 2], 17, 19, 10)
+      )
+    );
+  }
+}
+
+#define SHA256_W(schedule, lane, idx) \
+  ((uint32_t)wasm_i32x4_extract_lane((schedule)[(idx)], (lane)))
+
+#define SHA256_COMPRESS_LANE(hash, schedule, lane) do { \
+  uint32_t A, B, C, D, E, F, G, H; \
+  const uint32_t* k; \
+  int i; \
+  A = hash[0], B = hash[1], C = hash[2], D = hash[3]; \
+  E = hash[4], F = hash[5], G = hash[6], H = hash[7]; \
+  ROUND(A, B, C, D, E, F, G, H, rhash_k256[0], SHA256_W(schedule, lane, 0)); \
+  ROUND(H, A, B, C, D, E, F, G, rhash_k256[1], SHA256_W(schedule, lane, 1)); \
+  ROUND(G, H, A, B, C, D, E, F, rhash_k256[2], SHA256_W(schedule, lane, 2)); \
+  ROUND(F, G, H, A, B, C, D, E, rhash_k256[3], SHA256_W(schedule, lane, 3)); \
+  ROUND(E, F, G, H, A, B, C, D, rhash_k256[4], SHA256_W(schedule, lane, 4)); \
+  ROUND(D, E, F, G, H, A, B, C, rhash_k256[5], SHA256_W(schedule, lane, 5)); \
+  ROUND(C, D, E, F, G, H, A, B, rhash_k256[6], SHA256_W(schedule, lane, 6)); \
+  ROUND(B, C, D, E, F, G, H, A, rhash_k256[7], SHA256_W(schedule, lane, 7)); \
+  ROUND(A, B, C, D, E, F, G, H, rhash_k256[8], SHA256_W(schedule, lane, 8)); \
+  ROUND(H, A, B, C, D, E, F, G, rhash_k256[9], SHA256_W(schedule, lane, 9)); \
+  ROUND(G, H, A, B, C, D, E, F, rhash_k256[10], SHA256_W(schedule, lane, 10)); \
+  ROUND(F, G, H, A, B, C, D, E, rhash_k256[11], SHA256_W(schedule, lane, 11)); \
+  ROUND(E, F, G, H, A, B, C, D, rhash_k256[12], SHA256_W(schedule, lane, 12)); \
+  ROUND(D, E, F, G, H, A, B, C, rhash_k256[13], SHA256_W(schedule, lane, 13)); \
+  ROUND(C, D, E, F, G, H, A, B, rhash_k256[14], SHA256_W(schedule, lane, 14)); \
+  ROUND(B, C, D, E, F, G, H, A, rhash_k256[15], SHA256_W(schedule, lane, 15)); \
+  _Pragma("clang loop unroll(full)") \
+  for (i = 16, k = &rhash_k256[16]; i < 64; i += 16, k += 16) { \
+    ROUND(A, B, C, D, E, F, G, H, k[0], SHA256_W(schedule, lane, i + 0)); \
+    ROUND(H, A, B, C, D, E, F, G, k[1], SHA256_W(schedule, lane, i + 1)); \
+    ROUND(G, H, A, B, C, D, E, F, k[2], SHA256_W(schedule, lane, i + 2)); \
+    ROUND(F, G, H, A, B, C, D, E, k[3], SHA256_W(schedule, lane, i + 3)); \
+    ROUND(E, F, G, H, A, B, C, D, k[4], SHA256_W(schedule, lane, i + 4)); \
+    ROUND(D, E, F, G, H, A, B, C, k[5], SHA256_W(schedule, lane, i + 5)); \
+    ROUND(C, D, E, F, G, H, A, B, k[6], SHA256_W(schedule, lane, i + 6)); \
+    ROUND(B, C, D, E, F, G, H, A, k[7], SHA256_W(schedule, lane, i + 7)); \
+    ROUND(A, B, C, D, E, F, G, H, k[8], SHA256_W(schedule, lane, i + 8)); \
+    ROUND(H, A, B, C, D, E, F, G, k[9], SHA256_W(schedule, lane, i + 9)); \
+    ROUND(G, H, A, B, C, D, E, F, k[10], SHA256_W(schedule, lane, i + 10)); \
+    ROUND(F, G, H, A, B, C, D, E, k[11], SHA256_W(schedule, lane, i + 11)); \
+    ROUND(E, F, G, H, A, B, C, D, k[12], SHA256_W(schedule, lane, i + 12)); \
+    ROUND(D, E, F, G, H, A, B, C, k[13], SHA256_W(schedule, lane, i + 13)); \
+    ROUND(C, D, E, F, G, H, A, B, k[14], SHA256_W(schedule, lane, i + 14)); \
+    ROUND(B, C, D, E, F, G, H, A, k[15], SHA256_W(schedule, lane, i + 15)); \
+  } \
+  hash[0] += A, hash[1] += B, hash[2] += C, hash[3] += D; \
+  hash[4] += E, hash[5] += F, hash[6] += G, hash[7] += H; \
+} while (0)
+
+static void sha256_process_blocks_simd(const uint8_t *msg, uint32_t block_count) {
+  v128_t schedule[64];
+
+  while (block_count >= 4) {
+    sha256_schedule_simd(msg, msg + 64, msg + 128, msg + 192, schedule);
+    SHA256_COMPRESS_LANE(ctx->hash, schedule, 0);
+    SHA256_COMPRESS_LANE(ctx->hash, schedule, 1);
+    SHA256_COMPRESS_LANE(ctx->hash, schedule, 2);
+    SHA256_COMPRESS_LANE(ctx->hash, schedule, 3);
+    msg += 256;
+    block_count -= 4;
+  }
+
+  while (block_count > 0) {
+    sha256_process_block(ctx->hash, (uint32_t *)msg);
+    msg += sha256_block_size;
+    block_count -= 1;
+  }
+}
+
+#endif
+
 /**
  * Calculate message hash.
  * Can be called repeatedly with chunks of the message to be hashed.
@@ -220,6 +356,14 @@ void Hash_Update(uint32_t size) {
     size -= left;
   }
 
+#if defined(__wasm_simd128__)
+  if (size >= sha256_block_size) {
+    uint32_t block_count = size / sha256_block_size;
+    sha256_process_blocks_simd(msg, block_count);
+    msg += block_count * sha256_block_size;
+    size -= block_count * sha256_block_size;
+  }
+#else
   while (size >= sha256_block_size) {
     uint32_t* aligned_message_block = (uint32_t*)msg;
 
@@ -227,6 +371,7 @@ void Hash_Update(uint32_t size) {
     msg += sha256_block_size;
     size -= sha256_block_size;
   }
+#endif
 
   if (size) {
     /* save leftovers */

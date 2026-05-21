@@ -1,4 +1,5 @@
-import wasmJson from "../wasm/sha256.wasm.json";
+import wasmJsonSimd from "../wasm/sha256-simd.wasm.json";
+import wasmJsonPortable from "../wasm/sha256.wasm.json";
 import {
 	type IHasher,
 	type IWASMInterface,
@@ -6,7 +7,10 @@ import {
 } from "./WASMInterface";
 import lockedCreate from "./lockedCreate";
 import Mutex from "./mutex";
+import { isWasmSimdSupported } from "./simd";
 import type { IDataType } from "./util";
+
+const wasmJson = isWasmSimdSupported() ? wasmJsonSimd : wasmJsonPortable;
 
 const mutex = new Mutex();
 let wasmCache: IWASMInterface = null;

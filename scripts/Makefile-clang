@@ -1,5 +1,5 @@
-CFLAGS=-flto -O3 -nostdlib -fno-builtin -ffreestanding -mexec-model=reactor --target=wasm32
-LDFLAGS=-Wl,--strip-all -Wl,--initial-memory=131072 -Wl,--max-memory=131072 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic
+CFLAGS=-flto -O3 -nostdlib -fno-builtin -ffreestanding -mexec-model=reactor -mbulk-memory -mmutable-globals -msign-ext -mmultivalue -mnontrapping-fptoint --target=wasm32
+LDFLAGS=-Wl,--strip-all -Wl,--initial-memory=262144 -Wl,--max-memory=262144 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic
 
 # -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
 # -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
@@ -11,6 +11,7 @@ all : \
 		/app/wasm/blake2b.wasm \
 		/app/wasm/blake2s.wasm \
 		/app/wasm/blake3.wasm \
+		/app/wasm/blake3-simd.wasm \
 		/app/wasm/crc32.wasm \
 		/app/wasm/crc64.wasm \
 		/app/wasm/md4.wasm \
@@ -19,6 +20,7 @@ all : \
 		/app/wasm/scrypt.wasm \
 		/app/wasm/sha1.wasm \
 		/app/wasm/sha256.wasm \
+		/app/wasm/sha256-simd.wasm \
 		/app/wasm/sha512.wasm \
 		/app/wasm/sha3.wasm \
 		/app/wasm/sm3.wasm \
@@ -44,6 +46,21 @@ all : \
 
 /app/wasm/bcrypt.wasm : /app/src/bcrypt.c
 	clang $(CFLAGS) $(LDFLAGS) -fno-strict-aliasing -o $@ $<
+	sha1sum $@
+	stat -c "%n size: %s bytes" $@
+
+/app/wasm/blake3.wasm : /app/src/blake3.c
+	clang $(CFLAGS) -mtail-call $(LDFLAGS) -o $@ $<
+	sha1sum $@
+	stat -c "%n size: %s bytes" $@
+
+/app/wasm/blake3-simd.wasm : /app/src/blake3.c
+	clang $(CFLAGS) -msimd128 -mtail-call $(LDFLAGS) -o $@ $<
+	sha1sum $@
+	stat -c "%n size: %s bytes" $@
+
+/app/wasm/sha256-simd.wasm : /app/src/sha256.c
+	clang $(CFLAGS) -msimd128 $(LDFLAGS) -o $@ $<
 	sha1sum $@
 	stat -c "%n size: %s bytes" $@
 
