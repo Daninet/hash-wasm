@@ -14,7 +14,7 @@
 
 #ifdef WITH_BUFFER
 
-#define MAIN_BUFFER_SIZE 16 * 1024
+#define MAIN_BUFFER_SIZE 64 * 1024
 alignas(128) uint8_t main_buffer[MAIN_BUFFER_SIZE];
 
 WASM_EXPORT

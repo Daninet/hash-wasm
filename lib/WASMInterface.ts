@@ -9,7 +9,7 @@ import {
 	writeHexToUInt8,
 } from "./util";
 
-export const MAX_HEAP = 16 * 1024;
+export const MAX_HEAP = 64 * 1024;
 const WASM_FUNC_HASH_LENGTH = 4;
 const wasmMutex = new Mutex();
 
@@ -97,7 +97,7 @@ export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 	const loadWASMPromise = wasmMutex.dispatch(async () => {
 		if (!wasmModuleCache.has(binary.name)) {
 			const asm = decodeBase64(binary.data);
-			const promise = WebAssembly.compile(asm);
+			const promise = WebAssembly.compile(asm as BufferSource);
 
 			wasmModuleCache.set(binary.name, promise);
 		}
@@ -256,6 +256,7 @@ export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 			break;
 
 		case "blake3":
+		case "blake3-simd":
 			// if there is a key at blake3 then cannot simplify
 			canSimplify = (data, initParam) => initParam === 0 && isDataShort(data);
 			break;

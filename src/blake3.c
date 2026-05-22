@@ -19,7 +19,11 @@
 #define BLAKE3_BLOCK_LEN 64
 #define BLAKE3_CHUNK_LEN 1024
 #define BLAKE3_MAX_DEPTH 54
+#if defined(__wasm_simd128__)
+#define MAX_SIMD_DEGREE 4
+#else
 #define MAX_SIMD_DEGREE 1
+#endif
 #define MAX_SIMD_DEGREE_OR_2 (MAX_SIMD_DEGREE > 2 ? MAX_SIMD_DEGREE : 2)
 #define bool uint8_t
 #define true 1
@@ -52,7 +56,13 @@ static const uint8_t MSG_SCHEDULE[7][16] = {
   {11, 15, 5, 0, 1, 9, 8, 6, 14, 10, 2, 12, 3, 4, 7, 13},
 };
 
-size_t blake3_simd_degree(void) { return 1; }
+size_t blake3_simd_degree(void) {
+#if defined(__wasm_simd128__)
+  return MAX_SIMD_DEGREE;
+#else
+  return 1;
+#endif
+}
 
 // This struct is a private implementation detail. It has to be here because
 // it's part of blake3_hasher below.
@@ -214,6 +224,29 @@ void blake3_compress_in_place_portable(
   cv64[3] = state64[3] ^ state64[7];
 }
 
+#if defined(__wasm_simd128__)
+void blake3_compress_in_place_wasm32_simd(
+  uint32_t cv[8], const uint8_t block[BLAKE3_BLOCK_LEN], uint8_t block_len,
+  uint64_t counter, uint8_t flags
+);
+void blake3_compress_xof_wasm32_simd(
+  const uint32_t cv[8], const uint8_t block[BLAKE3_BLOCK_LEN], uint8_t block_len,
+  uint64_t counter, uint8_t flags, uint8_t out[64]
+);
+void blake3_hash_many_wasm32_simd(
+  const uint8_t *const *inputs, size_t num_inputs, size_t blocks,
+  const uint32_t key[8], uint64_t counter, uint8_t increment_counter, uint8_t flags,
+  uint8_t flags_start, uint8_t flags_end, uint8_t *out
+);
+#define blake3_compress_in_place blake3_compress_in_place_wasm32_simd
+#define blake3_compress_xof blake3_compress_xof_wasm32_simd
+#define blake3_hash_many blake3_hash_many_wasm32_simd
+#else
+#define blake3_compress_in_place blake3_compress_in_place_portable
+#define blake3_compress_xof blake3_compress_xof_portable
+#define blake3_hash_many blake3_hash_many_portable
+#endif
+
 static __inline__ void chunk_state_init(blake3_chunk_state *self, const uint32_t key[8], uint8_t flags) {
   memcpy32(self->cv, key);
   self->chunk_counter = 0;
@@ -291,7 +324,7 @@ static __inline__ output_t make_output(
 static __inline__ void output_chaining_value(const output_t *self, uint8_t cv[32]) {
   uint32_t cv_words[8];
   memcpy32(cv_words, self->input_cv);
-  blake3_compress_in_place_portable(
+  blake3_compress_in_place(
     cv_words, self->block, self->block_len, self->counter, self->flags
   );
   store_cv_words(cv, cv_words);
@@ -304,7 +337,7 @@ static __inline__ void output_root_bytes(
   size_t offset_within_block = seek % 64;
   uint8_t wide_buf[64];
   while (out_len > 0) {
-    blake3_compress_xof_portable(
+    blake3_compress_xof(
       self->input_cv, self->block, self->block_len, output_block_counter, self->flags | ROOT, wide_buf
     );
     size_t available_bytes = 64 - offset_within_block;
@@ -330,7 +363,7 @@ static __inline__ void chunk_state_update(
     input += take;
     input_len -= take;
     if (input_len > 0) {
-      blake3_compress_in_place_portable(
+      blake3_compress_in_place(
         self->cv, self->buf, BLAKE3_BLOCK_LEN, self->chunk_counter,
         self->flags | chunk_state_maybe_start_flag(self)
       );
@@ -341,7 +374,7 @@ static __inline__ void chunk_state_update(
   }
 
   while (input_len > BLAKE3_BLOCK_LEN) {
-    blake3_compress_in_place_portable(
+    blake3_compress_in_place(
       self->cv, input, BLAKE3_BLOCK_LEN, self->chunk_counter,
       self->flags | chunk_state_maybe_start_flag(self)
     );
@@ -413,6 +446,479 @@ void blake3_hash_many_portable(
   }
 }
 
+#if defined(__wasm_simd128__)
+
+#include <wasm_simd128.h>
+
+#define WASM_SIMD_DEGREE 4
+
+#define shuffle_epi32(__a, __c3, __c2, __c1, __c0) \
+  (wasm_i32x4_shuffle(__a, __a, __c0, __c1, __c2, __c3))
+
+#define shuffle_ps2(__a, __b, __z, __y, __x, __w) \
+  (wasm_i32x4_shuffle(__a, __b, __w, __x, __y + 4, __z + 4))
+
+#define unpacklo_epi64(__a, __b) \
+  (wasm_i64x2_shuffle(__a, __b, 0, 2))
+
+#define unpackhi_epi64(__a, __b) \
+  (wasm_i64x2_shuffle(__a, __b, 1, 3))
+
+#define unpacklo_epi32(__a, __b) \
+  (wasm_i32x4_shuffle(__a, __b, 0, 4, 1, 5))
+
+#define unpackhi_epi32(__a, __b) \
+  (wasm_i32x4_shuffle(__a, __b, 2, 6, 3, 7))
+
+static __inline__ v128_t wasm_loadu(const uint8_t src[16]) {
+  return wasm_v128_load((const v128_t *)src);
+}
+
+static __inline__ void wasm_storeu(v128_t src, uint8_t dest[16]) {
+  wasm_v128_store((v128_t *)dest, src);
+}
+
+static __inline__ v128_t wasm_addv(v128_t a, v128_t b) { return wasm_i32x4_add(a, b); }
+
+static __inline__ v128_t wasm_xorv(v128_t a, v128_t b) { return wasm_v128_xor(a, b); }
+
+static __inline__ v128_t wasm_set1(uint32_t x) { return wasm_i32x4_splat((int32_t)x); }
+
+static __inline__ v128_t wasm_set4(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+  return wasm_i32x4_make((int32_t)a, (int32_t)b, (int32_t)c, (int32_t)d);
+}
+
+static __inline__ v128_t wasm_rot16(v128_t x) {
+  return wasm_xorv(wasm_u32x4_shr(x, 16), wasm_i32x4_shl(x, 32 - 16));
+}
+
+static __inline__ v128_t wasm_rot12(v128_t x) {
+  return wasm_xorv(wasm_u32x4_shr(x, 12), wasm_i32x4_shl(x, 32 - 12));
+}
+
+static __inline__ v128_t wasm_rot8(v128_t x) {
+  return wasm_xorv(wasm_u32x4_shr(x, 8), wasm_i32x4_shl(x, 32 - 8));
+}
+
+static __inline__ v128_t wasm_rot7(v128_t x) {
+  return wasm_xorv(wasm_u32x4_shr(x, 7), wasm_i32x4_shl(x, 32 - 7));
+}
+
+static __inline__ void wasm_g1(v128_t *row0, v128_t *row1, v128_t *row2, v128_t *row3,
+  v128_t m
+) {
+  *row0 = wasm_addv(wasm_addv(*row0, m), *row1);
+  *row3 = wasm_xorv(*row3, *row0);
+  *row3 = wasm_rot16(*row3);
+  *row2 = wasm_addv(*row2, *row3);
+  *row1 = wasm_xorv(*row1, *row2);
+  *row1 = wasm_rot12(*row1);
+}
+
+static __inline__ void wasm_g2(v128_t *row0, v128_t *row1, v128_t *row2, v128_t *row3,
+  v128_t m
+) {
+  *row0 = wasm_addv(wasm_addv(*row0, m), *row1);
+  *row3 = wasm_xorv(*row3, *row0);
+  *row3 = wasm_rot8(*row3);
+  *row2 = wasm_addv(*row2, *row3);
+  *row1 = wasm_xorv(*row1, *row2);
+  *row1 = wasm_rot7(*row1);
+}
+
+static __inline__ void wasm_diagonalize(v128_t *row0, v128_t *row2, v128_t *row3) {
+  *row0 = shuffle_epi32(*row0, 2, 1, 0, 3);
+  *row3 = shuffle_epi32(*row3, 1, 0, 3, 2);
+  *row2 = shuffle_epi32(*row2, 0, 3, 2, 1);
+}
+
+static __inline__ void wasm_undiagonalize(v128_t *row0, v128_t *row2, v128_t *row3) {
+  *row0 = shuffle_epi32(*row0, 0, 3, 2, 1);
+  *row3 = shuffle_epi32(*row3, 1, 0, 3, 2);
+  *row2 = shuffle_epi32(*row2, 2, 1, 0, 3);
+}
+
+static __inline__ void wasm_compress_pre(v128_t rows[4], const uint32_t cv[8],
+  const uint8_t block[BLAKE3_BLOCK_LEN],
+  uint8_t block_len, uint64_t counter, uint8_t flags
+) {
+  rows[0] = wasm_loadu((uint8_t *)&cv[0]);
+  rows[1] = wasm_loadu((uint8_t *)&cv[4]);
+  rows[2] = wasm_set4(IV[0], IV[1], IV[2], IV[3]);
+  rows[3] = wasm_set4(counter_low(counter), counter_high(counter),
+    (uint32_t)block_len, (uint32_t)flags);
+
+  v128_t m0 = wasm_loadu(&block[sizeof(v128_t) * 0]);
+  v128_t m1 = wasm_loadu(&block[sizeof(v128_t) * 1]);
+  v128_t m2 = wasm_loadu(&block[sizeof(v128_t) * 2]);
+  v128_t m3 = wasm_loadu(&block[sizeof(v128_t) * 3]);
+
+  v128_t t0, t1, t2, t3, tt;
+
+  t0 = shuffle_ps2(m0, m1, 2, 0, 2, 0);
+  wasm_g1(&rows[0], &rows[1], &rows[2], &rows[3], t0);
+  t1 = shuffle_ps2(m0, m1, 3, 1, 3, 1);
+  wasm_g2(&rows[0], &rows[1], &rows[2], &rows[3], t1);
+  wasm_diagonalize(&rows[0], &rows[2], &rows[3]);
+  t2 = shuffle_ps2(m2, m3, 2, 0, 2, 0);
+  t2 = shuffle_epi32(t2, 2, 1, 0, 3);
+  wasm_g1(&rows[0], &rows[1], &rows[2], &rows[3], t2);
+  t3 = shuffle_ps2(m2, m3, 3, 1, 3, 1);
+  t3 = shuffle_epi32(t3, 2, 1, 0, 3);
+  wasm_g2(&rows[0], &rows[1], &rows[2], &rows[3], t3);
+  wasm_undiagonalize(&rows[0], &rows[2], &rows[3]);
+  m0 = t0;
+  m1 = t1;
+  m2 = t2;
+  m3 = t3;
+
+  #pragma clang loop unroll(full)
+  for (int round = 1; round < 7; round++) {
+    t0 = shuffle_ps2(m0, m1, 3, 1, 1, 2);
+    t0 = shuffle_epi32(t0, 0, 3, 2, 1);
+    wasm_g1(&rows[0], &rows[1], &rows[2], &rows[3], t0);
+    t1 = shuffle_ps2(m2, m3, 3, 3, 2, 2);
+    tt = shuffle_epi32(m0, 0, 0, 3, 3);
+    t1 = wasm_i32x4_shuffle(tt, t1, 0, 5, 2, 7);
+    wasm_g2(&rows[0], &rows[1], &rows[2], &rows[3], t1);
+    wasm_diagonalize(&rows[0], &rows[2], &rows[3]);
+    t2 = unpacklo_epi64(m3, m1);
+    tt = wasm_i32x4_shuffle(t2, m2, 0, 1, 2, 7);
+    t2 = shuffle_epi32(tt, 1, 3, 2, 0);
+    wasm_g1(&rows[0], &rows[1], &rows[2], &rows[3], t2);
+    t3 = unpackhi_epi32(m1, m3);
+    tt = unpacklo_epi32(m2, t3);
+    t3 = shuffle_epi32(tt, 0, 1, 3, 2);
+    wasm_g2(&rows[0], &rows[1], &rows[2], &rows[3], t3);
+    wasm_undiagonalize(&rows[0], &rows[2], &rows[3]);
+    m0 = t0;
+    m1 = t1;
+    m2 = t2;
+    m3 = t3;
+  }
+}
+
+void blake3_compress_in_place_wasm32_simd(
+  uint32_t cv[8], const uint8_t block[BLAKE3_BLOCK_LEN], uint8_t block_len,
+  uint64_t counter, uint8_t flags
+) {
+  v128_t rows[4];
+  wasm_compress_pre(rows, cv, block, block_len, counter, flags);
+  wasm_storeu(wasm_xorv(rows[0], rows[2]), (uint8_t *)&cv[0]);
+  wasm_storeu(wasm_xorv(rows[1], rows[3]), (uint8_t *)&cv[4]);
+}
+
+void blake3_compress_xof_wasm32_simd(
+  const uint32_t cv[8], const uint8_t block[BLAKE3_BLOCK_LEN], uint8_t block_len,
+  uint64_t counter, uint8_t flags, uint8_t out[64]
+) {
+  v128_t rows[4];
+  wasm_compress_pre(rows, cv, block, block_len, counter, flags);
+  wasm_storeu(wasm_xorv(rows[0], rows[2]), &out[0]);
+  wasm_storeu(wasm_xorv(rows[1], rows[3]), &out[16]);
+  wasm_storeu(wasm_xorv(rows[2], wasm_loadu((uint8_t *)&cv[0])), &out[32]);
+  wasm_storeu(wasm_xorv(rows[3], wasm_loadu((uint8_t *)&cv[4])), &out[48]);
+}
+
+static __inline__ void wasm_round_fn(v128_t v[16], v128_t m[16], size_t r) {
+  v[0] = wasm_addv(v[0], m[(size_t)MSG_SCHEDULE[r][0]]);
+  v[1] = wasm_addv(v[1], m[(size_t)MSG_SCHEDULE[r][2]]);
+  v[2] = wasm_addv(v[2], m[(size_t)MSG_SCHEDULE[r][4]]);
+  v[3] = wasm_addv(v[3], m[(size_t)MSG_SCHEDULE[r][6]]);
+  v[0] = wasm_addv(v[0], v[4]);
+  v[1] = wasm_addv(v[1], v[5]);
+  v[2] = wasm_addv(v[2], v[6]);
+  v[3] = wasm_addv(v[3], v[7]);
+  v[12] = wasm_xorv(v[12], v[0]);
+  v[13] = wasm_xorv(v[13], v[1]);
+  v[14] = wasm_xorv(v[14], v[2]);
+  v[15] = wasm_xorv(v[15], v[3]);
+  v[12] = wasm_rot16(v[12]);
+  v[13] = wasm_rot16(v[13]);
+  v[14] = wasm_rot16(v[14]);
+  v[15] = wasm_rot16(v[15]);
+  v[8] = wasm_addv(v[8], v[12]);
+  v[9] = wasm_addv(v[9], v[13]);
+  v[10] = wasm_addv(v[10], v[14]);
+  v[11] = wasm_addv(v[11], v[15]);
+  v[4] = wasm_xorv(v[4], v[8]);
+  v[5] = wasm_xorv(v[5], v[9]);
+  v[6] = wasm_xorv(v[6], v[10]);
+  v[7] = wasm_xorv(v[7], v[11]);
+  v[4] = wasm_rot12(v[4]);
+  v[5] = wasm_rot12(v[5]);
+  v[6] = wasm_rot12(v[6]);
+  v[7] = wasm_rot12(v[7]);
+  v[0] = wasm_addv(v[0], m[(size_t)MSG_SCHEDULE[r][1]]);
+  v[1] = wasm_addv(v[1], m[(size_t)MSG_SCHEDULE[r][3]]);
+  v[2] = wasm_addv(v[2], m[(size_t)MSG_SCHEDULE[r][5]]);
+  v[3] = wasm_addv(v[3], m[(size_t)MSG_SCHEDULE[r][7]]);
+  v[0] = wasm_addv(v[0], v[4]);
+  v[1] = wasm_addv(v[1], v[5]);
+  v[2] = wasm_addv(v[2], v[6]);
+  v[3] = wasm_addv(v[3], v[7]);
+  v[12] = wasm_xorv(v[12], v[0]);
+  v[13] = wasm_xorv(v[13], v[1]);
+  v[14] = wasm_xorv(v[14], v[2]);
+  v[15] = wasm_xorv(v[15], v[3]);
+  v[12] = wasm_rot8(v[12]);
+  v[13] = wasm_rot8(v[13]);
+  v[14] = wasm_rot8(v[14]);
+  v[15] = wasm_rot8(v[15]);
+  v[8] = wasm_addv(v[8], v[12]);
+  v[9] = wasm_addv(v[9], v[13]);
+  v[10] = wasm_addv(v[10], v[14]);
+  v[11] = wasm_addv(v[11], v[15]);
+  v[4] = wasm_xorv(v[4], v[8]);
+  v[5] = wasm_xorv(v[5], v[9]);
+  v[6] = wasm_xorv(v[6], v[10]);
+  v[7] = wasm_xorv(v[7], v[11]);
+  v[4] = wasm_rot7(v[4]);
+  v[5] = wasm_rot7(v[5]);
+  v[6] = wasm_rot7(v[6]);
+  v[7] = wasm_rot7(v[7]);
+
+  v[0] = wasm_addv(v[0], m[(size_t)MSG_SCHEDULE[r][8]]);
+  v[1] = wasm_addv(v[1], m[(size_t)MSG_SCHEDULE[r][10]]);
+  v[2] = wasm_addv(v[2], m[(size_t)MSG_SCHEDULE[r][12]]);
+  v[3] = wasm_addv(v[3], m[(size_t)MSG_SCHEDULE[r][14]]);
+  v[0] = wasm_addv(v[0], v[5]);
+  v[1] = wasm_addv(v[1], v[6]);
+  v[2] = wasm_addv(v[2], v[7]);
+  v[3] = wasm_addv(v[3], v[4]);
+  v[15] = wasm_xorv(v[15], v[0]);
+  v[12] = wasm_xorv(v[12], v[1]);
+  v[13] = wasm_xorv(v[13], v[2]);
+  v[14] = wasm_xorv(v[14], v[3]);
+  v[15] = wasm_rot16(v[15]);
+  v[12] = wasm_rot16(v[12]);
+  v[13] = wasm_rot16(v[13]);
+  v[14] = wasm_rot16(v[14]);
+  v[10] = wasm_addv(v[10], v[15]);
+  v[11] = wasm_addv(v[11], v[12]);
+  v[8] = wasm_addv(v[8], v[13]);
+  v[9] = wasm_addv(v[9], v[14]);
+  v[5] = wasm_xorv(v[5], v[10]);
+  v[6] = wasm_xorv(v[6], v[11]);
+  v[7] = wasm_xorv(v[7], v[8]);
+  v[4] = wasm_xorv(v[4], v[9]);
+  v[5] = wasm_rot12(v[5]);
+  v[6] = wasm_rot12(v[6]);
+  v[7] = wasm_rot12(v[7]);
+  v[4] = wasm_rot12(v[4]);
+  v[0] = wasm_addv(v[0], m[(size_t)MSG_SCHEDULE[r][9]]);
+  v[1] = wasm_addv(v[1], m[(size_t)MSG_SCHEDULE[r][11]]);
+  v[2] = wasm_addv(v[2], m[(size_t)MSG_SCHEDULE[r][13]]);
+  v[3] = wasm_addv(v[3], m[(size_t)MSG_SCHEDULE[r][15]]);
+  v[0] = wasm_addv(v[0], v[5]);
+  v[1] = wasm_addv(v[1], v[6]);
+  v[2] = wasm_addv(v[2], v[7]);
+  v[3] = wasm_addv(v[3], v[4]);
+  v[15] = wasm_xorv(v[15], v[0]);
+  v[12] = wasm_xorv(v[12], v[1]);
+  v[13] = wasm_xorv(v[13], v[2]);
+  v[14] = wasm_xorv(v[14], v[3]);
+  v[15] = wasm_rot8(v[15]);
+  v[12] = wasm_rot8(v[12]);
+  v[13] = wasm_rot8(v[13]);
+  v[14] = wasm_rot8(v[14]);
+  v[10] = wasm_addv(v[10], v[15]);
+  v[11] = wasm_addv(v[11], v[12]);
+  v[8] = wasm_addv(v[8], v[13]);
+  v[9] = wasm_addv(v[9], v[14]);
+  v[5] = wasm_xorv(v[5], v[10]);
+  v[6] = wasm_xorv(v[6], v[11]);
+  v[7] = wasm_xorv(v[7], v[8]);
+  v[4] = wasm_xorv(v[4], v[9]);
+  v[5] = wasm_rot7(v[5]);
+  v[6] = wasm_rot7(v[6]);
+  v[7] = wasm_rot7(v[7]);
+  v[4] = wasm_rot7(v[4]);
+}
+
+static __inline__ void wasm_transpose_vecs(v128_t vecs[WASM_SIMD_DEGREE]) {
+  v128_t ab_01 = unpacklo_epi32(vecs[0], vecs[1]);
+  v128_t ab_23 = unpackhi_epi32(vecs[0], vecs[1]);
+  v128_t cd_01 = unpacklo_epi32(vecs[2], vecs[3]);
+  v128_t cd_23 = unpackhi_epi32(vecs[2], vecs[3]);
+
+  v128_t abcd_0 = unpacklo_epi64(ab_01, cd_01);
+  v128_t abcd_1 = unpackhi_epi64(ab_01, cd_01);
+  v128_t abcd_2 = unpacklo_epi64(ab_23, cd_23);
+  v128_t abcd_3 = unpackhi_epi64(ab_23, cd_23);
+
+  vecs[0] = abcd_0;
+  vecs[1] = abcd_1;
+  vecs[2] = abcd_2;
+  vecs[3] = abcd_3;
+}
+
+static __inline__ void wasm_transpose_msg_vecs(const uint8_t *const *inputs,
+  size_t block_offset, v128_t out[16]
+) {
+  out[0] = wasm_loadu(&inputs[0][block_offset + 0 * sizeof(v128_t)]);
+  out[1] = wasm_loadu(&inputs[1][block_offset + 0 * sizeof(v128_t)]);
+  out[2] = wasm_loadu(&inputs[2][block_offset + 0 * sizeof(v128_t)]);
+  out[3] = wasm_loadu(&inputs[3][block_offset + 0 * sizeof(v128_t)]);
+  out[4] = wasm_loadu(&inputs[0][block_offset + 1 * sizeof(v128_t)]);
+  out[5] = wasm_loadu(&inputs[1][block_offset + 1 * sizeof(v128_t)]);
+  out[6] = wasm_loadu(&inputs[2][block_offset + 1 * sizeof(v128_t)]);
+  out[7] = wasm_loadu(&inputs[3][block_offset + 1 * sizeof(v128_t)]);
+  out[8] = wasm_loadu(&inputs[0][block_offset + 2 * sizeof(v128_t)]);
+  out[9] = wasm_loadu(&inputs[1][block_offset + 2 * sizeof(v128_t)]);
+  out[10] = wasm_loadu(&inputs[2][block_offset + 2 * sizeof(v128_t)]);
+  out[11] = wasm_loadu(&inputs[3][block_offset + 2 * sizeof(v128_t)]);
+  out[12] = wasm_loadu(&inputs[0][block_offset + 3 * sizeof(v128_t)]);
+  out[13] = wasm_loadu(&inputs[1][block_offset + 3 * sizeof(v128_t)]);
+  out[14] = wasm_loadu(&inputs[2][block_offset + 3 * sizeof(v128_t)]);
+  out[15] = wasm_loadu(&inputs[3][block_offset + 3 * sizeof(v128_t)]);
+
+  wasm_transpose_vecs(&out[0]);
+  wasm_transpose_vecs(&out[4]);
+  wasm_transpose_vecs(&out[8]);
+  wasm_transpose_vecs(&out[12]);
+}
+
+static __inline__ void wasm_load_counters(uint64_t counter, uint8_t increment_counter,
+  v128_t *out_lo, v128_t *out_hi
+) {
+  const v128_t mask = wasm_i32x4_splat(-(int32_t)increment_counter);
+  const v128_t add0 = wasm_i32x4_make(0, 1, 2, 3);
+  const v128_t add1 = wasm_v128_and(mask, add0);
+  const v128_t sign_bit = wasm_i32x4_splat(0x80000000);
+  v128_t l = wasm_i32x4_add(wasm_i32x4_splat((int32_t)counter), add1);
+  v128_t carry = wasm_i32x4_gt(
+    wasm_v128_xor(add1, sign_bit),
+    wasm_v128_xor(l, sign_bit)
+  );
+  v128_t h = wasm_i32x4_sub(wasm_i32x4_splat((int32_t)(counter >> 32)), carry);
+  *out_lo = l;
+  *out_hi = h;
+}
+
+static void blake3_hash4_wasm32_simd(
+  const uint8_t *const *inputs, size_t blocks,
+  const uint32_t key[8], uint64_t counter,
+  uint8_t increment_counter, uint8_t flags,
+  uint8_t flags_start, uint8_t flags_end,
+  uint8_t *out
+) {
+  v128_t h_vecs[8] = {
+    wasm_set1(key[0]), wasm_set1(key[1]), wasm_set1(key[2]), wasm_set1(key[3]),
+    wasm_set1(key[4]), wasm_set1(key[5]), wasm_set1(key[6]), wasm_set1(key[7]),
+  };
+  v128_t counter_low_vec, counter_high_vec;
+  wasm_load_counters(counter, increment_counter, &counter_low_vec,
+    &counter_high_vec);
+  const v128_t block_len_vec = wasm_set1(BLAKE3_BLOCK_LEN);
+  const v128_t iv0_vec = wasm_set1(IV[0]);
+  const v128_t iv1_vec = wasm_set1(IV[1]);
+  const v128_t iv2_vec = wasm_set1(IV[2]);
+  const v128_t iv3_vec = wasm_set1(IV[3]);
+  uint8_t block_flags = flags | flags_start;
+
+  for (size_t block = 0; block < blocks; block++) {
+    if (block + 1 == blocks) {
+      block_flags |= flags_end;
+    }
+    v128_t block_flags_vec = wasm_set1(block_flags);
+    v128_t msg_vecs[16];
+    wasm_transpose_msg_vecs(inputs, block * BLAKE3_BLOCK_LEN, msg_vecs);
+
+    v128_t v[16] = {
+      h_vecs[0], h_vecs[1], h_vecs[2], h_vecs[3],
+      h_vecs[4], h_vecs[5], h_vecs[6], h_vecs[7],
+      iv0_vec, iv1_vec, iv2_vec, iv3_vec,
+      counter_low_vec, counter_high_vec, block_len_vec, block_flags_vec,
+    };
+
+    wasm_round_fn(v, msg_vecs, 0);
+    wasm_round_fn(v, msg_vecs, 1);
+    wasm_round_fn(v, msg_vecs, 2);
+    wasm_round_fn(v, msg_vecs, 3);
+    wasm_round_fn(v, msg_vecs, 4);
+    wasm_round_fn(v, msg_vecs, 5);
+    wasm_round_fn(v, msg_vecs, 6);
+
+    h_vecs[0] = wasm_xorv(v[0], v[8]);
+    h_vecs[1] = wasm_xorv(v[1], v[9]);
+    h_vecs[2] = wasm_xorv(v[2], v[10]);
+    h_vecs[3] = wasm_xorv(v[3], v[11]);
+    h_vecs[4] = wasm_xorv(v[4], v[12]);
+    h_vecs[5] = wasm_xorv(v[5], v[13]);
+    h_vecs[6] = wasm_xorv(v[6], v[14]);
+    h_vecs[7] = wasm_xorv(v[7], v[15]);
+
+    block_flags = flags;
+  }
+
+  wasm_transpose_vecs(&h_vecs[0]);
+  wasm_transpose_vecs(&h_vecs[4]);
+  wasm_storeu(h_vecs[0], &out[0 * sizeof(v128_t)]);
+  wasm_storeu(h_vecs[4], &out[1 * sizeof(v128_t)]);
+  wasm_storeu(h_vecs[1], &out[2 * sizeof(v128_t)]);
+  wasm_storeu(h_vecs[5], &out[3 * sizeof(v128_t)]);
+  wasm_storeu(h_vecs[2], &out[4 * sizeof(v128_t)]);
+  wasm_storeu(h_vecs[6], &out[5 * sizeof(v128_t)]);
+  wasm_storeu(h_vecs[3], &out[6 * sizeof(v128_t)]);
+  wasm_storeu(h_vecs[7], &out[7 * sizeof(v128_t)]);
+}
+
+static __inline__ void hash_one_wasm32_simd(
+  const uint8_t *input, size_t blocks,
+  const uint32_t key[8], uint64_t counter,
+  uint8_t flags, uint8_t flags_start,
+  uint8_t flags_end,
+  uint8_t out[BLAKE3_OUT_LEN]
+) {
+  uint32_t cv[8];
+  memcpy32(cv, key);
+  uint8_t block_flags = flags | flags_start;
+  while (blocks > 0) {
+    if (blocks == 1) {
+      block_flags |= flags_end;
+    }
+    blake3_compress_in_place_wasm32_simd(cv, input, BLAKE3_BLOCK_LEN, counter,
+      block_flags);
+    input = &input[BLAKE3_BLOCK_LEN];
+    blocks -= 1;
+    block_flags = flags;
+  }
+  store_cv_words(out, cv);
+}
+
+void blake3_hash_many_wasm32_simd(
+  const uint8_t *const *inputs,
+  size_t num_inputs, size_t blocks,
+  const uint32_t key[8], uint64_t counter,
+  uint8_t increment_counter, uint8_t flags,
+  uint8_t flags_start, uint8_t flags_end,
+  uint8_t *out
+) {
+  while (num_inputs >= WASM_SIMD_DEGREE) {
+    blake3_hash4_wasm32_simd(inputs, blocks, key, counter, increment_counter,
+      flags, flags_start, flags_end, out);
+    if (increment_counter) {
+      counter += WASM_SIMD_DEGREE;
+    }
+    inputs += WASM_SIMD_DEGREE;
+    num_inputs -= WASM_SIMD_DEGREE;
+    out = &out[WASM_SIMD_DEGREE * BLAKE3_OUT_LEN];
+  }
+  while (num_inputs > 0) {
+    hash_one_wasm32_simd(inputs[0], blocks, key, counter, flags, flags_start,
+      flags_end, out);
+    if (increment_counter) {
+      counter += 1;
+    }
+    inputs += 1;
+    num_inputs -= 1;
+    out = &out[BLAKE3_OUT_LEN];
+  }
+}
+
+#endif
+
 // Use SIMD parallelism to hash up to MAX_SIMD_DEGREE chunks at the same time
 // on a single thread. Write out the chunk chaining values and return the
 // number of chunks hashed. These chunks are never the root and never empty;
@@ -430,7 +936,7 @@ static __inline__ size_t compress_chunks_parallel(
     chunks_array_len += 1;
   }
 
-  blake3_hash_many_portable(
+  blake3_hash_many(
     chunks_array, chunks_array_len, BLAKE3_CHUNK_LEN / BLAKE3_BLOCK_LEN, key,
     chunk_counter, true, flags, CHUNK_START, CHUNK_END, out
   );
@@ -471,7 +977,7 @@ static __inline__ size_t compress_parents_parallel(
     parents_array_len += 1;
   }
 
-  blake3_hash_many_portable(parents_array, parents_array_len, 1, key,
+  blake3_hash_many(parents_array, parents_array_len, 1, key,
                             0,  // Parents always use counter 0.
                             false, flags | PARENT,
                             0,  // Parents have no start flags.
@@ -554,7 +1060,8 @@ static size_t blake3_compress_subtree_wide(
   // right_n=1. Rather than compressing them into a single output, return
   // them directly, to make sure we always have at least two outputs.
   if (left_n == 1) {
-    memcpy64(out, cv_array);
+    memcpy32(out, cv_array);
+    memcpy32(&out[BLAKE3_OUT_LEN], right_cvs);
     return 2;
   }
 
@@ -588,7 +1095,7 @@ static __inline__ void compress_subtree_to_parent_node(
     num_cvs =
       compress_parents_parallel(cv_array, num_cvs, key, flags, out_array);
     if (num_cvs > 0) {
-      memcpy32(cv_array, out_array);
+      memcpy2(cv_array, out_array, (uint32_t)(num_cvs * BLAKE3_OUT_LEN));
     }
   }
   memcpy64(out, cv_array);
