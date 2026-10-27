@@ -1,3 +1,7 @@
+## Unreleased
+
+- Added `ad` (associated data) parameter to Argon2 functions and `argon2Verify`
+
 ## 4.12.0 (November 19, 2024)
 
 - **BREAKING CHANGE**: crc32c() and createCRC32C() were removed. You can now do the same thing with crc32() and createCRC32() through setting the polynomial parameter to 0x82F63B78

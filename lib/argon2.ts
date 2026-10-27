@@ -25,6 +25,10 @@ export interface IArgon2Options {
 	 */
 	secret?: IDataType;
 	/**
+	 * Associated data (RFC 9106 section 3.1, optional non-secret input)
+	 */
+	ad?: IDataType;
+	/**
 	 * Number of iterations to perform
 	 */
 	iterations: number;
@@ -139,6 +143,7 @@ async function argon2Internal(
 	const hashType = getHashType(options.hashType);
 	const { memorySize } = options; // in KB
 	const secret = getUInt8Buffer(options.secret ?? "");
+	const ad = getUInt8Buffer(options.ad ?? "");
 
 	const [argon2Interface, blake512] = await Promise.all([
 		WASMInterface(wasmJson, 1024),
@@ -166,7 +171,8 @@ async function argon2Internal(
 	blake512.update(salt);
 	blake512.update(int32LE(secret.length));
 	blake512.update(secret);
-	blake512.update(int32LE(0)); // associatedData length + associatedData
+	blake512.update(int32LE(ad.length));
+	blake512.update(ad);
 
 	const segments = Math.floor(memorySize / (parallelism * 4)); // length of each lane
 	const lanes = segments * 4;
@@ -231,6 +237,7 @@ const validateOptions = (options: IArgon2Options) => {
 	}
 
 	options.secret = getUInt8Buffer(options.secret ?? "");
+	options.ad = getUInt8Buffer(options.ad ?? "");
 
 	if (!Number.isInteger(options.iterations) || options.iterations < 1) {
 		throw new Error("Iterations should be a positive number");
@@ -324,6 +331,10 @@ export interface Argon2VerifyOptions {
 	 */
 	secret?: IDataType;
 	/**
+	 * Associated data used on hash creation
+	 */
+	ad?: IDataType;
+	/**
 	 * A previously generated argon2 hash in the 'encoded' output format
 	 */
 	hash: string;
@@ -333,6 +344,7 @@ const getHashParameters = (
 	password: IDataType,
 	encoded: string,
 	secret?: IDataType,
+	ad?: IDataType,
 ): IArgon2OptionsExtended => {
 	const regex =
 		/^\$argon2(id|i|d)\$v=([0-9]+)\$((?:[mtp]=[0-9]+,){2}[mtp]=[0-9]+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
@@ -357,6 +369,7 @@ const getHashParameters = (
 		...parsedParameters,
 		password,
 		secret,
+		ad,
 		hashType: hashType as IArgon2OptionsExtended["hashType"],
 		salt: decodeBase64(salt),
 		hashLength: getDecodeBase64Length(hash),
@@ -387,6 +400,7 @@ export async function argon2Verify(
 		options.password,
 		options.hash,
 		options.secret,
+		options.ad,
 	);
 	validateOptions(params);
 

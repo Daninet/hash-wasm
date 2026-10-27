@@ -503,6 +503,7 @@ interface IArgon2Options {
   password: IDataType; // password (or message) to be hashed
   salt: IDataType; // salt (usually containing random bytes)
   secret?: IDataType; // secret for keyed hashing
+  ad?: IDataType; // associated data (RFC 9106 section 3.1, optional non-secret input)
   iterations: number; // number of iterations to perform
   parallelism: number; // degree of parallelism
   memorySize: number; // amount of memory to be used in kibibytes (1024 bytes)
@@ -517,6 +518,7 @@ argon2id(options: IArgon2Options): Promise<string | Uint8Array>
 argon2Verify({
   password: IDataType, // password
   secret?: IDataType, // secret used on hash creation
+  ad?: IDataType, // associated data used on hash creation
   hash: string, // encoded hash
 }): Promise<boolean>
 
