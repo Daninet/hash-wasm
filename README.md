@@ -343,6 +343,8 @@ _The saved state can contain information about the input, including plaintext in
 
 You can make your own measurements here: [link](https://daninet.github.io/hash-wasm-benchmark/)
 
+> **Chrome DevTools:** In affected Chrome versions, opening DevTools can significantly slow down WebAssembly hashing and distort benchmark results. The slowdown may persist after closing DevTools or reloading the page. For representative measurements, close the affected tab and open the page in a new tab without opening DevTools. See [the original report](https://github.com/Daninet/hash-wasm/issues/46) and [the Chromium issue](https://bugs.chromium.org/p/chromium/issues/detail?id=1226418).
+
 Two scenarios were measured:
 
 - throughput with the short form (input size = 32 bytes)
