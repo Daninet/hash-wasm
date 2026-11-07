@@ -1,12 +1,21 @@
 const fs = require("node:fs");
-const binaryen = require("binaryen");
 
-console.log("binaryen optimize start");
+async function main() {
+  const { default: binaryen } = await import("binaryen");
 
-const mod = binaryen.readBinary(fs.readFileSync("./wasm/bcrypt.wasm"));
-mod.optimize();
+  console.log("binaryen optimize start");
 
-const wasmData = mod.emitBinary();
-fs.writeFileSync("./wasm/bcrypt.wasm", wasmData);
+  const mod = binaryen.readBinary(fs.readFileSync("./wasm/bcrypt.wasm"));
+  mod.optimize();
 
-console.log("binaryen optimize done");
+  const wasmData = mod.emitBinary();
+  fs.writeFileSync("./wasm/bcrypt.wasm", wasmData);
+  mod.dispose();
+
+  console.log("binaryen optimize done");
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
