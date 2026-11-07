@@ -1,4 +1,4 @@
-## Unreleased
+## 4.13.0 (November 7, 2026)
 
 - Fix `bcrypt()` and `bcryptVerify()` silently truncating passwords at the first zero byte. Passwords containing zero bytes now use their full binary representation; hashes previously generated from those passwords must be regenerated. Add zero-byte regression tests for bcrypt, HMAC, and PBKDF2. Thanks to [the PLSE Group](https://ucsbplse.github.io/) for reporting this issue ([#84](https://github.com/Daninet/hash-wasm/issues/84)).
 - Fix `IDataType` referencing Node.js `Buffer` typings in browser projects. Native Node.js Buffers remain supported through `Uint8Array` ([#68](https://github.com/Daninet/hash-wasm/issues/68)).
