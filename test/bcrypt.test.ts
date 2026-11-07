@@ -87,6 +87,25 @@ test("bcrypt self-test", async () => {
 	);
 });
 
+test("bcrypt does not truncate passwords at zero bytes", async () => {
+	const password = "correct horse\0battery";
+	const encoded = await bcrypt({
+		password,
+		salt: Buffer.alloc(16, 1),
+		costFactor: 4,
+	});
+	// Reference hash generated with Python bcrypt 5.0.0.
+	expect(encoded).toBe(
+		"$2a$04$.OC/.OC/.OC/.OC/.OC/.OZ2qXt8Thz11wkhRcMIhE5ohAMtGYimW",
+	);
+	await expect(bcryptVerify({ password, hash: encoded })).resolves.toBe(true);
+	for (const other of ["correct horse", "correct horse\0anything"]) {
+		await expect(
+			bcryptVerify({ password: Buffer.from(other), hash: encoded }),
+		).resolves.toBe(false);
+	}
+});
+
 test("bcrypt bundled tests", async () => {
 	expect(
 		await hash(
@@ -419,15 +438,16 @@ test("Invalid bcrypt parameters", async () => {
 		bcrypt({ ...options, password: Buffer.from([]) }),
 	).rejects.toThrow();
 	await expect(bcrypt({ ...options, password: "" })).rejects.toThrow();
-	await expect(
-		bcrypt({ ...options, password: Buffer.alloc(73) }),
-	).rejects.toThrow();
-	await expect(
-		bcrypt({
-			...options,
-			password: [...Array(73)].fill("a").join("").toString(),
-		}),
-	).rejects.toThrow();
+	for (const password of [
+		Buffer.alloc(73),
+		"a".repeat(73),
+		"é".repeat(37),
+		new Uint32Array(19),
+	]) {
+		await expect(bcrypt({ ...options, password })).rejects.toThrow(
+			"Password should be at most 72 bytes long",
+		);
+	}
 
 	await expect(bcrypt({ ...options, salt: undefined })).rejects.toThrow();
 	await expect(bcrypt({ ...options, salt: null })).rejects.toThrow();
@@ -487,15 +507,16 @@ test("Invalid bcrypt verify parameters", async () => {
 		bcryptVerify({ ...options, password: Buffer.from([]) }),
 	).rejects.toThrow();
 	await expect(bcryptVerify({ ...options, password: "" })).rejects.toThrow();
-	await expect(
-		bcryptVerify({ ...options, password: Buffer.alloc(73) }),
-	).rejects.toThrow();
-	await expect(
-		bcryptVerify({
-			...options,
-			password: [...Array(73)].fill("a").join("").toString(),
-		}),
-	).rejects.toThrow();
+	for (const password of [
+		Buffer.alloc(73),
+		"a".repeat(73),
+		"é".repeat(37),
+		new Uint32Array(19),
+	]) {
+		await expect(bcryptVerify({ ...options, password })).rejects.toThrow(
+			"Password should be at most 72 bytes long",
+		);
+	}
 
 	const testHash = async (hashStr: string) => {
 		await expect(bcryptVerify({ ...options, hash: hashStr })).rejects.toThrow();

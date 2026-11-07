@@ -495,7 +495,8 @@ static void BF_swap(BF_word *x, int count)
     *(ptr - 1) = block.LR[1]; \
   } while (ptr < &ctx.S[3][0xFF]);
 
-static void BF_set_key(const char *key, BF_key expanded, BF_key initial,
+static void BF_set_key(const char *key, uint32_t key_length,
+    BF_key expanded, BF_key initial,
     unsigned char flags)
 {
   const char *ptr = key;
@@ -524,8 +525,8 @@ static void BF_set_key(const char *key, BF_key expanded, BF_key initial,
  * information - that is, we mostly use fixed-cost bitwise operations instead
  * of branches or table lookups.  (One conditional branch based on password
  * length remains.  It is not part of the bug aftermath, though, and is
- * difficult and possibly unreasonable to avoid given the use of C strings by
- * the caller, which results in similar timing leaks anyway.)
+ * difficult and possibly unreasonable to avoid given that the caller already
+ * knows the password length.)
  *
  * For actual implementation, we set an array index in the variable "bug"
  * (0 means no bug, 1 means sign extension bug emulation) and a flag in the
@@ -557,7 +558,8 @@ static void BF_set_key(const char *key, BF_key expanded, BF_key initial,
  */
       if (j)
         sign |= tmp[1] & 0x80;
-      if (!*ptr)
+      /* Include embedded zero bytes and the appended bcrypt terminator. */
+      if (ptr == key + key_length)
         ptr = key;
       else
         ptr++;
@@ -601,7 +603,7 @@ static const unsigned char flags_by_subtype[26] =
   {2, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 0};
 
-static char *BF_crypt(const char *key, const char *setting,
+static char *BF_crypt(const char *key, uint32_t key_length, const char *setting,
   char *output, int size,
   BF_word min, int should_encode)
 {
@@ -622,7 +624,7 @@ static char *BF_crypt(const char *key, const char *setting,
   }
   BF_swap(binary.salt, 4);
 
-  BF_set_key(key, expanded_key, ctx.P,
+  BF_set_key(key, key_length, expanded_key, ctx.P,
       flags_by_subtype[(unsigned int)(unsigned char)setting[2] - 'a']);
 
   block.LR64 = 0;
@@ -724,11 +726,11 @@ int _crypt_output_magic(const char *setting, char *output, int size)
   return 0;
 }
 
-char *_crypt_blowfish_rn(const char *key, const char *setting,
+char *_crypt_blowfish_rn(const char *key, uint32_t key_length, const char *setting,
   char *output, int size, int should_encode)
 {
 	_crypt_output_magic(setting, output, size);
-	return BF_crypt(key, setting, output, size, 16, should_encode);
+	return BF_crypt(key, key_length, setting, output, size, 16, should_encode);
 }
 
 char *_crypt_gensalt_blowfish_rn(const char *prefix, unsigned long count,
@@ -758,7 +760,7 @@ void bcrypt(uint32_t password_length, uint32_t cost_factor, uint32_t should_enco
   _crypt_gensalt_blowfish_rn("$2a", cost_factor, (char*)salt, (char*)setting);
 
   uint8_t output[60];
-  _crypt_blowfish_rn((char*)key, (char*)setting, (char*)output, 60, should_encode);
+  _crypt_blowfish_rn((char*)key, password_length, (char*)setting, (char*)output, 60, should_encode);
 
   for (uint8_t i = 0; i < 60; i++) {
     main_buffer[i] = output[i];
@@ -772,7 +774,7 @@ uint32_t bcrypt_verify(uint32_t passwordLength) {
   key[passwordLength] = 0;
 
   uint8_t output[60];
-  _crypt_blowfish_rn((char*)key, (char*)main_buffer, (char*)output, 60, 1);
+  _crypt_blowfish_rn((char*)key, passwordLength, (char*)main_buffer, (char*)output, 60, 1);
 
   // 0-28 => setting
   // 29-59 => hash

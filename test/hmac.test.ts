@@ -89,6 +89,11 @@ test("simple test", async () => {
 	await HMACTest("key", "The quick brown fox jumps over the lazy dog");
 });
 
+test("does not truncate keys or data at zero bytes", async () => {
+	await HMACTest("key\0suffix", "data\0suffix");
+	await HMACTest(Buffer.from("\0key"), Buffer.from("\0data"));
+});
+
 test("can reuse a single hasher", async () => {
 	const algo = createMD5();
 	let hasher = await createHMAC(algo, "key1");

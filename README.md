@@ -180,6 +180,10 @@ _\*\* See [API reference](#api)_
 
 ### Hashing passwords with bcrypt
 
+Passwords may contain zero bytes, including in binary inputs. All password bytes
+are used. Both `bcrypt()` and `bcryptVerify()` reject passwords shorter than 1 byte
+or longer than 72 bytes.
+
 ```javascript
 import { bcrypt, bcryptVerify } from "hash-wasm";
 
