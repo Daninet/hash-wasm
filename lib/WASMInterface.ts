@@ -78,7 +78,7 @@ export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 		memoryView.set(data, offset);
 	};
 
-	const getMemory = () => memoryView;
+	const getMemory = (): Uint8Array => memoryView;
 	const getExports = () => wasmInstance.exports;
 
 	const setMemorySize = (totalSize: number) => {
@@ -97,7 +97,8 @@ export async function WASMInterface(binary: IEmbeddedWasm, hashLength: number) {
 	const loadWASMPromise = wasmMutex.dispatch(async () => {
 		if (!wasmModuleCache.has(binary.name)) {
 			const asm = decodeBase64(binary.data);
-			const promise = WebAssembly.compile(asm);
+			// decodeBase64 allocates a complete, non-shared ArrayBuffer.
+			const promise = WebAssembly.compile(asm.buffer as ArrayBuffer);
 
 			wasmModuleCache.set(binary.name, promise);
 		}
