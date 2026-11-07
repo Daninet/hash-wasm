@@ -3,7 +3,7 @@
 
 name: Build & publish
 on:
-  pull_request:
+  # pull_request:
   push:
     tags:
       - "v*"
