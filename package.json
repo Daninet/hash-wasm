@@ -9,8 +9,7 @@
     "build": "sh -c ./scripts/build.sh",
     "lint": "npx @biomejs/biome check lib test",
     "prepublishOnly": "sh -c ./scripts/build.sh",
-    "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage",
-    "webpack": "node webpack/webpack.js"
+    "test": "node --expose-gc ./node_modules/.bin/jest --coverage --logHeapUsage"
   },
   "sideEffects": false,
   "repository": {
