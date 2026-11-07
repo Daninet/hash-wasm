@@ -180,6 +180,10 @@ _\*\* See [API reference](#api)_
 
 ### Hashing passwords with bcrypt
 
+Passwords may contain zero bytes, including in binary inputs. All password bytes
+are used. Both `bcrypt()` and `bcryptVerify()` reject passwords shorter than 1 byte
+or longer than 72 bytes.
+
 ```javascript
 import { bcrypt, bcryptVerify } from "hash-wasm";
 
@@ -338,6 +342,8 @@ _The saved state can contain information about the input, including plaintext in
 # Benchmark
 
 You can make your own measurements here: [link](https://daninet.github.io/hash-wasm-benchmark/)
+
+> **Chrome DevTools:** In affected Chrome versions, opening DevTools can significantly slow down WebAssembly hashing and distort benchmark results. The slowdown may persist after closing DevTools or reloading the page. For representative measurements, close the affected tab and open the page in a new tab without opening DevTools. See [the original report](https://github.com/Daninet/hash-wasm/issues/46) and [the Chromium issue](https://bugs.chromium.org/p/chromium/issues/detail?id=1226418).
 
 Two scenarios were measured:
 

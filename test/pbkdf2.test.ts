@@ -96,6 +96,17 @@ test("simple test", async () => {
 	);
 });
 
+test("does not truncate passwords or salts at zero bytes", async () => {
+	for (const [password, salt] of [
+		["pass\0word", "salt\0suffix"],
+		[Buffer.from("\0password"), Buffer.from("\0salt")],
+	]) {
+		expect(await getWasmPBKDF2(password, salt, 10, 32)).toBe(
+			getNodePBKDF2(password, salt, 10, 32),
+		);
+	}
+});
+
 test("various key lengths", async () => {
 	expect(await getWasmPBKDF2("password", "salt", 500, 1)).toBe(
 		getNodePBKDF2("password", "salt", 500, 1),

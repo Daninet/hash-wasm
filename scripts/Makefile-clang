@@ -1,5 +1,5 @@
 CFLAGS=-flto -O3 -nostdlib -fno-builtin -ffreestanding -mexec-model=reactor --target=wasm32
-LDFLAGS=-Wl,--strip-all -Wl,--initial-memory=131072 -Wl,--max-memory=131072 -Wl,--no-entry -Wl,--allow-undefined -Wl,--compress-relocations -Wl,--export-dynamic
+LDFLAGS=-Wl,--strip-all -Wl,--initial-memory=131072 -Wl,--max-memory=131072 -Wl,--no-entry -Wl,--compress-relocations -Wl,--export-dynamic
 
 # -msimd128 -msign-ext -mmutable-globals -mmultivalue -mbulk-memory -mtail-call -munimplemented-simd128
 # -g -fdebug-prefix-map=/app/src=/C:/Projects/hash-wasm/src
@@ -38,7 +38,7 @@ all : \
 
 # Targets that need special compile arguments: 
 /app/wasm/argon2.wasm : /app/src/argon2.c
-	clang $(CFLAGS) $(LDFLAGS) -Wl,--max-memory=2147483648 -o $@ $<	
+	clang $(CFLAGS) $(LDFLAGS) -Wl,--max-memory=2147483648 -o $@ $<
 	sha1sum $@
 	stat -c "%n size: %s bytes" $@
 
@@ -48,6 +48,6 @@ all : \
 	stat -c "%n size: %s bytes" $@
 
 /app/wasm/scrypt.wasm : /app/src/scrypt.c
-	clang $(CFLAGS) $(LDFLAGS) -Wl,--max-memory=2147483648 -o $@ $< 
+	clang $(CFLAGS) $(LDFLAGS) -Wl,--max-memory=2147483648 -o $@ $<
 	sha1sum $@
 	stat -c "%n size: %s bytes" $@

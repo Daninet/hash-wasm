@@ -7,9 +7,7 @@ mkdir -p wasm
 
 npm run lint
 
-if [[ "$(docker images -q clang:hash-wasm 2> /dev/null)" == "" ]]; then
-  docker build -f scripts/Dockerfile -t clang:hash-wasm .
-fi
+docker build --pull -f scripts/Dockerfile -t clang:hash-wasm scripts
 
 # copy to docker volume
 docker rm hash-wasm-temp || true
@@ -32,6 +30,6 @@ docker volume rm hash-wasm-volume
 # node scripts/optimize
 node scripts/make_json
 node --max-old-space-size=4096 ./node_modules/rollup/dist/bin/rollup -c
-npx tsc ./lib/index --outDir ./dist --downlevelIteration --emitDeclarationOnly --declaration --resolveJsonModule --allowSyntheticDefaultImports
+npx tsc --project tsconfig.build.json
 
 #-s ASSERTIONS=1 \

@@ -133,10 +133,12 @@ XXH_FORCE_INLINE XXH128_hash_t XXH_mult64to128(xxh_u64 lhs, xxh_u64 rhs) {
   xxh_u64 const lo_hi = XXH_mult32to64(lhs & 0xFFFFFFFF, rhs >> 32);
   xxh_u64 const hi_hi = XXH_mult32to64(lhs >> 32, rhs >> 32);
 
-  /* Now add the products together. These will never overflow. */
-  xxh_u64 const cross = (lo_lo >> 32) + (hi_lo & 0xFFFFFFFF) + lo_hi;
-  xxh_u64 const upper = (hi_lo >> 32) + (cross >> 32) + hi_hi;
-  xxh_u64 const lower = (cross << 32) | (lo_lo & 0xFFFFFFFF);
+  /* Combine the middle products using explicit carries. */
+  xxh_u64 const middle = hi_lo + lo_hi;
+  xxh_u64 const carry = middle < hi_lo;
+  xxh_u64 const lower = lo_lo + (middle << 32);
+  xxh_u64 const upper = hi_hi + (middle >> 32) + (carry << 32)
+      + (lower < lo_lo);
 
   XXH128_hash_t r128;
   r128.low64 = lower;

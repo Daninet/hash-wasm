@@ -1,6 +1,6 @@
 import typescript from "@rollup/plugin-typescript";
 import json from "@rollup/plugin-json";
-import { terser } from "rollup-plugin-terser";
+import terser from "@rollup/plugin-terser";
 // import gzipPlugin from 'rollup-plugin-gzip';
 import license from "rollup-plugin-license";
 

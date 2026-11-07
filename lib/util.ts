@@ -12,7 +12,7 @@ const textEncoder = globalObject.TextEncoder
 	: null;
 
 export type ITypedArray = Uint8Array | Uint16Array | Uint32Array;
-export type IDataType = string | Buffer | ITypedArray;
+export type IDataType = string | ITypedArray;
 export type IEmbeddedWasm = { name: string; data: string; hash: string };
 
 export function intArrayToString(arr: Uint8Array, len: number): string {

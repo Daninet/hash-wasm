@@ -1,3 +1,15 @@
+## 4.13.0 (November 7, 2026)
+
+- Fix `bcrypt()` and `bcryptVerify()` silently truncating passwords at the first zero byte. Passwords containing zero bytes now use their full binary representation; hashes previously generated from those passwords must be regenerated. Add zero-byte regression tests for bcrypt, HMAC, and PBKDF2. Thanks to [the PLSE Group](https://ucsbplse.github.io/) for reporting this issue ([#84](https://github.com/Daninet/hash-wasm/issues/84)).
+- Fix `IDataType` referencing Node.js `Buffer` typings in browser projects. Native Node.js Buffers remain supported through `Uint8Array` ([#68](https://github.com/Daninet/hash-wasm/issues/68)).
+- Update to TypeScript 6 and remove deprecated compiler options. Use a dedicated declaration-build configuration and preserve compatibility with older TypeScript consumers ([#81](https://github.com/Daninet/hash-wasm/issues/81)).
+- Update development dependencies, including Rollup 4.68, Binaryen 132, Jest 30, and TypeScript tooling and typings.
+- Update the WASM build image from Alpine 3.20.3 to 3.24.4 (Clang/LLD 17.0.6 to 22.1.3) and rebuild all 22 WASM modules. Use explicit carry arithmetic in xxHash3/xxHash128 to avoid the unavailable `__multi3` runtime helper without compiler-rt, and fail builds on unresolved symbols.
+- Replace `rollup-plugin-terser` with the maintained `@rollup/plugin-terser` and update the Binaryen optimizer script to load its ESM API.
+- Update CI to Node.js 24 and run builds/tests on pull requests without publishing or uploading coverage.
+- Remove the obsolete `npm run webpack` script ([#75](https://github.com/Daninet/hash-wasm/pull/75)).
+- Document the Chrome DevTools WebAssembly performance issue and the fresh-tab workaround in the README ([#47](https://github.com/Daninet/hash-wasm/issues/47)).
+
 ## 4.12.0 (November 19, 2024)
 
 - **BREAKING CHANGE**: crc32c() and createCRC32C() were removed. You can now do the same thing with crc32() and createCRC32() through setting the polynomial parameter to 0x82F63B78
