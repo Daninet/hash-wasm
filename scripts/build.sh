@@ -7,9 +7,7 @@ mkdir -p wasm
 
 npm run lint
 
-if [[ "$(docker images -q clang:hash-wasm 2> /dev/null)" == "" ]]; then
-  docker build -f scripts/Dockerfile -t clang:hash-wasm .
-fi
+docker build --pull -f scripts/Dockerfile -t clang:hash-wasm scripts
 
 # copy to docker volume
 docker rm hash-wasm-temp || true
