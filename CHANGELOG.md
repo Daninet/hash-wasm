@@ -6,7 +6,7 @@
 - Update development dependencies, including Rollup 4.68, Binaryen 132, Jest 30, and TypeScript tooling and typings.
 - Update the WASM build image from Alpine 3.20.3 to 3.24.4 (Clang/LLD 17.0.6 to 22.1.3) and rebuild all 22 WASM modules. Use explicit carry arithmetic in xxHash3/xxHash128 to avoid the unavailable `__multi3` runtime helper without compiler-rt, and fail builds on unresolved symbols.
 - Replace `rollup-plugin-terser` with the maintained `@rollup/plugin-terser` and update the Binaryen optimizer script to load its ESM API.
-- Update CI to Node.js 24.
+- Update CI to Node.js 24 and run builds/tests on pull requests without publishing or uploading coverage.
 - Remove the obsolete `npm run webpack` script ([#75](https://github.com/Daninet/hash-wasm/pull/75)).
 - Document the Chrome DevTools WebAssembly performance issue and the fresh-tab workaround in the README ([#47](https://github.com/Daninet/hash-wasm/issues/47)).
 

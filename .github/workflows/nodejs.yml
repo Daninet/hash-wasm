@@ -3,6 +3,7 @@
 
 name: Build & publish
 on:
+  pull_request:
   push:
     tags:
       - "v*"
@@ -23,8 +24,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
       - run: npm run build
-      - run: npm test && bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }}
+      - run: npm test
+      - run: bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }}
+        if: github.event_name == 'push'
       - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+        if: github.event_name == 'push'
       - run: npm publish
+        if: github.event_name == 'push'
         env:
           CI: true
