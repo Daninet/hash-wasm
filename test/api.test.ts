@@ -4,7 +4,10 @@ import type { IHasher } from "../lib/WASMInterface";
 
 async function createAllFunctions(includeHMAC): Promise<IHasher[]> {
 	const keys = Object.keys(api).filter(
-		(key) => key.startsWith("create") && (includeHMAC || key !== "createHMAC"),
+		(key) =>
+			key.startsWith("create") &&
+			key !== "createArgon2" && // not an IHasher: it computes one-shot KDFs
+			(includeHMAC || key !== "createHMAC"),
 	);
 
 	return Promise.all(
