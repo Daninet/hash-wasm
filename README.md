@@ -174,6 +174,9 @@ async function run() {
 run();
 ```
 
+Empty passwords are accepted, matching the Argon2 reference implementation and
+libsodium's `crypto_pwhash`. Only a missing `password` is rejected.
+
 _\* See [String encoding pitfalls](#string-encoding-pitfalls)_
 
 _\*\* See [API reference](#api)_

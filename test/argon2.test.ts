@@ -503,6 +503,33 @@ test("longer calculations", async () => {
 	]);
 }, 30000);
 
+test("Empty password", async () => {
+	// Expected values from libsodium 1.0.22 crypto_pwhash (ARGON2ID13) with an
+	// empty password and salt 000102...0f; the same inputs KERI's Salter uses.
+	const salt = Buffer.from("000102030405060708090a0b0c0d0e0f", "hex");
+	const options = {
+		password: "",
+		salt,
+		parallelism: 1,
+		iterations: 1,
+		memorySize: 8,
+		hashLength: 16,
+		outputType: "hex" as const,
+	};
+
+	expect(await argon2id(options)).toBe("35858230a16f87fed2b29838c1fe2df6");
+	expect(await argon2id({ ...options, hashLength: 32 })).toBe(
+		"31ed41e2d73f27fdfe4eb4bec651341e58ba43477051c6fe4adad735d82ee08a",
+	);
+	expect(await argon2id({ ...options, password: new Uint8Array(0) })).toBe(
+		"35858230a16f87fed2b29838c1fe2df6",
+	);
+
+	const encoded = await argon2id({ ...options, outputType: "encoded" });
+	expect(await argon2Verify({ password: "", hash: encoded })).toBe(true);
+	expect(await argon2Verify({ password: "x", hash: encoded })).toBe(false);
+});
+
 test("Invalid parameters", async () => {
 	const functions = [argon2i, argon2d, argon2id];
 
@@ -527,7 +554,8 @@ test("Invalid parameters", async () => {
 		await expect(fn({ ...options, password: [] as any })).rejects.toThrow();
 		await expect(
 			fn({ ...options, password: Buffer.from([]) }),
-		).rejects.toThrow();
+		).resolves.not.toThrow();
+		await expect(fn({ ...options, password: "" })).resolves.not.toThrow();
 
 		await expect(fn({ ...options, salt: undefined })).rejects.toThrow();
 		await expect(fn({ ...options, salt: null })).rejects.toThrow();
@@ -599,8 +627,10 @@ test("Invalid verify parameters", async () => {
 	).rejects.toThrow();
 	await expect(
 		argon2Verify({ ...options, password: Buffer.from([]) }),
-	).rejects.toThrow();
-	await expect(argon2Verify({ ...options, password: "" })).rejects.toThrow();
+	).resolves.not.toThrow();
+	await expect(
+		argon2Verify({ ...options, password: "" }),
+	).resolves.not.toThrow();
 
 	const testHash = async (hashStr: string) => {
 		await expect(argon2Verify({ ...options, hash: hashStr })).rejects.toThrow();
