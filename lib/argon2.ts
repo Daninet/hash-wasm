@@ -1,6 +1,6 @@
 import wasmJson from "../wasm/argon2.wasm.json";
-import { type IHasher, WASMInterface } from "./WASMInterface";
-import { createBLAKE2b } from "./blake2b";
+import blake2bWasmJson from "../wasm/blake2b.wasm.json";
+import { type IWASMInterface, WASMInterface } from "./WASMInterface";
 import {
 	type IDataType,
 	decodeBase64,
@@ -73,47 +73,58 @@ function int32LE(x: number): Uint8Array {
 	return new Uint8Array(uint32View.buffer);
 }
 
-async function hashFunc(
-	blake512: IHasher,
+interface IArgon2Instances {
+	argon2: IWASMInterface;
+	blake2b: IWASMInterface;
+}
+
+async function createInstances(): Promise<IArgon2Instances> {
+	const [argon2, blake2b] = await Promise.all([
+		WASMInterface(wasmJson, 1024),
+		WASMInterface(blake2bWasmJson, 64),
+	]);
+	return { argon2, blake2b };
+}
+
+// The interface always reports 64 bytes; only the first `len` were produced.
+function digestBytes(blake2b: IWASMInterface, len: number): Uint8Array {
+	return (blake2b.digest("binary") as Uint8Array).slice(0, len);
+}
+
+function hashFunc(
+	blake2b: IWASMInterface,
 	buf: Uint8Array,
 	len: number,
-): Promise<Uint8Array> {
+): Uint8Array {
 	if (len <= 64) {
-		const blake = await createBLAKE2b(len * 8);
-		blake.update(int32LE(len));
-		blake.update(buf);
-		return blake.digest("binary");
+		blake2b.init(len * 8);
+		blake2b.update(int32LE(len));
+		blake2b.update(buf);
+		return digestBytes(blake2b, len);
 	}
 
 	const r = Math.ceil(len / 32) - 2;
 	const ret = new Uint8Array(len);
 
-	blake512.init();
-	blake512.update(int32LE(len));
-	blake512.update(buf);
-	let vp = blake512.digest("binary");
+	blake2b.init(512);
+	blake2b.update(int32LE(len));
+	blake2b.update(buf);
+	let vp = digestBytes(blake2b, 64);
 	ret.set(vp.subarray(0, 32), 0);
 
 	for (let i = 1; i < r; i++) {
-		blake512.init();
-		blake512.update(vp);
-		vp = blake512.digest("binary");
+		blake2b.init(512);
+		blake2b.update(vp);
+		vp = digestBytes(blake2b, 64);
 		ret.set(vp.subarray(0, 32), i * 32);
 	}
 
 	const partialBytesNeeded = len - 32 * r;
 
-	let blakeSmall: IHasher;
-	if (partialBytesNeeded === 64) {
-		blakeSmall = blake512;
-		blakeSmall.init();
-	} else {
-		blakeSmall = await createBLAKE2b(partialBytesNeeded * 8);
-	}
-
-	blakeSmall.update(vp);
-	vp = blakeSmall.digest("binary");
-	ret.set(vp.subarray(0, partialBytesNeeded), r * 32);
+	blake2b.init(partialBytesNeeded * 8);
+	blake2b.update(vp);
+	vp = digestBytes(blake2b, partialBytesNeeded);
+	ret.set(vp, r * 32);
 
 	return ret;
 }
@@ -129,9 +140,10 @@ function getHashType(type: IArgon2OptionsExtended["hashType"]): number {
 	}
 }
 
-async function argon2Internal(
+function argon2Compute(
+	{ argon2: argon2Interface, blake2b }: IArgon2Instances,
 	options: IArgon2OptionsExtended,
-): Promise<string | Uint8Array> {
+): string | Uint8Array {
 	const { parallelism, iterations, hashLength } = options;
 	const password = getUInt8Buffer(options.password);
 	const salt = getUInt8Buffer(options.salt);
@@ -140,13 +152,11 @@ async function argon2Internal(
 	const { memorySize } = options; // in KB
 	const secret = getUInt8Buffer(options.secret ?? "");
 
-	const [argon2Interface, blake512] = await Promise.all([
-		WASMInterface(wasmJson, 1024),
-		createBLAKE2b(512),
-	]);
-
 	// last block is for storing the init vector
 	argon2Interface.setMemorySize(memorySize * 1024 + 1024);
+	// The first pass XORs into the matrix, so it has to start from zero. A
+	// reused instance would otherwise return a wrong hash without any error.
+	argon2Interface.getMemory().fill(0);
 
 	const initVector = new Uint8Array(24);
 	const initVectorView = new DataView(initVector.buffer);
@@ -158,21 +168,21 @@ async function argon2Internal(
 	initVectorView.setInt32(20, hashType, true);
 	argon2Interface.writeMemory(initVector, memorySize * 1024);
 
-	blake512.init();
-	blake512.update(initVector);
-	blake512.update(int32LE(password.length));
-	blake512.update(password);
-	blake512.update(int32LE(salt.length));
-	blake512.update(salt);
-	blake512.update(int32LE(secret.length));
-	blake512.update(secret);
-	blake512.update(int32LE(0)); // associatedData length + associatedData
+	blake2b.init(512);
+	blake2b.update(initVector);
+	blake2b.update(int32LE(password.length));
+	blake2b.update(password);
+	blake2b.update(int32LE(salt.length));
+	blake2b.update(salt);
+	blake2b.update(int32LE(secret.length));
+	blake2b.update(secret);
+	blake2b.update(int32LE(0)); // associatedData length + associatedData
 
 	const segments = Math.floor(memorySize / (parallelism * 4)); // length of each lane
 	const lanes = segments * 4;
 
 	const param = new Uint8Array(72);
-	const H0 = blake512.digest("binary");
+	const H0 = digestBytes(blake2b, 64);
 	param.set(H0);
 
 	for (let lane = 0; lane < parallelism; lane++) {
@@ -180,19 +190,19 @@ async function argon2Internal(
 		param.set(int32LE(lane), 68);
 
 		let position = lane * lanes;
-		let chunk = await hashFunc(blake512, param, 1024);
+		let chunk = hashFunc(blake2b, param, 1024);
 		argon2Interface.writeMemory(chunk, position * 1024);
 
 		position += 1;
 		param.set(int32LE(1), 64);
-		chunk = await hashFunc(blake512, param, 1024);
+		chunk = hashFunc(blake2b, param, 1024);
 		argon2Interface.writeMemory(chunk, position * 1024);
 	}
 
 	const C = new Uint8Array(1024);
 	writeHexToUInt8(C, argon2Interface.calculate(new Uint8Array([]), memorySize));
 
-	const res = await hashFunc(blake512, C, hashLength);
+	const res = hashFunc(blake2b, C, hashLength);
 
 	if (options.outputType === "hex") {
 		const digestChars = new Uint8Array(hashLength * 2);
@@ -205,6 +215,13 @@ async function argon2Internal(
 
 	// return binary format
 	return res;
+}
+
+async function argon2Internal(
+	options: IArgon2OptionsExtended,
+): Promise<string | Uint8Array> {
+	// A fresh pair per call lets the working memory be released afterwards.
+	return argon2Compute(await createInstances(), options);
 }
 
 const validateOptions = (options: IArgon2Options) => {
@@ -266,7 +283,9 @@ interface IArgon2OptionsBinary {
 	outputType: "binary";
 }
 
-type Argon2ReturnType<T> = T extends IArgon2OptionsBinary ? Uint8Array : string;
+export type Argon2ReturnType<T> = T extends IArgon2OptionsBinary
+	? Uint8Array
+	: string;
 
 /**
  * Calculates hash using the argon2i password-hashing function
@@ -373,13 +392,9 @@ const validateVerifyOptions = (options: Argon2VerifyOptions) => {
 	}
 };
 
-/**
- * Verifies password using the argon2 password-hashing function
- * @returns True if the encoded hash matches the password
- */
-export async function argon2Verify(
+const getVerifyParameters = (
 	options: Argon2VerifyOptions,
-): Promise<boolean> {
+): IArgon2OptionsExtended => {
 	validateVerifyOptions(options);
 
 	const params = getHashParameters(
@@ -388,8 +403,67 @@ export async function argon2Verify(
 		options.secret,
 	);
 	validateOptions(params);
+	return params;
+};
 
-	const hashStart = options.hash.lastIndexOf("$") + 1;
+const matchesEncodedHash = (result: string, encoded: string): boolean => {
+	const hashStart = encoded.lastIndexOf("$") + 1;
+	return result.substring(hashStart) === encoded.substring(hashStart);
+};
+
+/**
+ * Verifies password using the argon2 password-hashing function
+ * @returns True if the encoded hash matches the password
+ */
+export async function argon2Verify(
+	options: Argon2VerifyOptions,
+): Promise<boolean> {
+	const params = getVerifyParameters(options);
 	const result = (await argon2Internal(params)) as string;
-	return result.substring(hashStart) === options.hash.substring(hashStart);
+	return matchesEncodedHash(result, options.hash);
+}
+
+/**
+ * Synchronous counterparts of the argon2 functions, returned by createArgon2().
+ */
+export interface IArgon2Hasher {
+	argon2i<T extends IArgon2Options>(options: T): Argon2ReturnType<T>;
+	argon2d<T extends IArgon2Options>(options: T): Argon2ReturnType<T>;
+	argon2id<T extends IArgon2Options>(options: T): Argon2ReturnType<T>;
+	argon2Verify(options: Argon2VerifyOptions): boolean;
+}
+
+/**
+ * Instantiates the WebAssembly modules once, for callers that need to hash
+ * synchronously afterwards.
+ *
+ * Each hasher keeps its WebAssembly memory at the largest size it has used
+ * until the hasher itself is released. Input, intermediate and output bytes are
+ * not erased from that memory after a call.
+ * @returns Hasher whose functions are synchronous
+ */
+export async function createArgon2(): Promise<IArgon2Hasher> {
+	const instances = await createInstances();
+
+	const compute = <T extends IArgon2Options>(
+		options: T,
+		hashType: IArgon2OptionsExtended["hashType"],
+	): Argon2ReturnType<T> => {
+		validateOptions(options);
+		return argon2Compute(instances, {
+			...options,
+			hashType,
+		}) as Argon2ReturnType<T>;
+	};
+
+	return {
+		argon2i: (options) => compute(options, "i"),
+		argon2d: (options) => compute(options, "d"),
+		argon2id: (options) => compute(options, "id"),
+		argon2Verify: (options) => {
+			const params = getVerifyParameters(options);
+			const result = argon2Compute(instances, params) as string;
+			return matchesEncodedHash(result, options.hash);
+		},
+	};
 }

@@ -177,6 +177,29 @@ run();
 Empty passwords are accepted, matching the Argon2 reference implementation and
 libsodium's `crypto_pwhash`. Only a missing `password` is rejected.
 
+To hash synchronously, load the WebAssembly modules once with `createArgon2()`:
+
+```javascript
+import { createArgon2 } from "hash-wasm";
+
+const hasher = await createArgon2();
+
+const key = hasher.argon2id({
+  password: "pass",
+  salt, // salt is a buffer containing random bytes
+  parallelism: 1,
+  iterations: 256,
+  memorySize: 512, // use 512KB memory
+  hashLength: 32, // output size = 32 bytes
+  outputType: "binary",
+});
+```
+
+A hasher keeps its WebAssembly memory at the largest `memorySize` it has used
+until the hasher itself is released, so prefer the async functions for occasional
+hashing with a large `memorySize`. Input, intermediate and output bytes are not
+erased from that memory after a call.
+
 _\* See [String encoding pitfalls](#string-encoding-pitfalls)_
 
 _\*\* See [API reference](#api)_
@@ -528,6 +551,13 @@ argon2Verify({
   secret?: IDataType, // secret used on hash creation
   hash: string, // encoded hash
 }): Promise<boolean>
+
+createArgon2(): Promise<{
+  argon2i(options: IArgon2Options): string | Uint8Array,
+  argon2d(options: IArgon2Options): string | Uint8Array,
+  argon2id(options: IArgon2Options): string | Uint8Array,
+  argon2Verify(options: Argon2VerifyOptions): boolean,
+}>
 
 bcrypt({
   password: IDataType, // password
