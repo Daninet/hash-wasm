@@ -212,14 +212,13 @@ const validateOptions = (options: IArgon2Options) => {
 		throw new Error("Invalid options parameter. It requires an object.");
 	}
 
-	if (!options.password) {
+	if (options.password === undefined || options.password === null) {
 		throw new Error("Password must be specified");
 	}
 
+	// Argon2 (RFC 9106) allows zero-length passwords, as do the reference
+	// implementation and libsodium's crypto_pwhash. Only a missing value is rejected.
 	options.password = getUInt8Buffer(options.password);
-	if (options.password.length < 1) {
-		throw new Error("Password must be specified");
-	}
 
 	if (!options.salt) {
 		throw new Error("Salt must be specified");
