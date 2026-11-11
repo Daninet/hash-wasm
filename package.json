@@ -16,6 +16,9 @@
     "type": "git",
     "url": "git+https://github.com/Daninet/hash-wasm.git"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "hash",
     "wasm",
